@@ -93,6 +93,11 @@ const priceDataSchema = new mongoose.Schema({
     volume:{type:Number},
 })
 
+const dividendDataSchema = new mongoose.Schema({
+    date:{type:Date, required:true},
+    dividend:{type:Number, required:true}
+})
+
 const tickerSchema = new mongoose.Schema({
     ticker:{type: String, required:true},
     name:{type: String, required: true},
@@ -100,6 +105,9 @@ const tickerSchema = new mongoose.Schema({
     sector:{type: String, required: true},
     industry:{type: String, required: true},
     subIndustry:{type: String, required:true},
+    stockExhange:{type: String},
+    country:{type: String},
+    currency:{type: String},
     founded:{type:String, required: true},
     address:{type: String, required: true},
     phone:{type: String, required: true},
@@ -109,6 +117,7 @@ const tickerSchema = new mongoose.Schema({
     balanceSheet:[balanceSheetSchema],
     cashFlow:[cashFlowSchema],
     priceData:[priceDataSchema],
+    dividendData:[dividendDataSchema],
     insiderTrading:[insiderTradingSchema]
 })
 
