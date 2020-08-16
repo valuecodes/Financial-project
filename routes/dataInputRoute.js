@@ -24,8 +24,8 @@ router.post('/',async (req, res) =>{
         ticker.dividendData=req.body.dividendData,
         ticker.insiderTrading=req.body.insiderTrading
         console.log('ticker saved',ticker)
-        await ticker.save()
-        res.send({message:'Ticker saved'})   
+        let saved = await ticker.save()
+        res.send({message:'Ticker saved',data:saved})   
     }else{
         let newTicker = new Ticker({
             ticker:req.body.ticker,
@@ -49,8 +49,8 @@ router.post('/',async (req, res) =>{
 
         console.log('ticker created')
 
-        await newTicker.save()
-        res.send({message:'Ticker created'})        
+        let saved = await newTicker.save()
+        res.send({message:'Ticker created',data:saved})        
     }
 
 })
