@@ -9,8 +9,12 @@ app.use(bodyParser.json({limit: "50mb"}));
 app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
 
 const dataInputRoute=require('./routes/dataInputRoute')
+const tickerRoute = require('./routes/tickerRoute')
+const portfolioRoute = require('./routes/portfolioRoute')
 
 app.use('/dataInput',dataInputRoute)
+app.use('/api/tickers',tickerRoute)
+app.use('/api/portfolio',portfolioRoute)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, console.log(`Server started on ${PORT}`))
