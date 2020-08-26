@@ -4,7 +4,6 @@ const Ticker = require('../models/tickerModel')
 
 router.post('/',async (req, res) =>{
     const ticker = await Ticker.findOne({ticker:req.body.ticker})
-    console.log(ticker.insiderTrading)
     if(ticker){
         ticker.ticker=req.body.ticker,
         ticker.name=req.body.name,
@@ -56,7 +55,6 @@ router.post('/',async (req, res) =>{
 })
 
 router.get('/', async (req,res) => {
-    console.log('test')
     let all=await Ticker.find()
     let tickers=[];
     all.forEach(item => tickers.push({
@@ -64,7 +62,6 @@ router.get('/', async (req,res) => {
         ticker:item.ticker,
         name:item.name
     }))
-    console.log(tickers)
     res.send({data:tickers})
 })
 

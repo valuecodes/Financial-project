@@ -4,6 +4,7 @@
 // @route     GET /
 // @ access   
 exports.addToPortfolio = async (req,res) => {
+    const id = req.params.id
     console.log(req.params)
     // let all=await Ticker.find()
     // let tickers=[];
