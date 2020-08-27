@@ -1,38 +1,58 @@
 // const Ticker = require('../models/tickerModel')
+const Portfolio = require('../models/portfolioModel')
 const User = require('../models/userModel')
 
 // @desc      Get all Tickers
 // @route     GET /
 // @ access   
-exports.addToPortfolio = async (req,res) => {
-    const id = req.params.id
-    console.log(req.params,'test')
-    // let all=await Ticker.find()
-    // let tickers=[];
-    // all.forEach(item => tickers.push([
-    //     item._id,
-    //     item.ticker,
-    //     item.name
-    // ]))
-    // res.send({data:tickers})
+exports.addTicker = async (req,res) => {
+    const user = await User.findById(req.user._id)
+
+    if(user){
+
+        const portfolio = await Portfolio.findById(req.params.id)
+        let newTicker = {
+            ticker:req.body.ticker,
+            quatity:0
+        }
+        portfolio.tickers.push(newTicker)
+        await portfolio.save()
+        return res.status(204).send({msg:'Ticker added succesfully'})
+
+    }else{
+        return res.status(401).send({msg: 'User not found'})
+    }
+    
 }
 
 // @desc      Create portfolio
 // @route     POST /portfolio/create
 // @ access  auth
 exports.createPortfolio = async (req, res) => {
-    console.log(req.body.name,req.user,'testsasds')
-    let user = await User.findById(req.user._id)
-    console.log(user)
+
+    const user = await User.findById(req.user._id)
+
     if(user){
-        let newPortfolio = {
+        
+        const portfolio = new Portfolio({
             name:req.body.name,
+            userID:user._id,
             tickers:[]
-        }
-        user.portfolios.push(newPortfolio)
-        await user.save()
+        })
+
+        const newPortfolio = await portfolio.save()
         res.status(201).send({message:'Portfolio created',data:newPortfolio})
+
     }else{
         return res.status(401).send({msg: 'User not found'})
+    }
+}
+
+exports.listUserPortfolios = async (req, res) => {
+    const userPortfolios = await Portfolio.find({userID:req.user._id})
+    if(userPortfolios){
+        res.status(201).send({data: userPortfolios})
+    }else{
+        return res.status(401).send({msg: 'Portfolios not found'})
     }
 }

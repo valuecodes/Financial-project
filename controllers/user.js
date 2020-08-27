@@ -17,8 +17,7 @@ exports.userSignin = async (req,res) => {
             email: signinUser.email,
             password: signinUser.password,
             isAdmin: signinUser.isAdmin,
-            token: getToken(signinUser),
-            portfolios:signinUser.portfolios
+            token: getToken(signinUser)
         })
     }else{
         res.status(401).send({msg:'Invalid Email or password.'})
@@ -34,8 +33,7 @@ exports.userRegister = async (req, res)=>{
             name: req.body.name,
             email: req.body.email,
             password: req.body.password,
-            isAdmin: false,
-            portfolios:[]
+            isAdmin: false
         })
         const newUser = await user.save()
         if(newUser){
@@ -44,8 +42,7 @@ exports.userRegister = async (req, res)=>{
                 name: newUser.name,
                 email: newUser.email,
                 isAdmin: newUser.isAdmin,
-                token: getToken(newUser),
-                portfolios:[]
+                token: getToken(newUser)
             })
         }
         
@@ -60,11 +57,9 @@ exports.createAdmin = async (req, res) => {
             name:'Juha',
             email:'juhakangas5@gmail.com',
             password: 1234,
-            isAdmin: true,
-            portfolios:[]
+            isAdmin: true
         })
         const newUser = await user.save()
-        console.log(newUser)
         res.send(newUser)
     } catch(err){
         res.send({msg:err.message})

@@ -1,11 +1,15 @@
 const express = require('express')
 const router = express.Router()
-const { addToPortfolio, createPortfolio } = require('../controllers/portfolio')
+const { addTicker, createPortfolio, listUserPortfolios } = require('../controllers/portfolio')
 const { isAuth } = require('../util')
 
-// router
-//     .route('/:id')
-//     .post(addToPortfolio)
+router
+    .route('/:id')
+    .put(isAuth,addTicker)
+
+router
+    .route('/userPortfolios')
+    .get(isAuth,listUserPortfolios)
 
 router
     .route('/create')

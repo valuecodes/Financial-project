@@ -1,6 +1,8 @@
 import { TICKER_LIST_REQUEST, TICKER_LIST_SUCCESS, TICKER_LIST_FAIL } from "../constants/tickerConstants";
 
-function tickerListReducer(state={},action){
+function tickerListReducer(state={
+    tickers:[]
+},action){
     switch(action.type){
         case TICKER_LIST_REQUEST:
             return {loading:true}
