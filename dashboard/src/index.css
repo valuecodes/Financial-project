@@ -1,0 +1,167 @@
+*{
+  /* margin: 0;
+  padding: 0; */
+}
+
+:root{
+  --main-container-color:rgb(206, 206, 206);
+}
+
+html{
+  font-size: 62.5%;
+  box-sizing: border-box;
+}
+body{
+  font: 1.6rem Helvetica;
+  height: 100vh;
+  margin: 0px;
+}
+
+.App{
+  min-height: 100vh;
+}
+.container{
+  max-width: 1600px;
+  margin: auto;
+}
+
+.button{
+
+}
+
+.formInput{
+  height: 3rem;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+.card{
+  background-color: var(--main-container-color);
+  border-radius: 1rem;
+}
+
+/* Header */
+.header{
+  width: 100vw;
+  background-color: rgb(219, 219, 219);
+}
+
+.headerContainer{
+  height: 5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar ul{
+  display: flex;
+  list-style-type: none;
+  margin: 5rem;
+}
+.navbar li{
+  margin: 1rem;
+}
+
+/* HomeScreen */
+.homeScreen{
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-column-gap: 2rem;
+  grid-row-gap: 2rem;
+  margin-top: 2rem;
+}
+
+.tickerList{
+  grid-row: 1/3;
+  height: 80rem;
+}
+
+.tickerGraph{
+  grid-column: 2/4;
+}
+
+.dividendGraph{
+  grid-column: 2/4;
+}
+
+/* SigninScreen */
+.signinScreen{
+
+}
+
+.form{
+
+}
+
+.form ul{
+  list-style-type: none;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+.form ul li{
+  display: flex;
+  flex-direction: column;
+  margin: 2rem;
+}
+
+.form{
+  max-width: 40rem;
+  margin: auto;
+  background-color: var(--main-container-color);
+}
+
+.inputPage{
+  display: flex;
+  margin:5rem;
+}
+
+.inputActions{
+  display: flex;
+  margin-top: 1rem;
+}
+
+.button{
+  height: 3rem;
+  min-width: 5rem;
+}
+.financeInput{
+  height: 50rem;
+}
+
+.companyInputInfo{
+  display: flex;
+  width: 20rem;
+  justify-content: space-between;
+}
+
+.inputInfo{
+  margin: 1rem;
+  padding: 1rem;
+  border: 0.1rem solid black;
+}
+
+.searchBox{
+  height: 5rem;
+}
+
+.searchResult{
+  position: relative;
+  background-color: rgb(199, 199, 199);
+  height: 3rem;
+  display: grid;
+  grid-template-columns: 10rem 1fr 5rem;
+}
+
+.searchResult p{
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  /* position: absolute; */
+}
+
+.outputItem{
+  display: flex;
+}
