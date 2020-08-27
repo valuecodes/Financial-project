@@ -18,7 +18,7 @@ exports.userSignin = async (req,res) => {
             password: signinUser.password,
             isAdmin: signinUser.isAdmin,
             token: getToken(signinUser),
-            portfolios:[]
+            portfolios:signinUser.portfolios
         })
     }else{
         res.status(401).send({msg:'Invalid Email or password.'})

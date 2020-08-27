@@ -1,0 +1,41 @@
+[33mcommit 7c05aa3e1fbbd7e93a716d2bba6f76f28fb22a8e[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Wed Aug 26 18:36:30 2020 +0300
+
+    Added user signin and register
+
+[33mcommit d58a7516000198c7d21eb1aadd97ed433af92103[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Tue Aug 25 18:22:17 2020 +0300
+
+    Added HomeScreen, Redux
+
+[33mcommit 3a7f7508d4839ab6a47b200b569be56ea29612d7[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Tue Aug 25 16:03:23 2020 +0300
+
+    Added React Router, Header
+
+[33mcommit 2ea20cca7b58dba1326e78365334ee518b4e2556[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Sun Aug 16 20:31:59 2020 +0300
+
+    Added output page, crud
+
+[33mcommit 1847ba51de0783bafe7af57c7a20a2bc267f3c7f[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Sun Aug 16 19:10:02 2020 +0300
+
+    Added insider trades, tickers, searchbox
+
+[33mcommit 2be533362c6c2889b5effd3be97d7b8160c66136[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Sat Aug 15 17:08:55 2020 +0300
+
+    Added financialData and priceData saving
+
+[33mcommit 5e4b80a1897534feaa3fe716b0a3138a7a8a922c[m
+Author: Juha Kangas <juhakangas5@gmail.com>
+Date:   Sat Aug 15 10:28:28 2020 +0300
+
+    first commit
