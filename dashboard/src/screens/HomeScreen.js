@@ -3,6 +3,8 @@ import axios from 'axios'
 import { useSelector,useDispatch } from 'react-redux'
 import SearchBox from '../components/SearchBox'
 import { listTickers } from '../actions/tickerActions';
+import TickerGraph from '../components/TickerGraph'
+import DividendGraph from '../components/DividendGraph'
 import { 
     createPortfolio, 
     listUserPortfolios, 
@@ -30,6 +32,7 @@ export default function HomeScreen() {
     const { success:tickerAddSuccess, error:tickerAddError} = portfolioAddTicker
 
     const portfolioDeleteTicker = useSelector(state => state.portfolioDeleteTicker)
+
     const {success: tickerDeleteSuccess, error: tickerDeleteError} = portfolioDeleteTicker
 
     const portfolioCreate = useSelector(state => state.portfolioCreate)
@@ -48,7 +51,6 @@ export default function HomeScreen() {
     const { success: transactionUpdateSuccess, error: transactionUpdateError } = portfolioUpdateTransaction
 
     const portfolioDeleteTransaction = useSelector(state => state.portfolioDeleteTransaction)
-
     const {success: transactionDeleteSuccess, error: transactionDeleteError} = portfolioDeleteTransaction
 
     useEffect(()=>{
@@ -69,8 +71,8 @@ export default function HomeScreen() {
             {userInfo&&
             <>
                 <TickerList userInfo={userInfo}/>
-                <div className='tickerGraph card'>tickerGraph</div>
-                <div className='dividendGraph card'>dividendGraph</div>
+                <DividendGraph/>
+                {/* <TickerGraph /> */}
             </>
             }
         </div>
@@ -170,6 +172,7 @@ function Portfolio({portfolio,items=[]}){
             <div className='portfolioTickers'>
                 {portfolio.tickers.map(ticker =>
                     <PortfolioTicker
+                        key={ticker.ticker}
                         ticker={ticker}
                         portfolio={portfolio}
                     />

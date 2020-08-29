@@ -1,6 +1,6 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
 import thunk from 'redux-thunk'
-import { tickerListReducer } from './reducers/tickerReducers';
+import { tickerListReducer, tickerDataReducer, tickerPortfolioDataReducer } from './reducers/tickerReducers';
 import { userSigninReducer, userRegisterReducer } from './reducers/userReducers';
 import Cookie from 'js-cookie'
 import { 
@@ -31,6 +31,8 @@ const reducer = combineReducers({
     portfolioUpdateTransaction: portfolioUpdateTransactionReducer,
     portfolioDeleteTransaction: portfolioDeleteTransactionReducer,
     portfolioUserList: portfolioUserListReducer,
+    tickerData:tickerDataReducer,
+    tickerPortfolioData: tickerPortfolioDataReducer,
 })
 
 const composeEnchancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__||compose

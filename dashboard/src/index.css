@@ -195,9 +195,24 @@ li{
 
 .tickerGraph{
   grid-column: 2/4;
+  height: 40rem;
+
+}
+
+.graphContainer{
+  margin: 5rem;
+  margin-right: 10rem;
+  height: 30rem;
+}
+
+.graphHeader{
+  display: flex;
+  justify-content: space-between;
+  margin: 1rem 5rem;
 }
 
 .dividendGraph{
+  height:35rem;
   grid-column: 2/4;
 }
 
