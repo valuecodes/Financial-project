@@ -1,4 +1,4 @@
-import React,{useEffect, useState} from 'react'
+import React,{useEffect, useState, useRef} from 'react'
 import axios from 'axios'
 import { useSelector,useDispatch } from 'react-redux'
 import SearchBox from '../components/SearchBox'
@@ -11,8 +11,10 @@ import {
     addTransaction,
     deleteTransaction,
     updateTransaction,
-    deleteTicker, 
+    deleteTicker,
+    updatePortfolio, 
 } from '../actions/portfolioActions';
+import { calculatePortfolioTotal, calculateTickerTotal, calculateTickerShareCount } from '../utils/portfolioUtils';
 
 export default function HomeScreen() {
 
@@ -33,6 +35,9 @@ export default function HomeScreen() {
     const portfolioCreate = useSelector(state => state.portfolioCreate)
     const { success:portfolioSuccess, error:portfolioError } = portfolioCreate 
 
+    const portfolioUpdate = useSelector(state => state.portfolioUpdate)
+    const { success:portfolioUpdateSuccess, error:portfolioUpdateError } = portfolioUpdate
+
     const portfolioDelete = useSelector(state => state.portfolioDelete)
     const { success:portfolioDeleteSucccess, error: portfolioDeleteError } = portfolioDelete
 
@@ -43,6 +48,7 @@ export default function HomeScreen() {
     const { success: transactionUpdateSuccess, error: transactionUpdateError } = portfolioUpdateTransaction
 
     const portfolioDeleteTransaction = useSelector(state => state.portfolioDeleteTransaction)
+
     const {success: transactionDeleteSuccess, error: transactionDeleteError} = portfolioDeleteTransaction
 
     useEffect(()=>{
@@ -54,7 +60,8 @@ export default function HomeScreen() {
         portfolioDeleteSucccess,
         transactionAddSuccess,
         transactionUpdateSuccess,
-        transactionDeleteSuccess
+        transactionDeleteSuccess,
+        portfolioUpdateSuccess
     ])
 
     return (
@@ -103,7 +110,6 @@ function UserPortfolios(){
 function Portfolio({portfolio,items=[]}){
 
     const [modifyPortfolio, setModifyPortfolio] = useState(false)
-
     const [search, setSearch] = useState('')
 
     const dispatch = useDispatch()
@@ -125,12 +131,29 @@ function Portfolio({portfolio,items=[]}){
 
     return(
         <div className='portfolio'>
-            <div className='portfolioHead'>
-                <p>{portfolio.name}</p>
-                <button>Modify portfolio</button>
-                {/* <label>Add ticker</label>
-                <input type='text' onChange={e => setSearch(e.target.value)}/>
-                <button className='delete' onClick={deletePortfolioHandler}>Delete portfolio</button> */}
+            <div className='portfolioHead'>         
+                <SmoothInput portfolio={portfolio}/>           
+                <div className='portfolioInfo'>
+                    {modifyPortfolio?
+                        <>
+                        <label>Add ticker</label>
+                        <input type='text' onChange={e => setSearch(e.target.value)}/>
+                        </>:
+                        <>
+                            <p>Type: Investing</p>    
+                            <p>Total: <b>{calculatePortfolioTotal(portfolio)} $</b></p>  
+                        </>
+                    }
+                    
+                </div>
+                
+                <div className='headerButtons'>
+                    <button 
+                        onClick={e => {setModifyPortfolio(!modifyPortfolio)}}
+                        className='button'
+                    >Options</button>    
+                    <button style={{display:modifyPortfolio?'':'none'}} className='delete' onClick={deletePortfolioHandler}>Delete Portfolio</button>      
+                </div>
             </div>
             {results.map((ticker,index) =>{
                 if(index<10){
@@ -153,6 +176,40 @@ function Portfolio({portfolio,items=[]}){
                 )}
             </div>
         </div>  
+    )
+}
+
+function SmoothInput({portfolio}){
+
+    const [portfolioName, setPortfolioName] = useState('')
+    const dispatch = useDispatch()
+    useEffect(()=>{
+        setPortfolioName(portfolio.name)
+    },[])
+
+    const [modify, setModify] = useState(false)
+
+    const updatePortfolioHandler = () => {
+        dispatch(updatePortfolio(portfolioName,portfolio._id))
+        setModify(false)
+    }
+
+    return(
+        <div className='smoothInput'>
+        {modify? <input 
+                
+                className='headerInput'
+                value={portfolioName} 
+                type='text'
+                onBlur={updatePortfolioHandler}
+                onChange={e => setPortfolioName(e.target.value)}
+                autoFocus
+            />:
+            <h3
+                onClick={e => setModify(true)}
+            >{portfolio.name}</h3>
+        }
+        </div>
     )
 }
 
@@ -187,8 +244,9 @@ function TickerHeader({ticker, portfolio, open, setOpen}){
         <div className='tickerHeader'>
             <p><b>{ticker.ticker}</b></p>
             <p><span>{ticker.name}</span></p> 
-            <p>Shares:</p>
-            <div className='tickerHeaderButtons'>
+            <p>{calculateTickerShareCount(ticker)} pcs</p>
+            <p><b>{calculateTickerTotal(ticker)}$</b></p>
+            <div className='headerButtons'>
                 <button onClick={e => setOpen(!open)}>Modify</button>   
                 <button
                     className='delete'

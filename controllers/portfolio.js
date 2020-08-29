@@ -19,6 +19,39 @@ exports.addTicker = async (req,res) => {
     
 }
 
+// @desc      Create portfolio
+// @route     POST /create
+// @ access  auth
+exports.createPortfolio = async (req, res) => {
+    
+    const portfolio = new Portfolio({
+        name:req.body.name,
+        userId:req.user._id,
+        tickers:[]
+    })
+    
+    const newPortfolio = await portfolio.save()
+    res.status(201).send({message:'Portfolio created',data:newPortfolio})
+
+}
+
+// @desc      Update portfolio
+// @route     PUT /:id
+// @ access   auth
+exports.updatePortfolio = async (req, res) => {
+    
+    const portfolioId = req.params.id
+    const portfolio = await Portfolio.findById(portfolioId)
+
+    if(portfolio){
+        portfolio.name = req.body.portfolio
+        await portfolio.save()
+        return res.send({message: 'Portfolio saved'})
+    }else{
+        return res.status(401).send({msg: 'Portfolio not found'})
+    }
+}
+
 // @desc      Delete ticker
 // @route     DELETE /:id/&:ticker
 // @ access   auth
@@ -37,21 +70,7 @@ exports.deleteTicker = async (req, res) => {
     }
 }
 
-// @desc      Create portfolio
-// @route     POST /create
-// @ access  auth
-exports.createPortfolio = async (req, res) => {
-    
-    const portfolio = new Portfolio({
-        name:req.body.name,
-        userId:req.user._id,
-        tickers:[]
-    })
-    
-    const newPortfolio = await portfolio.save()
-    res.status(201).send({message:'Portfolio created',data:newPortfolio})
 
-}
 
 // @desc      Delete portfolio
 // @route     DELETE /:id

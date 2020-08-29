@@ -22,7 +22,10 @@ import {
     PORTFOLIO_UPDATE_TRANSACTION_FAIL,
     PORTFOLIO_DELETE_TICKER_REQUEST,
     PORTFOLIO_DELETE_TICKER_SUCCESS,
-    PORTFOLIO_DELETE_TICKER_FAIL
+    PORTFOLIO_DELETE_TICKER_FAIL,
+    PORTFOLIO_UPDATE_REQUEST,
+    PORTFOLIO_UPDATE_SUCCESS,
+    PORTFOLIO_UPDATE_FAIL
 } from "../constants/portfolioConstants";
 
 function portfolioCreateReducer(state={},action){
@@ -32,6 +35,18 @@ function portfolioCreateReducer(state={},action){
         case PORTFOLIO_CREATE_SUCCESS:
             return {loading:false, success:true}
         case PORTFOLIO_CREATE_FAIL:
+            return {loading:false, error: action.payload}
+        default: return state
+    }
+}
+
+function portfolioUpdateReducer(state={},action){
+    switch(action.type){
+        case PORTFOLIO_UPDATE_REQUEST:
+            return {loading:true}
+        case PORTFOLIO_UPDATE_SUCCESS:
+            return {loading:false, success:true}
+        case PORTFOLIO_UPDATE_FAIL:
             return {loading:false, error: action.payload}
         default: return state
     }
@@ -124,12 +139,13 @@ function portfolioUserListReducer(state={
 }
 
 export{
+    portfolioUserListReducer,
     portfolioCreateReducer,
+    portfolioUpdateReducer,
     portfolioDeleteReducer,
     portfolioAddTickerReducer,
     portfolioDeleteTickerReducer,
     portfolioAddTransactionReducer,
     portfolioUpdateTransactionReducer,
     portfolioDeleteTransactionReducer,
-    portfolioUserListReducer
 }

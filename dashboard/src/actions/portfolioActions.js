@@ -24,6 +24,9 @@ import {
     PORTFOLIO_DELETE_TICKER_REQUEST,
     PORTFOLIO_DELETE_TICKER_SUCCESS,
     PORTFOLIO_DELETE_TICKER_FAIL,
+    PORTFOLIO_UPDATE_FAIL,
+    PORTFOLIO_UPDATE_SUCCESS,
+    PORTFOLIO_UPDATE_REQUEST,
 
 } from '../constants/portfolioConstants';
 
@@ -39,6 +42,21 @@ const createPortfolio = (name) => async(dispatch, getState) => {
         dispatch({type:PORTFOLIO_CREATE_SUCCESS})
     } catch(err){
         dispatch({type:PORTFOLIO_CREATE_FAIL, payload: err.message})
+    }
+}
+
+const updatePortfolio = (portfolio ,portfolioId) => async(dispatch,getState) => {
+    try{
+        dispatch({type: PORTFOLIO_UPDATE_REQUEST})
+        const {userSignin:{userInfo}} = getState()
+        const { data } = await axios.put('/api/portfolio/'+portfolioId,{portfolio},{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        dispatch({type: PORTFOLIO_UPDATE_SUCCESS})
+    } catch(err){
+        dispatch({type: PORTFOLIO_UPDATE_FAIL, payload: err.message})
     }
 }
 
@@ -150,9 +168,10 @@ const listUserPortfolios = () => async(dispatch, getState) => {
 }
 
 export {
-    createPortfolio,
-    deletePortfolio,
     listUserPortfolios,
+    createPortfolio,
+    updatePortfolio,
+    deletePortfolio,
     addTicker,
     deleteTicker,
     addTransaction,

@@ -1,11 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const { 
+    listUserPortfolios,
+    createPortfolio,
+    updatePortfolio,
+    deletePortfolio, 
     addTicker, 
     deleteTicker,
-    createPortfolio, 
-    listUserPortfolios,
-    deletePortfolio,
     addTransaction,
     updateTransaction,
     deleteTransaction
@@ -23,6 +24,7 @@ router
 router
     .route('/:id')
     .post(isAuth,addTicker)
+    .put(isAuth,updatePortfolio)
     .delete(isAuth,deletePortfolio)
 
 router
