@@ -37,7 +37,8 @@ export default function Dividends() {
     },[portfolios])
 
     useEffect(()=>{
-        if(tickerData){
+        if(tickerData&&selectedPortfolio){
+            console.log(selectedPortfolio,tickerData)
             let transactions=calculateDividendTransactions(selectedPortfolio,tickerData)
             setDividendTransactions(transactions)
             setDividendList(getAllDividends(tickerData,transactions))

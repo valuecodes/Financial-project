@@ -27,6 +27,7 @@ export default function Header() {
                         {/* <li><Link to='/register'>Register</Link></li> */}
                         <li><Link to='/addData'>Admin</Link></li>
                         {userInfo && <li>
+                            <Link to='/portfolio'>Portfolio</Link>
                             <button onClick={logOutHandler}>Log out</button>
                         </li>} 
                     </ul>
