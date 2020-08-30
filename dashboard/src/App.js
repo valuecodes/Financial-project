@@ -15,6 +15,7 @@ function App() {
           <Route path='/addData' component={AddDataScreen}/>
           <Route path='/register' component={RegisterScreen}/>
           <Route path='/signin' component={SigninScreen}/>
+          {/* <Route path='/portfolio' component={portfolioScreen}/> */}
           <Route path='/' exact={true} component={HomeScreen}/>
         </main>
       </div>    

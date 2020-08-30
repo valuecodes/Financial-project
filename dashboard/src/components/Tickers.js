@@ -4,7 +4,7 @@ import { Line } from 'react-chartjs-2';
 import { getTickerData } from '../actions/tickerActions';
 import { SetTimePeriod } from './graphComponents';
 
-export default function TickerGraph({portfolio}){
+export default function Tickers({portfolio}){
 
     const [selectedPortfolio, setSelectedPortfolio] = useState(null)
     const [selectedTicker, setSelectedTicker] = useState({
@@ -22,7 +22,7 @@ export default function TickerGraph({portfolio}){
 
     useEffect(()=>{
         if(selectedPortfolio){
-
+            console.log(selectedPortfolio)
         }
     },[selectedPortfolio])
 
@@ -49,12 +49,12 @@ export default function TickerGraph({portfolio}){
                     </div>
                 }  
             </div>
-            <MainGraph selectedTicker={selectedTicker}/>
+            <TickerGraph selectedTicker={selectedTicker}/>
         </div>
     )
 }
 
-function MainGraph({selectedTicker}){
+function TickerGraph({selectedTicker}){
 
     const dispatch = useDispatch()
     const [time, setTime] = useState({

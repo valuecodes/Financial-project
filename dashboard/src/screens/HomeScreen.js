@@ -3,8 +3,8 @@ import axios from 'axios'
 import { useSelector,useDispatch } from 'react-redux'
 import SearchBox from '../components/SearchBox'
 import { listTickers } from '../actions/tickerActions';
-import TickerGraph from '../components/TickerGraph'
-import DividendGraph from '../components/DividendGraph'
+import Tickers from '../components/Tickers'
+import Dividends from '../components/Dividends'
 import { 
     createPortfolio, 
     listUserPortfolios, 
@@ -71,8 +71,11 @@ export default function HomeScreen() {
             {userInfo&&
             <>
                 <TickerList userInfo={userInfo}/>
-                <DividendGraph/>
-                {/* <TickerGraph /> */}
+                <div className='mainSection'>
+                    <Tickers />
+                    <Dividends/>                        
+                </div>
+
             </>
             }
         </div>

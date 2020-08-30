@@ -99,8 +99,9 @@ exports.addTransaction = async (req, res) => {
     if(portfolio){
         const tickerId = req.params.ticker
         let index= portfolio.tickers.findIndex(item => item._id==tickerId)
+        let factor = req.body.transaction.type==='buy'?1:-1
         const newTransaction = {
-            count: req.body.transaction.count,
+            count: req.body.transaction.count*factor,
             price: req.body.transaction.price,
             date: req.body.transaction.date,
             type: req.body.transaction.type
