@@ -71,11 +71,12 @@ function transactionsToMonths(transactions,time){
     let currentYear=new Date().getFullYear();
     let start = new Date(transactions[transactions.length-1].date).getFullYear()
     let end = new Date(transactions[0].date).getFullYear()
+    
     if(time.start){
         start = time.start.getFullYear()
         end = time.end.getFullYear()
     }
-    console.log(time)
+
     let labels=[]
     let values=[]
     let months=[]
@@ -123,7 +124,6 @@ function getAllDividends(tickerData, transactions){
 
 function filterDividends(dividendList,time,selectedTicker){
     let selectedDivs = filterBetweenDates(dividendList,time)
-    console.log(selectedTicker._id)
     if(selectedTicker._id){
         selectedDivs = selectedDivs.filter(div => div.ticker===selectedTicker.ticker)
     }
@@ -150,4 +150,69 @@ function filterBetweenDates(list,time){
     return list.filter(item => {
         return new Date(item.date)>new Date(time.start)&&new Date(item.date)<new Date(time.end)
     })
+}
+
+// Price Data
+export function calculateTickerPriceData(ticker,time,selectedPortfolio){
+
+    let priceData = ticker.priceData
+    
+    if(new Date(priceData[0].date)>new Date(priceData[1].date)){
+        priceData = ticker.priceData.reverse()
+    }
+    
+    let insider = ticker.insiderTrading.reverse().filter(item => new Date(item.date)>time.start)
+    priceData = priceData.filter(item => new Date(item.date)>time.start)
+
+    const labels =  priceData.map(item => item.date.split('T')[0])
+    
+    // let {points,pointColors, tooltipLabels, tooltipFooters} = setInsiderTrades(priceData,insider,labels)
+
+    let currentTicker = selectedPortfolio.tickers.find(item => item.ticker===ticker.ticker)
+
+    let {points,pointColors, tooltipLabels, tooltipFooters} = setPortfolioTrades(priceData,currentTicker,labels,time)
+
+    const data = priceData.map(item => item.close)
+
+    return { data, labels, points, pointColors, tooltipLabels, tooltipFooters }
+}
+
+function setPortfolioTrades(priceData,currentTicker,labels,time){
+
+    let trades = currentTicker.transactions.filter(item => new Date(item.date)>time.start)
+
+    let points=priceData.map(item => 0)
+    let pointColors = priceData.map(item => 0)
+    let tooltipLabels = priceData.map(item => [])
+    // let tooltipFooters = priceData.map(item => [])
+
+    trades.forEach(item => {
+        let insiderDate = new Date(item.date)
+        let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<604800000)
+        points[index]=5
+        pointColors[index]=item.type==='buy'?'green':'red'
+        tooltipLabels[index].push(item.type+` ${item.count}pcs ${item.price}$` )
+    })
+
+    return { points, pointColors, tooltipLabels}
+}
+
+function setInsiderTrades(priceData,insider,labels){
+
+    let points=priceData.map(item => 0)
+    let pointColors = priceData.map(item => 0)
+    let tooltipLabels = priceData.map(item => [])
+    let tooltipFooters = priceData.map(item => [])
+
+    insider.forEach(item => {
+        let insiderDate = new Date(item.date)
+        let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<604800000)
+        points[index]=5
+        pointColors[index]=item.type==='Buy'?'green':'red'
+        tooltipLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
+        tooltipFooters[index].push(item)
+    })
+
+    return { points, pointColors, tooltipLabels,tooltipFooters}
+
 }

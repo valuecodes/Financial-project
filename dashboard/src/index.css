@@ -12,7 +12,8 @@ html{
   box-sizing: border-box;
 }
 body{
-  font: 1.6rem Helvetica;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.6rem;
   height: 100vh;
   margin: 0px;
 }
@@ -27,6 +28,10 @@ body{
 
 .gray{
   background-color: lightgrey;
+}
+
+.textRight{
+  text-align: right;
 }
 
 ul{
@@ -59,6 +64,7 @@ li{
 .card{
   background-color: var(--main-container-color);
   border-radius: 1rem;
+  /* padding: 1rem; */
 }
 
 /* Header */
@@ -91,6 +97,46 @@ li{
   grid-column-gap: 2rem;
   grid-row-gap: 2rem;
   margin-top: 2rem;
+}
+
+.portfolioMain{
+  margin: 1rem 0;
+  background-color: rgb(238, 238, 238);
+  border-radius: 0.5rem;
+}
+
+.sidePortfolios{
+  padding: 1rem;
+}
+
+.portfolioMainHead{
+  padding: 0 1rem;
+  height: 5rem;
+  display: grid;
+  grid-template-columns: 17rem 1fr auto;
+  align-items: center;
+  background-color: rgb(179, 206, 200);
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.portfolioMainHead h3,p{
+  margin: 0;
+}
+
+.portfolioMainTicker{
+  padding: 0 1rem;
+  display: grid;
+  grid-template-columns: 7rem 2fr 1fr 5rem;
+}
+
+.portfolioMainTicker p{
+  font-size: 1.4rem;
+}
+
+.portfolioMainFooter{
+  height: 1.5rem;
+  background-color: rgb(179, 206, 200);
+  border-radius: 0 0 0.5rem 0.5rem;
 }
 
 .mainSection{
@@ -173,7 +219,7 @@ li{
 
 .addTickerTransaction ul{
   display: flex;
-  background-color: rgb(189, 189, 189);
+  background-color: rgb(194, 194, 194);
 }
 
 .addTickerTransaction ul li{
@@ -211,16 +257,23 @@ li{
   margin: 0.5rem;
 }
 
+
+/* Graph */
+.mainGraphs{
+  height: 70rem;
+ padding: 2rem; 
+}
+
 .tickerGraph{
   grid-column: 2/4;
   /* height: 30rem; */
-
 }
 
 .graphContainer{
-  margin: 5rem;
-  margin-right: 10rem;
-  height: 25rem;
+  height: 27rem;
+  margin-bottom: 5rem;
+  /* margin: 5rem; */
+  /* margin: 2rem; */
 }
 
 .graphHeader{
@@ -232,6 +285,11 @@ li{
 .dividendGraph{
   /* height:35rem; */
   grid-column: 2/4;
+}
+
+.graphActions{
+  display: flex;
+  justify-content: space-between;
 }
 
 .calendar{

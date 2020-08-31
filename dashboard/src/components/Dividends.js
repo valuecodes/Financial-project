@@ -5,58 +5,32 @@ import { Line } from 'react-chartjs-2'
 import { SetTimePeriod } from './graphComponents';
 import { calculateDividendTransactions, transactionsToMonths, getAllDividends,  filterDividends, getMonthNum } from '../utils/portfolioUtils';
 
-export default function Dividends() {
+export default function Dividends({selectedPortfolio}) {
 
     const dispatch=useDispatch()
     const [currentPage, setCurrentPage] = useState('graph')
-    const [selectedPortfolio, setSelectedPortfolio] = useState(null)    
+   
     const [selectedTicker, setSelectedTicker] = useState({
         _id:null
     })
+
     const [dividendTransactions, setDividendTransactions] = useState([])
     const [dividendList, setDividendList] = useState([])
-
-    const portfolioUserList = useSelector(state => state.portfolioUserList)
-    const { loading, portfolios,error } = portfolioUserList
 
     const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
     const {loading:portfolioDataLoading, tickers:tickerData, error:portfolioDataError} = tickerPortfolioData
 
     useEffect(()=>{
-        if(selectedPortfolio){
-            dispatch(getPortfolioTickersData(selectedPortfolio._id))
-        }
-    },[selectedPortfolio])
-
-    useEffect(()=>{
-        if(portfolios){
-            if(portfolios.length!==0){
-                setSelectedPortfolio(portfolios[0])
-            }
-        }
-    },[portfolios])
-
-    useEffect(()=>{
         if(tickerData&&selectedPortfolio){
-            console.log(selectedPortfolio,tickerData)
             let transactions=calculateDividendTransactions(selectedPortfolio,tickerData)
             setDividendTransactions(transactions)
             setDividendList(getAllDividends(tickerData,transactions))
         }
-    },[tickerData])
+    },[tickerData,selectedPortfolio])
 
     return (
         <div className='dividendGraph card'>
             <div className='graphHeader'>
-                {portfolios && 
-                    <div>{portfolios.map(portfolio => 
-                        <button 
-                            key={portfolio._id}
-                            style={{backgroundColor:selectedPortfolio?portfolio._id===selectedPortfolio._id?'lightgreen':'':''}} className='button' 
-                            onClick={e => {setSelectedPortfolio(portfolio);setSelectedTicker({_id:null})}}
-                            >{portfolio.name}</button>
-                    )}</div>                
-                }
                 <div className=''>
                     <button
                         style={{backgroundColor:currentPage==='graph'?'lightgreen':''}} 
@@ -159,13 +133,13 @@ function DividendCalendar({dividendList,selectedTicker}){
                     <label className='gray'>Dividend</label>
                 </div>    
                 {months.map((month,index) =>
-                    <CalendarColumn month={month} index={index}/>
+                    <CalendarColumn key={month.num} month={month} index={index}/>
                 )}  
             </div>
 
             <div className='months calendarRows'>  
                 {months.map(month =>
-                    <p>{month.name}</p>
+                    <p key={month.num}>{month.name}</p>
                 )}   
             </div>
         </div>
@@ -176,7 +150,7 @@ function CalendarColumn({month, index}){
     return(
         <div className='calendarColumn'>
             {month.dividends.map(div =>
-                <div className='dividendEvent'
+                <div key={div._id} className='dividendEvent'
                     style={{backgroundColor:div.transaction&&'lightgreen'}}
                 >
                     <span>{div.ticker}</span>
@@ -256,7 +230,7 @@ function DividendGraph({dividendTransactions,selectedTicker}){
             <Line
                 data={chart}
                 // width={20}
-                // height={3}
+                // height={10}
                 options={{
                     responsive:true,
                     maintainAspectRatio: false}}

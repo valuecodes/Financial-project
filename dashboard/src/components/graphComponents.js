@@ -54,6 +54,7 @@ export function SetTimePeriod({time,setTime,type='full', yearsFrom=2020, yearsTo
         <div>
             {timePeriods.map(period =>
                 <button  
+                key={period}
                 style={{backgroundColor:time.value===period&&'lightgreen'}}
                 onClick={()=>changeTimePeriod(period)}>{period.replace('.',' ').split('-')[0]}</button>
             )}

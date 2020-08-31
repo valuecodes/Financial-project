@@ -1,10 +1,6 @@
-import React,{useEffect, useState, useRef} from 'react'
-import axios from 'axios'
+import React,{useEffect, useState} from 'react'
 import { useSelector,useDispatch } from 'react-redux'
-import SearchBox from '../components/SearchBox'
 import { listTickers } from '../actions/tickerActions';
-import Tickers from '../components/Tickers'
-import Dividends from '../components/Dividends'
 import { 
     createPortfolio, 
     listUserPortfolios, 
@@ -74,17 +70,7 @@ export default function PortfolioScreen() {
                     <CreatePortfolio userInfo={userInfo}/>
                     <UserPortfolios />  
                 </div>            
-                
-                // <TickerList userInfo={userInfo}/>
             }
-        </div>
-    )
-}
-
-function TickerList({userInfo}){
-    return(
-        <div className='tickerList card'>
-
         </div>
     )
 }
@@ -243,7 +229,9 @@ function TickerHeader({ticker, portfolio, open, setOpen}){
     }
 
     return(
-        <div className='tickerHeader'>
+        <div className='tickerHeader'
+        style={{backgroundColor:open&&'lightgray'}}
+        >
             <p><b>{ticker.ticker}</b></p>
             <p><span>{ticker.name}</span></p> 
             <p>{calculateTickerShareCount(ticker)} pcs</p>

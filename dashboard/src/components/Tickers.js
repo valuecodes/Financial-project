@@ -3,63 +3,57 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Line } from 'react-chartjs-2';
 import { getTickerData } from '../actions/tickerActions';
 import { SetTimePeriod } from './graphComponents';
+import { getChartOptions } from '../utils/chartUtils';
+import 'chartjs-plugin-datalabels';
+import { calculateTickerPriceData } from '../utils/portfolioUtils';
 
-export default function Tickers({portfolio}){
+export default function Tickers({selectedPortfolio}){
 
-    const [selectedPortfolio, setSelectedPortfolio] = useState(null)
     const [selectedTicker, setSelectedTicker] = useState({
         _id:null
     })
-
-    const portfolioUserList = useSelector(state => state.portfolioUserList)
-    const { loading, portfolios,error } = portfolioUserList
-
-    useEffect(() => {
-        if(portfolios){
-            setSelectedPortfolio(portfolios[0])
-        }
-    }, [portfolios])
-
+    const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
+    const {loading:portfolioDataLoading, tickers:tickerData, error:portfolioDataError} = tickerPortfolioData
     useEffect(()=>{
-        if(selectedPortfolio){
-            console.log(selectedPortfolio)
+        if(tickerData){
+            setSelectedTicker(selectedPortfolio.tickers[selectedPortfolio.tickers.length-1])
         }
-    },[selectedPortfolio])
+    },[tickerData])
 
     return(
         <div className='tickerGraph card'>
             <div className='graphHeader'>
-                {portfolios && 
-                    <div>{portfolios.map(portfolio => 
-                        <button 
-                            style={{backgroundColor:selectedPortfolio?portfolio._id===selectedPortfolio._id?'lightgreen':'':''}} className='button' 
-                            onClick={e => {setSelectedPortfolio(portfolio);setSelectedTicker({_id:null})}}
-                            >{portfolio.name}</button>
-                    )}</div>                
-                }
-                {selectedPortfolio&&
                     <div className='selectedPortfolio'>
-                        {selectedPortfolio.tickers.map(ticker =>
-                            <button
-                                onClick={e => setSelectedTicker(ticker)}
-                                style={{backgroundColor: ticker._id === selectedTicker._id? 'lightgreen':''}}
-                                >
-                            {ticker.ticker}</button>
-                        )}
+                        {selectedPortfolio&&
+                            <>
+                                {selectedPortfolio.tickers.map(ticker =>
+                                    <button
+                                        key={ticker._id}
+                                        onClick={e => setSelectedTicker(ticker)}
+                                        style={{backgroundColor: ticker._id === selectedTicker._id? 'lightgreen':''}}
+                                        >
+                                    {ticker.ticker}</button>
+                                )}
+                            </>                                
+                        }
                     </div>
-                }  
             </div>
-            <TickerGraph selectedTicker={selectedTicker}/>
+            <TickerGraph tickerData={tickerData} selectedTicker={selectedTicker} selectedPortfolio={selectedPortfolio}/>
         </div>
     )
 }
 
-function TickerGraph({selectedTicker}){
+function TickerGraph({tickerData,selectedTicker,selectedPortfolio}){
 
     const dispatch = useDispatch()
+    const [chartOptions, setChartOptions] = useState({        
+        responsive:true,
+        maintainAspectRatio: false
+    })
     const [time, setTime] = useState({
         time:0
     })
+    const [mode, setMode] = useState(null)
 
     const [chart, setChart] = useState({
         type: 'line',
@@ -70,48 +64,57 @@ function TickerGraph({selectedTicker}){
         ],
         labels: [],
     })
-    const tickerData = useSelector(state => state.tickerData)
-    const { loading, ticker, error } = tickerData
- 
-    useEffect(()=>{
-        if(selectedTicker.ticker){
-            dispatch(getTickerData(selectedTicker.ticker))
-        }
-    },[selectedTicker])
 
-    useEffect(()=>{
-        if(ticker){
-            let priceData = ticker.priceData
-            if(new Date(priceData[0].date)>new Date(priceData[1].date)){
-                priceData = ticker.priceData.reverse()
-            }
-            priceData = priceData.filter(item => new Date(item.date)>time.time)
-            const labels =  priceData.map(item => item.date.split('T')[0])
-            const data = priceData.map(item => item.close)
-            let newData = {
-                labels,
-                datasets:[
-                    {
-                        data
-                    }
-                ]
-            }
-            setChart(newData)
+    useEffect(()=>{            
+        if(tickerData){
+            let ticker = tickerData.find(item => item.ticker===selectedTicker.ticker)
+            if(ticker){
+
+                let { 
+                    labels, 
+                    data, 
+                    points, 
+                    pointColors,
+                    tooltipLabels, 
+                    tooltipFooters 
+                } = calculateTickerPriceData(ticker,time,selectedPortfolio)
+
+                let newData = {
+                    labels,
+                    datasets:[
+                        {
+                            data,
+                            pointBackgroundColor:pointColors,
+                            pointRadius:points,
+                            pointHitRadius:0,
+                            tooltipLabels,
+                            tooltipFooters
+                        }
+                    ]
+                }
+
+                setChart(newData)
+
+                setChartOptions(getChartOptions(tooltipLabels,tooltipFooters))
+                
+            }            
         }
-    },[ticker,time])
+
+    },[tickerData,selectedTicker,time])
 
     return(
         <div className='graphContainer'>
-            <SetTimePeriod time={time} setTime={setTime}/>
-
+            <div className='graphActions'>
+                <div className='graphModes'>
+                    <button>Buy/sell</button>
+                    <button>Insider Trades</button>
+                </div>
+                <SetTimePeriod time={time} setTime={setTime}/>
+            </div>
+            
             <Line
                 data={chart}
-                // width={20}
-                // height={3}
-                options={{
-                    responsive:true,
-                    maintainAspectRatio: false}}
-                // options={this.state.chartOptions}
+                options={chartOptions}
             />            
         </div>
     )
