@@ -3,41 +3,21 @@ const router = express.Router()
 const Ticker = require('../models/tickerModel')
 
 router.post('/',async (req, res) =>{
-    const ticker = await Ticker.findOne({ticker:req.body.ticker})
+    const ticker = await Ticker.findById(req.body._id)
     if(ticker){
-        ticker.ticker=req.body.ticker,
-        ticker.name=req.body.name,
-        ticker.description=req.body.description,
-        ticker.sector=req.body.sector,
-        ticker.industry=req.body.industry,
-        ticker.subIndustry=req.body.subIndustry,
-        ticker.founded=req.body.founded,
-        ticker.address=req.body.address,
-        ticker.phone=req.body.phone,
-        ticker.website=req.body.website,
-        ticker.employees=req.body.employees,
+        ticker.profile=req.body.profile,
         ticker.incomeStatement=req.body.incomeStatement,
         ticker.balanceSheet=req.body.balanceSheet,
         ticker.cashFlow=req.body.cashFlow,
         ticker.priceData=req.body.priceData,
         ticker.dividendData=req.body.dividendData,
         ticker.insiderTrading=req.body.insiderTrading
-        console.log('ticker saved',ticker)
         let saved = await ticker.save()
+        console.log('ticker saved')
         res.send({message:'Ticker saved',data:saved})   
     }else{
         let newTicker = new Ticker({
-            ticker:req.body.ticker,
-            name:req.body.name,
-            description:req.body.description,
-            sector:req.body.sector,
-            industry:req.body.industry,
-            subIndustry:req.body.subIndustry,
-            founded:req.body.founded,
-            address:req.body.address,
-            phone:req.body.phone,
-            website:req.body.website,
-            employees:req.body.employees,
+            profile:req.body.profile,
             incomeStatement:req.body.incomeStatement,
             balanceSheet:req.body.balanceSheet,
             cashFlow:req.body.cashFlow,
@@ -45,13 +25,10 @@ router.post('/',async (req, res) =>{
             dividendData: req.body.dividendData,
             insiderTrading:req.body.insiderTrading
         })
-
         console.log('ticker created')
-
         let saved = await newTicker.save()
-        res.send({message:'Ticker created',data:saved})        
+        res.send({message:'Ticker created',data:saved})  
     }
-
 })
 
 router.get('/', async (req,res) => {
@@ -59,8 +36,8 @@ router.get('/', async (req,res) => {
     let tickers=[];
     all.forEach(item => tickers.push({
         id:item._id,
-        ticker:item.ticker,
-        name:item.name
+        ticker:item.profile.ticker,
+        name:item.profile.name
     }))
     res.send({data:tickers})
 })
@@ -71,7 +48,7 @@ router.get('/:id', async (req,res) => {
 })
 
 router.post('/saveTickers', async (req,res) =>{
-    // console.log(req.body)
+
     let tickers=[]
     
     for(var i=0;i<req.body.length;i++){

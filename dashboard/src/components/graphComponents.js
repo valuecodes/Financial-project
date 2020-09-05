@@ -1,6 +1,6 @@
 import React,{useEffect, useState} from 'react'
 
-export function SetTimePeriod({time,setTime,type='full', yearsFrom=2020, yearsTo=2020, all=true}) {
+export function SetTimePeriod({options,setOptions,type='full', yearsFrom=2020, yearsTo=2020, all=true}) {
 
     const [timePeriods, setTimePeriods] = useState([])
 
@@ -8,7 +8,7 @@ export function SetTimePeriod({time,setTime,type='full', yearsFrom=2020, yearsTo
         
         if(type==='full'){
             changeTimePeriod('1.years')
-            setTimePeriods(['3.months-months', '6.months-months','1.years-years','3.years-years','5.years-years','10.years-years','20.years-years'])
+            setTimePeriods(['3.month-months', '6.months-months','1.years-years','3.years-years','5.years-years','10.years-years','20.years-years'])
         }else if(type==='yearly'){
             
             let years = Array.from({length:(yearsTo+1)-yearsFrom},(v,k)=>k+yearsFrom+'.-fyears')
@@ -22,31 +22,34 @@ export function SetTimePeriod({time,setTime,type='full', yearsFrom=2020, yearsTo
         }
     }, [type,yearsFrom,yearsTo])
 
-    function changeTimePeriod(value){
-        const number = value.split('.')[0]
-        const period = value.split('-')[1]
-        let start=new Date()
-        let end=new Date()
+    function changeTimePeriod(timeValue){
+        const number = timeValue.split('.')[0]
+        const period = timeValue.split('-')[1]
+        let timeStart=new Date()
+        let timeEnd=new Date()
         switch(period){
             case 'months':
-                start.setMonth(start.getMonth()- number);
+                timeStart.setMonth(timeStart.getMonth()- number);
                 break 
             case 'years':
-                start.setFullYear(start.getFullYear() - number);   
+                timeStart.setFullYear(timeStart.getFullYear() - number);   
                 break  
             case 'fyears':
-                start = new Date(number, 0, 1);
-                end = new Date(number, 12, 0);   
+                timeStart = new Date(number, 0, 1);
+                timeEnd = new Date(number, 12, 0);   
                 break
             case 'all':
-                start = new Date(yearsFrom, 0, 1);
+                timeStart = new Date(yearsFrom, 0, 1);
                 break
-            default: start.setFullYear(start.getFullYear() - 1);   
+            default: timeStart.setFullYear(timeStart.getFullYear() - 1);   
         }
-        setTime({
-            value,
-            start,
-            end
+        setOptions({
+            ...options,
+            time:{
+                timeValue,
+                timeStart,
+                timeEnd                
+            }
         })
     }
 
@@ -55,7 +58,7 @@ export function SetTimePeriod({time,setTime,type='full', yearsFrom=2020, yearsTo
             {timePeriods.map(period =>
                 <button  
                 key={period}
-                style={{backgroundColor:time.value===period&&'lightgreen'}}
+                style={{backgroundColor:options.time.timeValue===period&&'lightgreen'}}
                 onClick={()=>changeTimePeriod(period)}>{period.replace('.',' ').split('-')[0]}</button>
             )}
         </div>

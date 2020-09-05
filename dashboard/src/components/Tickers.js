@@ -5,17 +5,19 @@ import { getTickerData } from '../actions/tickerActions';
 import { SetTimePeriod } from './graphComponents';
 import { getChartOptions } from '../utils/chartUtils';
 import 'chartjs-plugin-datalabels';
-import { calculateTickerPriceData } from '../utils/portfolioUtils';
+import { calculateTickerPriceData, calculatePortfolioChart } from '../utils/portfolioUtils';
 
 export default function Tickers({selectedPortfolio}){
 
     const [selectedTicker, setSelectedTicker] = useState({
         _id:null
     })
+    const [mode,setMode] = useState('portfolio')
     const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
     const {loading:portfolioDataLoading, tickers:tickerData, error:portfolioDataError} = tickerPortfolioData
     useEffect(()=>{
-        if(tickerData){
+        if(tickerData&&selectedPortfolio){
+            console.log(tickerData)
             setSelectedTicker(selectedPortfolio.tickers[selectedPortfolio.tickers.length-1])
         }
     },[tickerData])
@@ -23,9 +25,12 @@ export default function Tickers({selectedPortfolio}){
     return(
         <div className='tickerGraph card'>
             <div className='graphHeader'>
-                    <div className='selectedPortfolio'>
+                    <div className='selectedPortfolio'>                        <div className='selectedPortfolioModes'>
+                            <button style={{backgroundColor:mode==='tickers'&&'lightgreen'}} onClick={()=>setMode('tickers')}>Tickers</button>
+                            <button style={{backgroundColor:mode==='portfolio'&&'lightgreen'}} onClick={()=>setMode('portfolio')}>Portfolio</button>
+                        </div>
                         {selectedPortfolio&&
-                            <>
+                            <div className='selectedPortfolioTickers'>
                                 {selectedPortfolio.tickers.map(ticker =>
                                     <button
                                         key={ticker._id}
@@ -34,11 +39,97 @@ export default function Tickers({selectedPortfolio}){
                                         >
                                     {ticker.ticker}</button>
                                 )}
-                            </>                                
+                            </div>                                
                         }
+
                     </div>
             </div>
-            <TickerGraph tickerData={tickerData} selectedTicker={selectedTicker} selectedPortfolio={selectedPortfolio}/>
+            {mode==='portfolio'&&
+                <PortfolioGraph tickerData={tickerData} selectedPortfolio={selectedPortfolio}/>
+            }
+            {mode==='tickers'&&
+               <TickerGraph tickerData={tickerData} selectedTicker={selectedTicker} selectedPortfolio={selectedPortfolio}/> 
+            }
+        </div>
+    )
+}
+
+function PortfolioGraph({tickerData,selectedPortfolio}){
+    const dispatch = useDispatch()
+    const [chartOptions, setChartOptions] = useState({        
+        responsive:true,
+        maintainAspectRatio: false,
+        plugins: {
+            datalabels: {
+                display: false,
+            },
+        },
+    })
+
+    const [options, setOptions] = useState({
+        events:{
+            absolute:true,
+            winLoss:false,
+        },
+        time:{
+            timeValue:'',
+            timeStart:'',
+            timeEnd:'',            
+        }
+    })
+
+    const [chart, setChart] = useState({
+        type: 'line',
+        datasets:[
+            {
+                data:[]
+            }
+        ],
+        labels: [],
+    })
+
+    useEffect(()=>{
+        if(tickerData&&selectedPortfolio){
+            
+            const {data,labels} = calculatePortfolioChart(tickerData,selectedPortfolio,options)
+
+            let newData = {
+                labels,
+                datasets:[
+                    {
+                        data,
+                        // pointBackgroundColor:pointColors,
+                        // pointRadius:points,
+                        // pointHitRadius:0,
+                        // tooltipLabels,
+                        // tooltipFooters
+                    }
+                ]
+            }
+
+            setChart(newData)
+        }
+    },[tickerData,selectedPortfolio,options])
+
+    return(
+        <div className='graphContainer'>
+            <div className='graphActions'>
+                <div className='eventOptions'>
+                    {Object.keys(options.events).map(key =>
+                        <button
+                            key={key}
+                            style={{backgroundColor:options.events[key]?'lightgreen':''}} 
+                            onClick={() => setOptions({...options,events:{...options.events,[key]:!options.events[key]}})}>
+                            {camelCaseToString(key)}
+                        </button>
+                    )}
+                </div>
+                <SetTimePeriod options={options} setOptions={setOptions} />
+            </div>
+            <Line
+                data={chart}
+                options={chartOptions}
+            />            
         </div>
     )
 }
@@ -50,10 +141,20 @@ function TickerGraph({tickerData,selectedTicker,selectedPortfolio}){
         responsive:true,
         maintainAspectRatio: false
     })
-    const [time, setTime] = useState({
-        time:0
+
+    const [options, setOptions] = useState({
+        events:{
+            userTrades:false,
+            insiderTrades:false,
+            dividends:false,
+            userDividends:false,            
+        },
+        time:{
+            timeValue:'',
+            timeStart:'',
+            timeEnd:'',            
+        }
     })
-    const [mode, setMode] = useState(null)
 
     const [chart, setChart] = useState({
         type: 'line',
@@ -67,7 +168,7 @@ function TickerGraph({tickerData,selectedTicker,selectedPortfolio}){
 
     useEffect(()=>{            
         if(tickerData){
-            let ticker = tickerData.find(item => item.ticker===selectedTicker.ticker)
+            let ticker = tickerData.find(item => item.profile.ticker===selectedTicker.ticker)
             if(ticker){
 
                 let { 
@@ -77,7 +178,7 @@ function TickerGraph({tickerData,selectedTicker,selectedPortfolio}){
                     pointColors,
                     tooltipLabels, 
                     tooltipFooters 
-                } = calculateTickerPriceData(ticker,time,selectedPortfolio)
+                } = calculateTickerPriceData(ticker,selectedPortfolio,options)
 
                 let newData = {
                     labels,
@@ -94,28 +195,36 @@ function TickerGraph({tickerData,selectedTicker,selectedPortfolio}){
                 }
 
                 setChart(newData)
-
                 setChartOptions(getChartOptions(tooltipLabels,tooltipFooters))
-                
             }            
         }
 
-    },[tickerData,selectedTicker,time])
+    },[tickerData,selectedTicker,options])
 
     return(
         <div className='graphContainer'>
             <div className='graphActions'>
-                <div className='graphModes'>
-                    <button>Buy/sell</button>
-                    <button>Insider Trades</button>
+                <div className='eventOptions'>
+                    {Object.keys(options.events).map(key =>
+                        <button
+                            style={{backgroundColor:options.events[key]?'lightgreen':''}} 
+                            onClick={() => setOptions({...options,events:{...options.events,[key]:!options.events[key]}})}>
+                            {camelCaseToString(key)}
+                        </button>
+                    )}
                 </div>
-                <SetTimePeriod time={time} setTime={setTime}/>
+                <SetTimePeriod options={options} setOptions={setOptions} />
             </div>
-            
             <Line
                 data={chart}
                 options={chartOptions}
             />            
         </div>
     )
+}
+
+function camelCaseToString(s) {
+    return s.split(/(?=[A-Z])/).map(function(p) {
+        return p.charAt(0).toUpperCase() + p.slice(1);
+    }).join(' ');
 }

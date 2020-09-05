@@ -1,10 +1,10 @@
-import React,{useEffect, useState, useRef} from 'react'
+import React,{useEffect, useState } from 'react'
 import { useSelector,useDispatch } from 'react-redux'
 import { listTickers, getPortfolioTickersData } from '../actions/tickerActions';
 import { listUserPortfolios } from '../actions/portfolioActions';
 import Tickers from '../components/Tickers'
 import Dividends from '../components/Dividends'
-import { calculatePortfolioTotal, calculateTickerShareCount, calculateTickerTotal } from '../utils/portfolioUtils';
+import { calculatePortfolioTotal, calculateTickerTotal, calculateTickerCurrentValue } from '../utils/portfolioUtils';
 import { Link} from 'react-router-dom'
 
 export default function HomeScreen() {
@@ -37,9 +37,12 @@ function Main(){
 
     const portfolioUserList = useSelector(state => state.portfolioUserList)
     const { loading, portfolios,error } = portfolioUserList
+
+
     
     useEffect(()=>{
         if(selectedPortfolio){
+            console.log(selectedPortfolio)
             dispatch(getPortfolioTickersData(selectedPortfolio._id))
         }
     },[selectedPortfolio])
@@ -75,6 +78,8 @@ function MainSide({userInfo}){
     const dispatch = useDispatch()
     const portfolioUserList = useSelector(state => state.portfolioUserList)
     const { loading, portfolios,error } = portfolioUserList
+    const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
+    const {loading:portfolioDataLoading, tickers:tickerData, error:portfolioDataError} = tickerPortfolioData
 
     return(
         <div className='card sidePortfolios'>
@@ -89,10 +94,23 @@ function MainSide({userInfo}){
                     <div className='portfolioMainBody'>
                         {portfolio.tickers.map(ticker => 
                             <div key={ticker._id} className='portfolioMainTicker'>
-                                <Link to={''}>{ticker.ticker}</Link>    
+                                <Link to={'/ticker/'+ticker.ticker}>{ticker.ticker}</Link>    
                                 <p>{ticker.name}</p>
-                                <p className='textRight'>{calculateTickerShareCount(ticker)} pcs</p>
-                                <p className='textRight'><b>{calculateTickerTotal(ticker)}$</b></p>
+                                {/* <p className='textRight'>{calculateTickerShareCount(ticker)} pcs</p>
+                                <p className='textRight'><b>{calculateTickerTotal(ticker)}$</b></p> */}
+                                {tickerData &&
+                                    <>
+                                    <p>
+                                        {(calculateTickerCurrentValue(ticker,tickerData)-calculateTickerTotal(ticker)).toFixed(2)+'$'}
+                                    </p>   
+                                    <p className='textRight'>
+                                        {
+                                            Number(((calculateTickerCurrentValue(ticker,tickerData)-calculateTickerTotal(ticker))/calculateTickerTotal(ticker))*100).toFixed(2)+'%'
+                                        }
+                                    </p>                                    
+                                    <p className='textRight'><b>{calculateTickerCurrentValue(ticker,tickerData)}$</b></p>  
+                                    </>       
+                                }
                             </div>
                         )}
                     </div>

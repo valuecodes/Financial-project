@@ -119,7 +119,7 @@ exports.addTransaction = async (req, res) => {
 // @route     DELETE /:id/&:ticker/&:transaction
 // @ access   auth
 exports.deleteTransaction = async (req, res) => {
-    console.log(req.params)
+    
     const portfolioId = req.params.id
     const portfolio = await Portfolio.findById(portfolioId)
     
@@ -160,7 +160,7 @@ exports.updateTransaction = async (req, res) => {
 
 
 exports.listUserPortfolios = async (req, res) => {
-    console.log('test')
+
     const userId = req.user._id
     const userPortfolios = await Portfolio.find({userId: userId})
 

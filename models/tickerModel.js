@@ -15,6 +15,7 @@ const incomeStatementSchema = new mongoose.Schema({
     revenue:{type:Number},
     costOfRevenue:{type:Number},
     grossProfit:{type:Number},
+    researchAndDevelopment:{type:Number},
     sgaExpenses:{type:Number},
     depreciationAmortization:{type:Number},
     otherOperatingExp:{type:Number},
@@ -24,7 +25,7 @@ const incomeStatementSchema = new mongoose.Schema({
     otherNetIncome:{type:Number},
     incomeTaxProvision:{type:Number},
     netIncome:{type:Number},
-    weightedAverageShares:{type:Number},
+    sharesOutstanding:{type:Number},
     dividendsPerShare:{type:Number},
     eps:{type:Number},
 })
@@ -60,7 +61,6 @@ const balanceSheetSchema = new mongoose.Schema({
     apic:{type:Number},
     retainedEarnigs:{type:Number},
     totalEquity:{type:Number},
-    sharesOutstanding:{type:Number},
     tangibleBookValuePerShare:{type:Number},
     treasuryStock:{type:Number},
 })
@@ -98,7 +98,7 @@ const dividendDataSchema = new mongoose.Schema({
     dividend:{type:Number, required:true}
 })
 
-const tickerSchema = new mongoose.Schema({
+const profileSchema = new mongoose.Schema({
     ticker:{type: String, required:true},
     name:{type: String, required: true},
     description:{type: String, required: true},
@@ -112,7 +112,11 @@ const tickerSchema = new mongoose.Schema({
     address:{type: String, required: true},
     phone:{type: String, required: true},
     website:{type: String, required: true},
-    employees:{type: String, required: true},
+    employees:{type: String, required: true},    
+})
+
+const tickerSchema = new mongoose.Schema({
+    profile:profileSchema,
     incomeStatement:[incomeStatementSchema],
     balanceSheet:[balanceSheetSchema],
     cashFlow:[cashFlowSchema],

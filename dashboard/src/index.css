@@ -55,6 +55,10 @@ li{
   border-radius: 0.5rem;
 }
 
+.chart{
+  height: 30rem;
+}
+
 .formInput{
   height: 3rem;
   border: none;
@@ -83,7 +87,7 @@ li{
 .navbar ul{
   display: flex;
   list-style-type: none;
-  margin: 5rem;
+  /* margin: 5rem; */
 }
 .navbar li{
   margin: 1rem;
@@ -107,6 +111,7 @@ li{
 
 .sidePortfolios{
   padding: 1rem;
+  min-width: 40rem;
 }
 
 .portfolioMainHead{
@@ -126,11 +131,11 @@ li{
 .portfolioMainTicker{
   padding: 0 1rem;
   display: grid;
-  grid-template-columns: 7rem 2fr 1fr 5rem;
+  grid-template-columns: 7rem 2fr 5rem 5rem 5rem;
 }
 
 .portfolioMainTicker p{
-  font-size: 1.4rem;
+  font-size: 1rem;
 }
 
 .portfolioMainFooter{
@@ -282,6 +287,10 @@ li{
   margin: 1rem 5rem;
 }
 
+.selectedPortfolio{
+  display: flex;
+}
+
 .dividendGraph{
   /* height:35rem; */
   grid-column: 2/4;
@@ -369,8 +378,15 @@ li{
   height: 3rem;
   min-width: 5rem;
 }
+
+.dataInputs{
+  display: flex;
+  flex-direction: column;
+}
+
 .financeInput{
-  height: 50rem;
+  height: 20rem;
+  border: 0.1rem solid black;
 }
 
 .companyInputInfo{
@@ -407,4 +423,26 @@ li{
 
 .outputItem{
   display: flex;
+}
+
+
+/* TickerScreen */
+.tickerScreen{
+  margin: auto;
+  width: 100rem;
+  height: 50rem;
+  /* background-color: beige */
+}
+
+.ticker{
+  /* height: 50; */
+  margin: auto;
+  /* width: 80rem; */
+  background-color: rgb(207, 207, 207);
+}
+
+.tickerInfo{
+  border-bottom: 0.1rem solid black;
+  display: flex;
+  align-items: center;
 }

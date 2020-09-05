@@ -8,9 +8,9 @@ exports.getTickers = async (req,res) => {
     let all=await Ticker.find()
     let tickers=[];
     all.forEach(item => tickers.push([
-        item._id,
-        item.ticker,
-        item.name
+        item.profile._id,
+        item.profile.ticker,
+        item.profile.name
     ]))
     res.send({data:tickers})
 }
@@ -20,7 +20,7 @@ exports.getTickers = async (req,res) => {
 // @ access   
 exports.getTickerData = async (req, res) => {
     const tickerId = req.params.id
-    const ticker = await Ticker.findOne({ticker:tickerId})
+    const ticker = await Ticker.findOne({'profile.ticker':tickerId})
     if(ticker){
         return res.send({data:ticker})
     }else{
@@ -32,14 +32,16 @@ exports.getTickerData = async (req, res) => {
 // @route     GET /
 // @ access   Auth
 exports.getPortfolioTickerData = async (req, res) => {
-    console.log(req.params)
+    
     const portfolioId = req.params.id
     const portfolio = await Portfolio.findById(portfolioId)
 
     if(portfolio){
         
         let tickers = portfolio.tickers.map(ticker => ticker.ticker)
-        let portfolioTickers = await Ticker.find({'ticker':{$in:tickers}})
+        console.log(tickers)
+        let portfolioTickers = await Ticker.find({'profile.ticker':{$in:tickers}})
+         console.log(portfolioTickers)
         return res.send({data:portfolioTickers})
         
     }else{

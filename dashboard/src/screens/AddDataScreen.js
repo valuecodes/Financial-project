@@ -10,7 +10,8 @@ import {
     calculateInsiderData,
     calculateYahooPrice,
     calculateYahooDividend,
-    calculateInsiderMarketBeat
+    calculateInsiderMarketBeat,
+    calculateMacroTrendsAnnual
 } from '../components/calculations/inputCalculations'
 
 export default function AddDataScreen() {
@@ -18,18 +19,20 @@ export default function AddDataScreen() {
     const inputRef=useRef()
 
     const [companyInfo, setCompanyInfo] = useState({
-        ticker:'',
-        name:'',
-        description:'',
-        sector:'',
-        stockExhange: '',
-        industry:'',
-        subIndustry:'',
-        founded:'',
-        address:'',
-        phone:'',
-        website:'',
-        employees:'',
+        profile:{
+            ticker:'',
+            name:'',
+            description:'',
+            sector:'',
+            stockExhange: '',
+            industry:'',
+            subIndustry:'',
+            founded:'',
+            address:'',
+            phone:'',
+            website:'',
+            employees:'',
+        },
         incomeStatement:[],
         balanceSheet:[],
         cashFlow:[],
@@ -51,7 +54,7 @@ export default function AddDataScreen() {
         }
         getData()
     },[])
-
+    console.log(companyInfo)
     const [data, setData] = useState('')
     const processData= async ()=>{
         try{
@@ -74,6 +77,7 @@ export default function AddDataScreen() {
             let array=data.split('\n')
             if(array.length>1){
                 let key = getKey(array,data)
+                console.log(key)
                 switch (key) {
                     case 'Total Premiums Earned':
                     case 'Revenue':
@@ -87,7 +91,7 @@ export default function AddDataScreen() {
                         setCompanyInfo({...companyInfo,cashFlow:calculateFinancialCashFlowData(array)})
                         break;
                     case 'companyInfo':
-                        setCompanyInfo({...companyInfo, ...calculateCompanyInfo(data,companyInfo)})
+                        setCompanyInfo({...companyInfo, profile:calculateCompanyInfo(data,companyInfo)})
                         break
                     case 'insider':
                         setCompanyInfo({...companyInfo,insiderTrading:[...companyInfo.insiderTrading,calculateInsiderData(data)]})
@@ -103,8 +107,13 @@ export default function AddDataScreen() {
                         break
                     case 'helsinki':
                         setTickers([...tickers,...getHelsinkiTickers(array)])
+                        break
+                    case 'macroTrendsAnnual':
+                        calculateMacroTrendsAnnual(array,companyInfo,setCompanyInfo)
+                        break
                     case 'dividends':
                         setCompanyInfo({...companyInfo,dividendData:calculateYahooDividend(array)})
+                        break
                     default:
                         break;
                 }          
@@ -120,27 +129,42 @@ export default function AddDataScreen() {
 
         }
     }
+
+    const handleFileData=(e)=>{
+        const file = e.target.files[0]
+        const reader = new FileReader();
+        reader.addEventListener('load', function(e) {   
+            var text = e.target.result;
+            handleData(text)
+        });
+        reader.readAsText(file);
+    }
+
     return (
         <div className='inputPage'>
-           
             <div className='inputContainer'>     
                 <SearchInput 
                     currentTickers={currentTickers}
                     selectTicker={selectTicker}    
                 />
                 <div className='inputActions'>
-                    <textarea 
-                        className='financeInput' 
-                        type='text' 
-                        onChange={e => handleData(e.target.value)}
-                        ref={inputRef}
-                    />
+                    <div className='dataInputs'>
+                        <textarea 
+                            className='financeInput' 
+                            type='text' 
+                            onChange={e => handleData(e.target.value)}
+                            ref={inputRef}
+                        />
+                        <input
+                            onChange={e => handleFileData(e)}
+                        className='financeInput' type='file'/>
+                    </div>
                     <button onClick={processData} className='button'>Save Company Data</button>
                     <button onClick={saveTickers} className='button'>save tickers</button>            
                 </div>
             </div>
             <div className='inputInfoContainer'>
-                <CompanyInfo state={companyInfo}/>
+                <InputInfo text={'Profile'} dataText={'profile'} state={companyInfo.profile} setSelectedData={setSelectedData}/>
                 <InputInfo text={'Income Statement'} dataText={'incomeStatement'} state={companyInfo.incomeStatement} setSelectedData={setSelectedData}/>
                 <InputInfo text={'Balance Sheet'} dataText={'balanceSheet'} state={companyInfo.balanceSheet} setSelectedData={setSelectedData}/>
                 <InputInfo text={'Cash Flow'} dataText={'cashFlow'} state={companyInfo.cashFlow} setSelectedData={setSelectedData}/>
@@ -158,8 +182,8 @@ function getKey(array,data){
         if(array[1].split('\t')[0]==='Trend'){
             array.splice(1,2)
         }
-
         let key = array[1].split('\t')[0]
+        console.log(array)
         if(array[2]==='CURRENT PRICE') key = 'companyInfo'
         if(checkInsider(data)) key = 'insider'
         if(array[0]==='Date,Open,High,Low,Close,Adj Close,Volume') key = 'yahooPrice'
@@ -169,6 +193,7 @@ function getKey(array,data){
         }
         if(key==='Cargotec Oyj') key='helsinki'
         if(array[0]==="Date,Dividends") key='dividends'
+        if(key==='Annual Data | Millions of US $ except per share data') key = 'macroTrendsAnnual'
         return key
 }
 

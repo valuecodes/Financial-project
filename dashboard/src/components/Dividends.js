@@ -57,7 +57,7 @@ export default function Dividends({selectedPortfolio}) {
                 }  
             </div>
             <div>
-                {currentPage==='graph' &&
+                {/* {currentPage==='graph' &&
                     <DividendGraph 
                         dividendTransactions={dividendTransactions}
                         selectedTicker={selectedTicker}
@@ -68,7 +68,7 @@ export default function Dividends({selectedPortfolio}) {
                         dividendList={dividendList}
                         selectedTicker={selectedTicker}
                     />
-                }
+                } */}
             </div>
             
         </div>
@@ -79,10 +79,10 @@ function DividendCalendar({dividendList,selectedTicker}){
 
     const [months, setMonths] = useState([]);
     const [dividends, setDividends] = useState([])
-    const [time, setTime] = useState({
-        value:'',
-        start:new Date().getFullYear(),
-        end:new Date().getFullYear()
+    const [options, setOptions] = useState({
+        timeValue:'',
+        timeStart:new Date().getFullYear(),
+        timeEnd:new Date().getFullYear()
     })
 
 
@@ -92,7 +92,7 @@ function DividendCalendar({dividendList,selectedTicker}){
 
     useEffect(()=>{
         if(dividendList.length>0){
-            let dividends=filterDividends(dividendList,time,selectedTicker)
+            let dividends=filterDividends(dividendList,options,selectedTicker)
             let updateMonths = createMonths()
             dividends.forEach(div => {
                 updateMonths[getMonthNum(div)].dividends.push(div)
@@ -100,7 +100,7 @@ function DividendCalendar({dividendList,selectedTicker}){
             setMonths(updateMonths)
             setDividends(dividendList)
         }
-    },[dividendList,time,selectedTicker])
+    },[dividendList,options,selectedTicker])
 
     function createMonths(){
         const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']    
@@ -118,8 +118,8 @@ function DividendCalendar({dividendList,selectedTicker}){
         <div>
             {dividends.length>0 &&
                 <SetTimePeriod 
-                    time={time} 
-                    setTime={setTime} 
+                    options={options} 
+                    setOptions={setOptions} 
                     type={'yearly'} 
                     yearsFrom={Number(dividends[dividends.length-1].date.split('-')[0])} 
                     yearsTo={Number(dividends[0].date.split('-')[0])}

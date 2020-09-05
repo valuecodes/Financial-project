@@ -1,7 +1,7 @@
 import React,{useState} from 'react'
 
 export default function SearchInput({currentTickers,selectTicker }) {
-
+    console.log(currentTickers,selectTicker)
     const [search, setSearch] = useState('')
 
     const results=!search?
@@ -32,3 +32,4 @@ export default function SearchInput({currentTickers,selectTicker }) {
         </div>
     )
 }
+

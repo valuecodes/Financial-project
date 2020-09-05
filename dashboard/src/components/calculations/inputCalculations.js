@@ -2,6 +2,7 @@ export function calculateFinancialIncomeData(data){
     let newData={}
     let dates=data[0].split('\t')
     let keyData=calculateKeyData(data)
+    console.log(dates)
     let fData=[];
     for(var i=0;i<dates.length;i++){
         if(dates[i]){
@@ -20,7 +21,7 @@ export function calculateFinancialIncomeData(data){
                 'ebit': calculateFinancialStatement('ebit',i,keyData),
                 'incomeTaxProvision': calculateFinancialStatement('incomeTaxProvision',i,keyData),
                 'netIncome': calculateFinancialStatement('netIncome',i,keyData),
-                'weightedAverageShares': calculateFinancialStatement('weightedAverageShares',i,keyData),
+                'sharesOutstanding': calculateFinancialStatement('weightedAverageShares',i,keyData),
                 'dividendsPerShare': calculateFinancialStatement('dividendsPerShare',i,keyData),
                 'eps': calculateFinancialStatement('eps',i,keyData),
             }
@@ -46,7 +47,7 @@ function calculateFinancialStatement(key,i,keyData){
         ebit:['Net Income Before Taxes'],
         incomeTaxProvision:['Provision for Income Taxes'],
         netIncome:['Net Income'],
-        weightedAverageShares:['Diluted Weighted Average Shares'],
+        sharesOutstanding:['Diluted Weighted Average Shares'],
         dividendsPerShare:['DPS - Common Stock Primary Issue'],
         eps:['Diluted Normalized EPS']
     }
@@ -91,7 +92,6 @@ export function calculateFinancialBalanceSheetData(data){
                 'apic':calculatebalanceSheet('apic',i,keyData),
                 'retainedEarnigs':calculatebalanceSheet('retainedEarnigs',i,keyData),
                 'totalEquity':calculatebalanceSheet('totalEquity',i,keyData),
-                'sharesOutstanding':calculatebalanceSheet('sharesOutstanding',i,keyData),
                 'tangibleBookValuePerShare':calculatebalanceSheet('tangibleBookValuePerShare',i,keyData),
                 'treasuryStock':calculatebalanceSheet('treasuryStock',i,keyData),
             }
@@ -135,7 +135,6 @@ function calculatebalanceSheet(key,i,keyData){
         apic:['Additional Paid-In Capital'],
         retainedEarnigs:['Retained Earnings (Accumulated Deficit)'],
         totalEquity:['Total Equity'],
-        sharesOutstanding:['Total Common Shares Outstanding'],
         tangibleBookValuePerShare:['Tangible Book Value per Share, Common Eq'],
         treasuryStock:['Treasury Stock - Common'],
     }
@@ -217,17 +216,31 @@ export function calculateCompanyInfo(data,info){
 }
 
 export function calculateInsiderData(data){
+
     let newData={
         name: data.split('Name:')[1].split('\n')[0].trim(),
         position: data.split('Position:')[1].split('\n')[0].trim(),
         date: data.split('Transaction date:')[1].split('\n')[0].trim(),
-        type: data.split('Nature of the transaction:')[1].split('\n')[0].trim(),
+        type: calculateTransactionType(data.split('Nature of the transaction:')[1].split('\n')[0].trim()),
         instrument: data.split('Instrument type:')[1].split('\n')[0].trim(),
         price:Number(data.split('Volume weighted average price:')[1].split('\n')[0].split(' ')[1]),
         volume: Number(data.split('Aggregated transactions')[1].split('Volume')[1].replace(/[:, ]/g, ""))
     }
     // newData.price=Number(newData.price)?newData.price:NaN
     return newData
+}
+
+function calculateTransactionType(text){
+    if(text==='ACQUISITION'){
+        return 'Buy'
+    }else if(text==='RECEIPT OF A SHARE-BASED INCENTIVE OR REMUNERATION'){
+        return 'Incentive/Remuneration'
+    }else if(text==='DISPOSAL'){
+        return 'Sell'
+    }else{
+        return text
+    }
+
 }
 
 export function calculateInsiderMarketBeat(data){
@@ -254,10 +267,12 @@ export function calculateYahooDividend(data){
     let divData=[]
     for(var i=1;i<data.length;i++){
         let row = data[i].split(',')
-        divData.push({
-            date:new Date(row[0]),
-            dividend:Number(row[1])
-        })
+        if(new Date(row[0]).getFullYear()>=2000){
+            divData.push({
+                date:new Date(row[0]),
+                dividend:Number(row[1])
+            })
+        }
     }
     divData.sort((a,b)=> a.date-b.date)
     return divData
@@ -268,24 +283,30 @@ export function calculateYahooPrice(data){
     let priceData=[]
     for(var i=data.length-1;i>0;i--){
         let row=data[i].split(',')
-        priceData.push({
-            date:row[0],
-            high:row[2],
-            low:row[3],
-            close:row[4],
-            volume:row[6]
-        })
+        if(new Date(row[0]).getFullYear()>=2000){
+            priceData.push({
+                date:row[0],
+                high:row[2],
+                low:row[3],
+                close:row[4],
+                volume:row[6]
+            })            
+        }
     }
+    console.log(priceData)
     return priceData
 }
 
 function calculateFinancialNumber(keys,index,keyData){
-
-    for(var i=0;i<keys.length;i++){
-        if(keyData[keys[i]]){
-            return parseNumber(keyData[keys[i]][index])
-        }
+    console.log(keys,index,keyData)
+    if(keys){
+        for(var i=0;i<keys.length;i++){
+            if(keyData[keys[i]]){
+                return parseNumber(keyData[keys[i]][index])
+            }
+        }        
     }
+
     return NaN
 }
 
@@ -308,3 +329,145 @@ function calculateKeyData(data){
     }
     return fData
 }   
+
+export function calculateMacroTrendsAnnual(data,companyInfo,setCompanyInfo){
+
+    data.shift()
+    let numberOfYears=0
+    let key=''
+
+    for(var i=1;i<data.length;i++){
+        if(letterCounter(data[i])>5){
+            numberOfYears=i
+            key=data[i]
+            break
+        }
+    }
+    console.log(key)
+    switch(key){
+        case 'Revenue':
+            setCompanyInfo({...companyInfo,incomeStatement:calculateMacroTrendsIncome(numberOfYears,data)}) 
+            break
+        case 'Cash On Hand':
+            setCompanyInfo({...companyInfo,balanceSheet:calculateMacroTrendsBalance(numberOfYears,data)}) 
+            break
+        case 'Net Income/Loss':
+                setCompanyInfo({...companyInfo,cashFlow:calculateMacroTrendsCashflow(numberOfYears,data)}) 
+            break
+        default: return
+    }
+    
+}
+
+function calculateMacroTrendsCashflow(numberOfYears,data){
+    let fData=[]
+    for(var a=1;a<=numberOfYears;a++){
+        let namedDataBlock={
+            'date':new Date(data[a]),
+            'netIncome':parseMacroNumber(data[a+(numberOfYears*1)]),
+            'depreciationDepletion':parseMacroNumber(data[a+(numberOfYears*2)]),
+            'nonCashItems':parseMacroNumber(data[a+(numberOfYears*4)]),
+            'cashTaxesPaid':parseMacroNumber('-'),
+            'cashInterestPaid':parseMacroNumber('-'),
+            'changesInWorkingCapital':parseMacroNumber('-'),
+            'operatingCashFlow':parseMacroNumber(data[a+(numberOfYears*10)]),
+            'capEx':parseMacroNumber(data[a+(numberOfYears*11)]),
+            'otherInvesting':parseMacroNumber(data[a+(numberOfYears*17)]),
+            'investingCashFlow':parseMacroNumber(data[a+(numberOfYears*18)]),
+            'dividendsPaid':parseMacroNumber(data[a+(numberOfYears*24)]),
+            'issuanceRetirementOfDebt':parseMacroNumber('-'),
+            'financingCashFlow':parseMacroNumber(data[a+(numberOfYears*26)]),
+            'foreignExchangeEffects':parseMacroNumber('-'),
+            'netChangeinCash':parseMacroNumber(data[a+(numberOfYears*27)]),
+            'issuanceRetirementOfStock':parseMacroNumber('-'),
+        }
+        fData.push(namedDataBlock)  
+    } 
+    fData.pop()
+    return fData
+}
+
+function calculateMacroTrendsBalance(numberOfYears,data){
+    let fData=[]
+    for(var a=1;a<=numberOfYears;a++){
+        let namedDataBlock={
+            'date':new Date(data[a]),
+            'cash':parseMacroNumber(data[a+(numberOfYears*1)]),
+            'netReceivables':parseMacroNumber('-'),
+            'totalReceivables':parseMacroNumber(data[a+(numberOfYears*2)]),
+            'inventory':parseMacroNumber(data[a+(numberOfYears*3)]),
+            'prepaidExpenses':parseMacroNumber(data[a+(numberOfYears*4)]),
+            'otherCurrentAssets':parseMacroNumber(data[a+(numberOfYears*5)]),
+            'currentAssets':parseMacroNumber(data[a+(numberOfYears*6)]),
+            'propertyPlantEquiment':parseMacroNumber(data[a+(numberOfYears*7)]),
+            'accumalatedDepreciation':parseMacroNumber('-'),
+            'goodwill':parseMacroNumber(data[a+(numberOfYears*9)]),
+            'intangibles':parseMacroNumber('-'),
+            'noteReceivables':parseMacroNumber('-'),
+            'otherLongTermAssets':parseMacroNumber(data[a+(numberOfYears*10)]),
+            'totalAssets':parseMacroNumber(data[a+(numberOfYears*12)]),
+            'accountsPayable':parseMacroNumber('-'),
+            'accruedExpenses':parseMacroNumber('-'),
+            'shortTermDebt':parseMacroNumber('-'),
+            'capitalLeases':parseMacroNumber('-'),
+            'otherCurrentLiabilities':parseMacroNumber('-'),
+            'currentLiabilities':parseMacroNumber(data[a+(numberOfYears*13)]),
+            'longTermDebt':parseMacroNumber(data[a+(numberOfYears*14)]),
+            'capitalLeaseObligations':parseMacroNumber('-'),
+            'totalLongTermDebt':parseMacroNumber('-'),
+            'totalDebt':parseMacroNumber('-'),
+            'otherLiabilities':parseMacroNumber('-'),
+            'totalLiabilities':parseMacroNumber(data[a+(numberOfYears*17)]),
+            'apic':parseMacroNumber('-'),
+            'retainedEarnigs':parseMacroNumber(data[a+(numberOfYears*19)]),
+            'totalEquity':parseMacroNumber(data[a+(numberOfYears*22)]),
+            'tangibleBookValuePerShare':parseMacroNumber('-'),
+            'treasuryStock':parseMacroNumber('-'),
+        }
+        fData.push(namedDataBlock)  
+    } 
+    fData.pop()
+    return fData
+}
+
+function calculateMacroTrendsIncome(numberOfYears,data){
+    let fData=[]
+
+    for(var a=1;a<=numberOfYears;a++){
+        let namedDataBlock={
+            'date':new Date(data[a]),
+            'revenue': parseMacroNumber(data[a+(numberOfYears*1)]),
+            'costOfRevenue': parseMacroNumber(data[a+(numberOfYears*2)]),
+            'grossProfit': parseMacroNumber(data[a+(numberOfYears*3)]),
+            'r&d': parseMacroNumber(data[a+(numberOfYears*4)]),
+            'sgaExpenses': parseMacroNumber(data[a+(numberOfYears*5)]),
+            'depreciationAmortization': parseMacroNumber('-'),
+            'otherOperatingExp': parseMacroNumber(data[a+(numberOfYears*6)]),
+            'totalOperationgExp': parseMacroNumber(data[a+(numberOfYears*7)]),
+            'operatingIncome': parseMacroNumber(data[a+(numberOfYears*8)]),
+            'interestIncome': parseMacroNumber('-'),
+            'otherNetIncome': parseMacroNumber(data[a+(numberOfYears*9)]),
+            'ebit': parseMacroNumber(data[a+(numberOfYears*18)]),
+            'incomeTaxProvision': parseMacroNumber('-'),
+            'netIncome': parseMacroNumber(data[a+(numberOfYears*16)]),
+            'sharesOutstanding': parseMacroNumber(data[a+(numberOfYears*20)]),
+            'dividendsPerShare': parseMacroNumber('-'),
+            'eps': parseMacroNumber(data[a+(numberOfYears*22)]),
+        }
+        fData.push(namedDataBlock)
+    }
+    fData.pop()
+    return fData
+}
+
+function parseMacroNumber(text){
+
+    let num = Number(text.replace(/[,$ ]/g,''))
+    console.log(text.charAt(1),text)
+    if(text.charAt(1)==='−') num = Number(text.replace(/[,$− ]/g,''))*-1
+    return num
+}
+
+function letterCounter (x) {
+    return x.replace(/[^a-zA-Z]/g, '').length;
+  }
