@@ -39,10 +39,9 @@ exports.getPortfolioTickerData = async (req, res) => {
     if(portfolio){
         
         let tickers = portfolio.tickers.map(ticker => ticker.ticker)
-        console.log(tickers)
         let portfolioTickers = await Ticker.find({'profile.ticker':{$in:tickers}})
-         console.log(portfolioTickers)
-        return res.send({data:portfolioTickers})
+         
+        return res.send({tickerData:portfolioTickers,portfolio})
         
     }else{
         return res.status(401).send({msg: 'Portfolio not found'})

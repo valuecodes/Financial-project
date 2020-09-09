@@ -41,7 +41,7 @@ function tickerPortfolioDataReducer(state={},action){
         case TICKER_PORTFOLIO_DATA_REQUEST:
             return {loading:true}
         case TICKER_PORTFOLIO_DATA_SUCCESS:
-            return {loading:false, tickers:action.payload}
+            return {loading:false, tickers:action.payload.tickerData,portfolio:action.payload.portfolio}
         case TICKER_PORTFOLIO_DATA_FAIL:
             return {loading:false, error: action.payload}
         default: return state

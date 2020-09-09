@@ -1,7 +1,241 @@
-function calculatePortfolioTotal(portfolio){
-    const tickerTotals = portfolio.tickers.map(ticker => calculateTickerTotal(ticker))
-    return tickerTotals.reduce((a,c) => a+c,0)
+import { formatCurrency, roundToTwoDecimal, formatPercentage, formatValue, getNumberOfWeek } from "./utils";
+import { TickerData } from "./tickerUtils";
+
+export function Portfolio(tickerData,portfolio){
+    this.name = portfolio.name
+    this.userTickers = portfolio.tickers
+    this._id = portfolio._id
+    this.portfolio = portfolio
+    this.tickerData = tickerData
+    this.purchasePrice = (format) => calculatePurchasePrice(portfolio,format);
+    this.currentValue = (format) => calculateCurrentValue(portfolio,tickerData,format)
+    this.priceChange = (format) => calculatePriceChange(portfolio,tickerData,format)
+    this.priceChangePercentage = (format) => calculatePriceChangePercentage(portfolio,tickerData,format)
+    this.priceChart = (options) => calculateChart(tickerData,portfolio,options)
+    this.returnChart = (options) => calculateReturnChart(tickerData,portfolio,options)
 }
+
+export function calculatePurchasePrice(portfolio,format){
+    let tickerTotals = portfolio.tickers.map(ticker => calculateTickerTotal(ticker))
+    let value = tickerTotals.reduce((a,c) => a+c,0)
+    return formatValue(value,format)
+}
+
+export function calculateCurrentValue(portfolio,tickerData,format){
+    let tickerTotals = portfolio.tickers.map(ticker => calculateTickerCurrent(ticker,tickerData))
+    let value = tickerTotals.reduce((a,c) => a+c,0)
+    return formatValue(value,format)
+}
+
+export function calculatePriceChange(portfolio,tickerData,format){
+    let value = calculateCurrentValue(portfolio,tickerData)-calculatePurchasePrice(portfolio)
+    return formatValue(value,format)
+}
+
+export function calculatePriceChangePercentage(portfolio,tickerData,format){
+    let value = ((calculateCurrentValue(portfolio,tickerData)-calculatePurchasePrice(portfolio))/calculatePurchasePrice(portfolio))*100
+    return formatValue(value,format)
+}
+
+export function calculateChart(tickerData,portfolio,options){
+
+    if(options.type==='price'){
+        return calculatePriceChart(tickerData,portfolio,options)
+    }else if(options.type==='return'){
+        return calculateReturnChart(tickerData,portfolio,options)
+    }else{
+        return { }
+    }
+    
+}
+
+function calculatePriceChart(tickerData,portfolio,options){
+    const { time } = options
+
+    let tickers = portfolio.tickers.map(item => item)
+    let dates={}
+    tickers.forEach(item =>{
+        let ticker = new TickerData(item,tickerData)
+        let data = ticker.priceChartData(options)
+        data.forEach(item =>{
+            let key=item.key
+            if(dates[key]){
+                dates[key].price+=item.value
+                dates[key].dividend+=item.dividend
+            }else{
+                dates[key]={
+                   price:item.value,
+                   dividend:item.dividend
+                }
+            }             
+        })
+    })  
+
+    let array=[]
+    for(let key in dates){
+        array.push({
+            date:key,
+            value:dates[key].price,
+            dividend:dates[key].dividend
+        })
+    }
+
+    array.shift()
+    let data = []
+    let labels = []
+    let dividends = []
+
+    array.forEach(item =>{
+        data.unshift(item.value)
+        dividends.unshift(item.dividend)
+        labels.unshift(item.date.slice(0, -1))
+    })
+
+    let total=0;
+    let cumulativeDividends = dividends.map((item,index) => (total+=item))
+    total=0;
+    let cumulativeDividendsPrice = dividends.map((item,index) => ((total+=item)+data[index]))
+    let percentageChangeWithDivs = cumulativeDividendsPrice.map(item => Number((((item-data[0])/data[0])*100).toFixed(2)))
+    let percentageChange = data.map(item => Number((((item-data[0])/data[0])*100).toFixed(2)))
+
+    return { 
+        data, 
+        labels,
+        cumulativeDividends,
+        cumulativeDividendsPrice, 
+        percentageChange,
+        percentageChangeWithDivs,
+    }
+}
+
+export function calculateReturnChart(tickerData,portfolio,options){
+    const { time } = options
+
+    let tickers = portfolio.tickers.map(item => item)
+    let dates={}
+    tickers.forEach(item =>{
+        let ticker = new TickerData(item,tickerData)
+        let data = ticker.returnChartData(options)
+        data.forEach(item =>{
+            let key=item.key
+            if(dates[key]){
+                dates[key].price+=item.value
+                dates[key].dividend+=item.dividend
+            }else{
+                dates[key]={
+                   price:item.value,
+                   dividend:item.dividend
+                }
+            }             
+        })
+    })
+
+    let array=[]
+    for(let key in dates){
+        array.push({
+            date:key,
+            value:dates[key].price,
+            dividend:dates[key].dividend
+        })
+    }
+    let offset=array[array.length-1].value
+    array.shift()
+    
+    let data = []
+    let labels = []
+    let dividends = []
+    let dataoff = []
+    array.forEach(item =>{
+        data.unshift(item.value-offset)
+        dataoff.unshift(item.value)
+        dividends.unshift(item.dividend)
+        labels.unshift(item.date.slice(0, -1))
+    })
+
+    let total=0;
+    let cumulativeDividends = dividends.map((item,index) => (total+=item))
+    total=0;
+    let cumulativeDividendsPrice = dividends.map((item,index) => ((total+=item)+data[index]))
+    let cumulativeDividendsPriceOff = dividends.map((item,index) => ((total+=item)+dataoff[index]))
+    let percentageChangeWithDivs = cumulativeDividendsPriceOff.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
+    let percentageChange = dataoff.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
+
+    return { 
+        data, 
+        labels,
+        cumulativeDividends,
+        cumulativeDividendsPrice, 
+        percentageChange,
+        percentageChangeWithDivs
+    }
+}
+
+
+
+
+
+
+
+
+
+export function calculatePortfolioChart(tickerData,portfolio,options){
+
+    const { time } = options
+    let tickers = portfolio.tickers.map(item => item)
+    tickers.forEach(item =>
+        item.priceData = 
+        tickerData.find(elem => elem.profile.ticker===item.ticker)
+        .priceData
+        .filter(item => new Date(item.date)>time.timeStart)
+    )
+    let dates={}
+
+    tickers.forEach(item =>    
+        item.priceData.forEach(price =>{
+            let divDate=price.date.split('T')[0]
+            item.transactions.forEach(transaction=>{
+                if(new Date(transaction.date)<new Date(price.date)){
+                    let week = getNumberOfWeek(price.date)
+                    let year = new Date(price.date).getFullYear()
+                    let key =year+'/'+week
+                    if(dates[key]){
+                        dates[key]+=transaction.count*price.close
+                    }else{
+                        dates[key]=transaction.count*price.close
+                    }                    
+                }
+            })
+        }
+        )
+    )
+    let labels = Object.keys(dates).reverse()
+    let data = Object.values(dates).reverse()
+    labels = labels.map(label => label.split('T')[0])
+    return { labels, data }
+}
+
+
+
+export function calculateTickerCurrentValue(ticker,tickerData){
+    let found = tickerData.find(item => item.profile.ticker===ticker.ticker)
+    if(found){
+        let price = found.priceData[0].close
+        let count = calculateTickerShareCount(ticker)
+        return Number((price*count).toFixed(2))
+    }
+    return 0
+}
+
+
+
+
+
+
+function calculateTickerCurrent(ticker,tickerData){
+
+    let price = tickerData.find(item => item.profile.ticker===ticker.ticker).priceData[0].close
+    return ticker.transactions.reduce((a,c)=> a+(c.count*price),0)
+}  
 
 function calculateTickerTotal(ticker){
     return ticker.transactions.reduce((a,c)=> a+(c.count*c.price),0)
@@ -134,7 +368,6 @@ function getMonthNum(item){
 }
 
 export {
-    calculatePortfolioTotal,
     calculateTickerTotal,
     calculateTickerShareCount,
     calculateDividendTransactions,
@@ -291,66 +524,3 @@ function setInsiderTrades(priceData,insider,labels){
 
 }
 
-export function calculatePortfolioChart(tickerData,portfolio,options){
-
-    const { time } = options
-    
-    let tickers = portfolio.tickers.map(item => item)
-  
-    
-    tickers.forEach(item =>
-        item.priceData = 
-        tickerData.find(elem => elem.profile.ticker===item.ticker)
-        .priceData
-        .filter(item => new Date(item.date)>time.timeStart)
-    )
-    
-    let dates={}
-    
-    tickers.forEach(item =>    
-        item.priceData.forEach(price =>{
-            let divDate=price.date.split('T')[0]
-            item.transactions.forEach(transaction=>{
-                if(new Date(transaction.date)<new Date(price.date)){
-                    let week = getNumberOfWeek(price.date)
-                    let year = new Date(price.date).getFullYear()
-                    let key =year+'/'+week
-                    if(dates[key]){
-                        dates[key]+=transaction.count*price.close
-                    }else{
-                        dates[key]=transaction.count*price.close
-                    }                    
-                }
-            })
-        }
-        )
-    )
-    let labels = Object.keys(dates).reverse()
-    let data = Object.values(dates).reverse()
-    labels = labels.map(label => label.split('T')[0])
-    return { labels, data }
-}
-
-function getNumberOfWeek(dt) {
-    dt = new Date(dt)
-    var tdt = new Date(dt.valueOf());
-    var dayn = (dt.getDay() + 6) % 7;
-    tdt.setDate(tdt.getDate() - dayn + 3);
-    var firstThursday = tdt.valueOf();
-    tdt.setMonth(0, 1);
-    if (tdt.getDay() !== 4) 
-      {
-     tdt.setMonth(0, 1 + ((4 - tdt.getDay()) + 7) % 7);
-       }
-    return 1 + Math.ceil((firstThursday - tdt) / 604800000);
-}
-
-export function calculateTickerCurrentValue(ticker,tickerData){
-    let found = tickerData.find(item => item.profile.ticker===ticker.ticker)
-    if(found){
-        let price = found.priceData[0].close
-        let count = calculateTickerShareCount(ticker)
-        return Number((price*count).toFixed(2))
-    }
-    return 0
-}

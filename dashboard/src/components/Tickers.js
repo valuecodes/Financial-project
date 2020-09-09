@@ -56,6 +56,7 @@ export default function Tickers({selectedPortfolio}){
 
 function PortfolioGraph({tickerData,selectedPortfolio}){
     const dispatch = useDispatch()
+    
     const [chartOptions, setChartOptions] = useState({        
         responsive:true,
         maintainAspectRatio: false,

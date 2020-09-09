@@ -7,10 +7,9 @@ export function SetTimePeriod({options,setOptions,type='full', yearsFrom=2020, y
     useEffect(() => {
         
         if(type==='full'){
-            changeTimePeriod('1.years')
+            changeTimePeriod('1.years-years')
             setTimePeriods(['3.month-months', '6.months-months','1.years-years','3.years-years','5.years-years','10.years-years','20.years-years'])
         }else if(type==='yearly'){
-            
             let years = Array.from({length:(yearsTo+1)-yearsFrom},(v,k)=>k+yearsFrom+'.-fyears')
             if(all){
                 years.push('All.-all')
@@ -20,6 +19,7 @@ export function SetTimePeriod({options,setOptions,type='full', yearsFrom=2020, y
             }
             setTimePeriods(years)
         }
+
     }, [type,yearsFrom,yearsTo])
 
     function changeTimePeriod(timeValue){
@@ -54,7 +54,7 @@ export function SetTimePeriod({options,setOptions,type='full', yearsFrom=2020, y
     }
 
     return (
-        <div>
+        <div className='chartTimePeriods chartButtonContainer'>
             {timePeriods.map(period =>
                 <button  
                 key={period}

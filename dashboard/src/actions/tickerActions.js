@@ -41,7 +41,7 @@ const getPortfolioTickersData = (portfolioId) => async (dispatch,getState) => {
             }
         })
         console.log(data)
-        dispatch({type: TICKER_PORTFOLIO_DATA_SUCCESS, payload: data.data})
+        dispatch({type: TICKER_PORTFOLIO_DATA_SUCCESS, payload: data})
     } catch(err){   
         dispatch({type: TICKER_PORTFOLIO_DATA_FAIL, payload: err.message})
     }

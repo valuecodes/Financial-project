@@ -104,7 +104,7 @@ function FinancialRatios({ticker}){
                       break;
                     case 'pb-ratio':
                         if(bookValue[0]){
-                            data.unshift(Number((priceData[i].close/bookValue[0].bookValue).toFixed(1)) )
+                            data.unshift(Number((priceData[i].close/bookValue[0].bookValue).toFixed(1)))
                             labels.unshift(priceData[i].date.split('T')[0])
                             price.unshift(priceData[i].close)
                         }   
@@ -112,7 +112,7 @@ function FinancialRatios({ticker}){
                     case 'dividend-yield':
                         if(div[0]){
                             let totalDiv = div.reduce((a,b)=>a+b.dividend,0)
-                            data.unshift(Number(((totalDiv/priceData[i].close)*100).toFixed(1)) )
+                            data.unshift(Number(((totalDiv/priceData[i].close)*100).toFixed(1)))
                             labels.unshift(priceData[i].date.split('T')[0])
                             price.unshift(priceData[i].close)
                         }
@@ -134,8 +134,7 @@ function FinancialRatios({ticker}){
             }
 
             setChart(newData)
-            let pointBackgroundColor=calculatePEColors(data)
-            console.log(data)
+            let pointBackgroundColor=calculatePointColors(data,ratio)
             let newPriceData = {
                 labels,
                 datasets:[
@@ -186,9 +185,12 @@ function FinancialRatios({ticker}){
     )
 }
 
-function normalize (val, max, min) { return 100-(((val - min) / (max - min))*100); }
+function normalize (val, max, min) { return (((val - min) / (max - min))*100); }
 
-function colorPercentage(perc) {
+function colorPercentage(perc,ratio) {
+
+    if(ratio!=='dividend-yield') perc = 100-perc
+    
 	var r, g, b = 0;
 	if(perc < 50) {
 		r = 255;
@@ -202,12 +204,11 @@ function colorPercentage(perc) {
 	return '#' + ('000000' + h.toString(16)).slice(-6);
 }
 
-function calculatePEColors(data){
+function calculatePointColors(data,ratio){
     let max = Math.max(...data)
     let min = Math.min(...data)
-    let percentages = data.map(item => colorPercentage(normalize(item,max,min)))
+    let percentages = data.map(item => colorPercentage(normalize(item,max,min),ratio))
     return percentages
-    console.log(percentages,normalize(data[0],max,min))
 }
 
 function FinancialStatements({ticker}){
