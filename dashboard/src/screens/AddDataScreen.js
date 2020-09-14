@@ -47,6 +47,7 @@ export default function AddDataScreen() {
         key:'', 
         state:[]
     })
+    
     useEffect(()=>{
         async function getData(){
             let res = await axios.get('/dataInput/')
@@ -54,7 +55,7 @@ export default function AddDataScreen() {
         }
         getData()
     },[])
-    console.log(companyInfo)
+
     const [data, setData] = useState('')
     const processData= async ()=>{
         try{
@@ -77,7 +78,6 @@ export default function AddDataScreen() {
             let array=data.split('\n')
             if(array.length>1){
                 let key = getKey(array,data)
-                console.log(key)
                 switch (key) {
                     case 'Total Premiums Earned':
                     case 'Revenue':

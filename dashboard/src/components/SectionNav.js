@@ -7,6 +7,7 @@ export default function SectionNav({navigation,setNavigation}){
             <ul>
                 {navigation.options.map((item,index)=>
                     <li
+                        key={item}
                         style={{
                             backgroundColor:item===navigation.selected.name&&'rgba(0, 0, 0, 0.2)',
                             borderBottom:item===navigation.selected.name&&'0.2rem solid lightgreen'

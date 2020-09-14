@@ -21,13 +21,13 @@ export default function TradingScreen() {
 
     useEffect(()=>{
         dispatch(listTickers())
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[])
 
     const portfolioAddTicker = useSelector(state => state.portfolioAddTicker)
     const { success:tickerAddSuccess, error:tickerAddError} = portfolioAddTicker
 
     const portfolioDeleteTicker = useSelector(state => state.portfolioDeleteTicker)
-
     const {success: tickerDeleteSuccess, error: tickerDeleteError} = portfolioDeleteTicker
 
     const portfolioCreate = useSelector(state => state.portfolioCreate)
@@ -48,8 +48,20 @@ export default function TradingScreen() {
     const portfolioDeleteTransaction = useSelector(state => state.portfolioDeleteTransaction)
     const {success: transactionDeleteSuccess, error: transactionDeleteError} = portfolioDeleteTransaction
 
+    const errors=[
+        tickerAddError,
+        tickerDeleteError,
+        portfolioError,
+        portfolioUpdateError,
+        portfolioDeleteError,
+        transactionAddError,
+        transactionUpdateError,
+        transactionDeleteError
+    ]
+
     useEffect(()=>{
         dispatch(listUserPortfolios())
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[
         portfolioSuccess, 
         tickerAddSuccess, 
@@ -61,9 +73,9 @@ export default function TradingScreen() {
         portfolioUpdateSuccess
     ])
 
-
     return (
         <div className='container'>
+            {errors&&errors.map(item => <div key={item}>{item}</div>)}
             {userInfo&&
                 <div className='tickerList card'>
                     <CreatePortfolio userInfo={userInfo}/>
@@ -141,18 +153,16 @@ function Portfolio({portfolio,items=[]}){
                     <button style={{display:modifyPortfolio?'':'none'}} className='delete' onClick={deletePortfolioHandler}>Delete Portfolio</button>      
                 </div>
             </div>
-            {results.map((ticker,index) =>{
-                if(index<10){
-                    return <div 
-                        key={ticker[1]}
-                        className='searchResult' 
-                        onClick={e => submitHandler(ticker)}
-                        >
-                            <p>{ticker[1]}</p> 
-                            <p>{ticker[2]}</p> 
-                        </div>
-                }
-            })}
+            {results.map((ticker,index) =>
+                index<10&&<div 
+                    key={ticker[1]}
+                    className='searchResult' 
+                    onClick={e => submitHandler(ticker)}
+                    >
+                        <p>{ticker[1]}</p> 
+                        <p>{ticker[2]}</p> 
+                    </div>
+            )}
             <div className='portfolioTickers'>
                 {portfolio.tickers.map(ticker =>
                     <PortfolioTicker
@@ -172,6 +182,7 @@ function SmoothInput({portfolio}){
     const dispatch = useDispatch()
     useEffect(()=>{
         setPortfolioName(portfolio.name)
+        // eslint-disable-next-line react-hooks/exhaustive-deps        
     },[])
 
     const [modify, setModify] = useState(false)

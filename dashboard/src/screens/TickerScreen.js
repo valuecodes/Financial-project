@@ -1,72 +1,49 @@
 import React,{ useEffect,useState, useRef } from 'react'
 import { useDispatch,useSelector } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
-import { camelCaseToString } from '../utils/utils';
-import { Line, Bar, Chart } from 'react-chartjs-2';
+import { camelCaseToString, datasetKeyProvider } from '../utils/utils';
+import { Line, Bar } from 'react-chartjs-2';
 import { listUserPortfolios } from '../actions/portfolioActions';
-import { Ticker } from '../utils/tickerUtils';
-// import Options from '../components/Options'
-import { getChartOptions, priceChartOptions, calculatePriceChart, calculateEventChart, calculateRatioPriceChart, calculateRatioChart, calculateRatioFinacialChart, calculateFinancialChart, financialChartOptions, eventChartOptions } from '../utils/chartUtils';
+import { Ticker } from '../utils/ticker';
+import {  
+    calculatePriceChart, 
+    calculateEventChart, 
+    calculateRatioPriceChart, 
+    calculateRatioChart, 
+    calculateRatioFinacialChart, 
+    calculateFinancialChart 
+} from '../utils/chart';
+import { 
+    priceChartOptions,
+    financialChartOptions, 
+    eventChartOptions, 
+    ratioChartOptions, 
+    barChartOptions 
+} from '../utils/chartOptions'
 import SectionNav from '../components/SectionNav';
-import { Options } from '../screens/PortfolioScreen'
+import Options from '../components/Options'
 
 export default function TickerScreen(props) {
 
-    const [ticker, setTicker] = useState(null)
-    const [options,setOptions] = useState({
-        time:{
-            timeValue:'10.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
-        },
-        selectedMode:'events',
-        modes:['price','events','ratios','financials'],
-        price:{
-            // chartType:{
-            //     selectedOption:'total',
-            //     options:['totalReturn','sharePrice','dividends'],
-            //     optionType:'single'
-            // }
-        },
-        events:{
-            // events:{
-            //     options:{
-            //         userTrades:true,
-            //         insiderTrades:false,
-            //         userDividends:false,
-            //         dividends:false
-            //     },
-            //     optionType:'multi'
-            // }
-        },
-        ratios:{
-            ratios:{
-                selectedOption:'pe',
-                options:['pe','pb','dividendYield'],
-                optionType:'single'
-            }
-        },
-        financials:{
-            statements:{
-                selectedOption:'incomeStatement',
-                options:['incomeStatement','balanceSheet','cashFlow'],
-                optionType:'single'
-            }
-        }
-    })
-
     const dispatch = useDispatch()
+    const [navigation,setNavigation] = useState({
+        selected:{name:'price',index:0},
+        options:['price','events','ratios','financials']
+    })
+    const [ticker, setTicker] = useState(null)
     const tickerData = useSelector(state => state.tickerData)
     const { loading:l1, ticker:tickerFullData, error:e1 } = tickerData
     const portfolioUserList = useSelector(state => state.portfolioUserList)
     const { loading, portfolios,error } = portfolioUserList
-
+    const loadings = [l1,loading]
+    const errors = [e1,error]
     useEffect(()=>{
         let tickerId = props.match.params.id
         dispatch(getTickerData(tickerId))
         if(!portfolios.length){
             dispatch(listUserPortfolios())
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[props])
 
     function searchFromPortfolios(portfolios,tickerFullData){
@@ -97,52 +74,36 @@ export default function TickerScreen(props) {
         }
     },[portfolios,tickerFullData,props])
 
-    const [navigation,setNavigation] = useState({
-        selected:{name:'price',index:0},
-        options:['price','events','ratios','financials']
-    })
-
     return (
         <div className='tickerScreen container'>
+            {loadings&&<div>Loading...</div>}
+            {errors&&errors.map((item,index) => <div key={index}>{item}</div>)}
             <TickerHeader ticker={ticker}/>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
-            {/* <Options options={options} setOptions={setOptions}/> */}
             {loading?<div>Loading...</div>:error?<div>{error}</div>:
                 <div className='sectionContainer'>
                     <div 
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >    
-                        <PriceChart ticker={ticker}/>    
-                        <EventChart ticker={ticker}/>
-                        <TickerRatios ticker={ticker}/>
-                        <Financials ticker={ticker}/>   
+                        <PriceChart ticker={ticker} navigation={navigation}/>    
+                        <EventChart ticker={ticker} navigation={navigation}/>
+                        <TickerRatios ticker={ticker} navigation={navigation}/>
+                        <Financials ticker={ticker} navigation={navigation}/>   
                     </div>
                 </div>
             }
-            {/* {options.selectedMode==='price'&&
-                <PriceChart ticker={ticker} options={options}/>
-            } */}
-            {/* {options.selectedMode==='events'&&
-                <EventChart ticker={ticker} options={options}/>
-            }
-            {options.selectedMode==='ratios'&&
-                <TickerRatios ticker={ticker} options={options}/>
-            }
-            {options.selectedMode==='financials'&&
-                <Financials ticker={ticker} options={options}/>
-            } */}
         </div>
     )
 }
 
-function Financials({ticker}){
+function Financials({ticker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'incomeStatement',
         options:['incomeStatement','balanceSheet','cashFlow'],
         time:{
-            timeValue:'20.years-years',
+            timeValue:'15.years-years',
             timeStart:new Date().getFullYear(),
             timeEnd:new Date().getFullYear(),            
         },
@@ -162,19 +123,20 @@ function Financials({ticker}){
             setChartOptions(financialChartOptions(options))
             setFinancialData(financialChartCoponents.fullFinancialData)
         }
-    },[ticker,options])
-
-    function datasetKeyProvider(){ return Math.random()}    
+    },[ticker,options])  
+    
 
     return(
         <div className='tickerFinancials'>
             <Options options={options} setOptions={setOptions}/>        
             <div className='financialChartContainer'>
-                <Bar
-                    datasetKeyProvider={datasetKeyProvider}
-                    data={financialChart}
-                    options={chartOptions}
-                />  
+                {navigation.selected.name==='financials'&&
+                    <Bar
+                        datasetKeyProvider={datasetKeyProvider}
+                        data={financialChart}
+                        options={chartOptions}
+                    />          
+                }
             </div>
             <div className='financialStatement'>
                 
@@ -184,17 +146,17 @@ function Financials({ticker}){
                             <tr>
                             <th>Year</th>
                             {financialData.map(item =>
-                                <th>{item.date.substring(0, 7)}</th>
+                                <th key={item._id}>{item.date.substring(0, 7)}</th>
                             )}
                             </tr>
                         </thead>
                         <tbody>
                             {Object.keys(financialData[0]).map((item,index) =>{
                                 return  index>1&&
-                                    <tr>
+                                    <tr key={index}>
                                         <td>{camelCaseToString(item)}</td>
                                         {financialData.map((elem,index) =>
-                                            <td>{financialData[index][item]}</td>
+                                            <td key={index}>{financialData[index][item]}</td>
                                         )}
                                     </tr>   
                             })}
@@ -207,7 +169,7 @@ function Financials({ticker}){
     )
 }
 
-function TickerRatios({ticker}){
+function TickerRatios({ticker,navigation}){
 
     const ratioChartRef = useRef()
     const ratioPriceChartRef = useRef()
@@ -216,206 +178,10 @@ function TickerRatios({ticker}){
         selected:'pe',
         options:['pe','pb','dividendYield'],
         time:{
-            timeValue:'20.years-years',
+            timeValue:'15.years-years',
             timeStart:new Date().getFullYear(),
             timeEnd:new Date().getFullYear(),            
         },
-    })
-
-    const [chartOptions, setChartOptions] = useState({    
-        responsive:true,
-        maintainAspectRatio: false,
-        plugins: {
-            datalabels: {
-                display: false,
-            },
-        },
-        layout: {
-            padding: {
-               left     : 0,
-               right    : 0,
-               top      : 0,
-               bottom   : 0
-            }
-          },
-        fontSize:20,
-        legend: {
-            align:'start',
-            padding:20,
-            labels: {
-                fontSize: 20,
-                padding:20,
-                fontColor:'white',
-                boxWidth: 0,
-            }
-        },
-        tooltips: {
-            mode: 'index',
-            intersect: false,
-            titleFontColor:'rgba(0,0,0,0)',
-            enabled:false,
-            custom: function(tooltipModel) {
-
-                let ratioChart = ratioChartRef.current
-                let ratioPrice = ratioPriceChartRef.current
-                
-                let toolTipItems=[
-                    {id:'tooltipRatio',type:'point',chart:ratioChart,chartIndex:0},
-                    {id:'toolTipPrice',type:'point',chart:ratioPrice,chartIndex:1},
-                    {id:'tooltipRatioLabel',type:'label',chart:ratioChart,chartIndex:0},
-                    {id:'toolTipPricelabel',type:'label',chart:ratioPrice,chartIndex:1},
-                ]
-
-                if(tooltipModel.dataPoints){
-
-                    let tooltipPoints = tooltipModel.dataPoints.length
-                    let index = tooltipModel.dataPoints[0].index
-
-                    for(var i=0;i<tooltipPoints;i++){
-                        toolTipItems.forEach((item,index) =>{
-                            let tooltipItem = document.getElementById(item.id);
-                            if(!tooltipItem){
-                                tooltipItem = createTooltipItem(item) 
-                            }                            
-                            switch(item.type){
-                                case 'point':
-                                    setTooltipPoint(tooltipItem,item.chart,item.chartIndex)
-                                    break
-                                case 'label':
-                                    setToolTipLabel(tooltipItem,item.chart,item.chartIndex)
-                                    break
-                                default:
-                            }
-                        })
-
-                        function createTooltipItem(item){
-                            let tooltipItem = document.createElement('div');                 
-                            tooltipItem.id = item.id;
-                            tooltipItem.innerHTML = '<table></table>';
-                            document.body.appendChild(tooltipItem) 
-                            return tooltipItem
-                        }
-
-                        function setToolTipLabel(item,chart,chartIndex){  
-
-                            if (tooltipModel.body) {
-                                let text =chart.props.data.datasets[0].data[index].toFixed(1)
-                                var tableRoot = item.querySelector('table');
-                                if(chartIndex===0){
-                                    text = formatRatio(text,chart.props.data.datasets[0].label)
-                                }else{
-                                    text = text + '$'
-                                }
-                                tableRoot.textContent = text;
-                            }      
-
-                            let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
-                            let position = chart.chartInstance.canvas.getBoundingClientRect()
-
-                            if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
-                                item.style.opacity = 1;
-                                item.style.position = 'absolute';
-                                item.style.left = position.left + window.pageXOffset +tooltipModel.caretX+15  + 'px';
-                                item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
-                                item.style.backgroundColor='dimgray'
-                                item.style.color='white'
-                                item.style.fontSize='15px'
-                                item.style.borderRadius='25%'                                
-                                item.style.padding='5px'                                  
-                            }
-
-                        }
-
-                        function formatRatio(text,ratio){
-                            switch(ratio){
-                                case 'Historical PE-ratio':
-                                    return 'P/E '+text
-                                case 'Historical PB-ratio':
-                                    return 'P/B '+text
-                                case 'Historical Dividend Yield':
-                                    return text+'%'
-                                default: return ''
-                            }
-                        }
-
-                        function setTooltipPoint(item,chart){                    
-                            let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
-                            let position = chart.chartInstance.canvas.getBoundingClientRect()
-                            if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
-                                item.style.opacity = 1;
-                                item.style.position = 'absolute';
-                                item.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';
-                                item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
-                                item.style.pointerEvents = 'none';
-                                item.style.width = '10px';
-                                item.style.height = '10px';
-                                item.style.borderRadius = '20px';
-                                item.style.border = '2px solid black';
-                                item.style.backgroundColor = 'white';                                   
-                            }         
-                        }
-
-                        
-
-                    }                    
-                }else{
-                    toolTipItems.forEach(item =>{
-                        if(document.getElementById(item.id)){
-                            document.getElementById(item.id).style.opacity=0;
-                        }     
-                    })
-                }
-            },
-            callbacks: {
-                label: function (tooltipItem, data) {
-                    console.log(tooltipItem.yLabel)
-                    // const { datasetIndex,index } = tooltipItem
-                    // // tt.current.textContent=`${formatCurrency( tooltipItem.yLabel)}`
-                    // let currentData = (datasetIndex===0?data.datasets[datasetIndex].percentageChange[index]:data.datasets[datasetIndex].percentageChangeWithDivs[index])+'%'
-                    // // if(data.datasets[datasetIndex].options.price.chartType.selectedOption==='dividends'){
-                    // //     currentData = data.datasets[datasetIndex].data[index].toFixed(2)+'$'
-                    // }
-                    return tooltipItem.yLabel.toFixed(1)+'$'
-            }}
-        },  
-        scales: {
-            xAxes: [{   
-                ticks: {
-                    maxTicksLimit: 8,
-                    maxRotation: 0,
-                    minRotation: 0
-                },
-            }],
-        },
-    })
-
-    const [barChartOptions, setBarChartOptions] = useState({    
-        responsive:true,
-        maintainAspectRatio: false,
-        plugins: {
-            datalabels: {
-                // display: false,
-            },
-        },
-        fontSize:20,
-        legend: {
-            align:'start',
-            padding:20,
-            labels: {
-                fontSize: 20,
-                padding:20,
-                fontColor:'white',
-                boxWidth: 0,
-            }
-        },scales: {
-            yAxes: [{
-                ticks: {
-                    beginAtZero: true,
-                    barPercentage:0.5
-                },
-                categoryPercentage:0.5,
-            }]
-        }
     })
 
     const [ratioChart, setRatioChart] = useState({})
@@ -436,22 +202,21 @@ function TickerRatios({ticker}){
             setPriceChart(priceChartData)
 
         }
-    },[ticker,options])
-
-    function datasetKeyProvider(){ return Math.random()}    
+    },[ticker,options])   
 
     return(
         <div className='section'>
             <Options options={options} setOptions={setOptions}/>
             <div className='ratioCharts'>
-                <div className='ratioChartContainer'>
-                    <Line
-                        id={'ratioChart'}
-                        ref={ratioChartRef}
-                        datasetKeyProvider={datasetKeyProvider}
-                        data={ratioChart}
-                        options={chartOptions}
-                    />  
+                <div className='ratioChartContainer'>                                 {navigation.selected.name==='ratios'&&
+                        <Line
+                            id={'ratioChart'}
+                            ref={ratioChartRef}
+                            datasetKeyProvider={datasetKeyProvider}
+                            data={ratioChart}
+                            options={ratioChartOptions(ratioChartRef,ratioPriceChartRef)}
+                        />
+                    }  
                 </div>
                 <div className='ratioChartContainer'>
                     <Line
@@ -459,15 +224,17 @@ function TickerRatios({ticker}){
                         ref={ratioPriceChartRef}
                         datasetKeyProvider={datasetKeyProvider}
                         data={priceChart}
-                        options={chartOptions}
-                    /> 
+                        options={ratioChartOptions(ratioChartRef,ratioPriceChartRef)}
+                    />                 
                 </div>
                 <div className='ratioChartContainer'>
-                    <Bar
-                        datasetKeyProvider={datasetKeyProvider}
-                        data={ratioFinancialChart}
-                        options={barChartOptions}
-                    /> 
+                    {navigation.selected.name==='ratios'&&
+                        <Bar
+                            datasetKeyProvider={datasetKeyProvider}
+                            data={ratioFinancialChart}
+                            options={barChartOptions()}
+                        />                 
+                    }
                 </div>
             </div>
 
@@ -475,21 +242,16 @@ function TickerRatios({ticker}){
     )
 }
 
-function EventChart({ticker}){
+function EventChart({ticker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'',
         options:[],
         time:{
-            timeValue:'20.years-years',
+            timeValue:'15.years-years',
             timeStart:new Date().getFullYear(),
             timeEnd:new Date().getFullYear(),            
         },
-    })
-
-    const [chartOptions, setChartOptions] = useState({        
-        responsive:true,
-        maintainAspectRatio: false
     })
     const [chart, setChart] = useState({})
 
@@ -497,37 +259,37 @@ function EventChart({ticker}){
         if(ticker){
             let chartComponents = ticker.eventChart(options)
             let chartData = calculateEventChart(chartComponents,options)
-            setChartOptions(eventChartOptions())
             setChart(chartData)     
         }
     },[ticker, options])
 
-    function datasetKeyProvider(){ return Math.random()}
     return(
         <section className='section'>
             <Options options={options} setOptions={setOptions}/>        
             <div className='tickerScreenChart'>
                 <div className='chartContainer'>
-                    <Line
-                        id={'canvas'}
-                        datasetKeyProvider={datasetKeyProvider}
-                        data={chart}
-                        options={chartOptions}
-                    />  
+                    {navigation.selected.name==='events'&&
+                        <Line
+                            id={'canvas'}
+                            datasetKeyProvider={datasetKeyProvider}
+                            data={chart}
+                            options={eventChartOptions()}
+                        />  
+                    }
                 </div>
             </div>            
         </section>
     )
 }
 
-function PriceChart({ticker}){
+function PriceChart({ticker,navigation}){
 
     const chartRef = useRef()
     const [options,setOptions]=useState({
         selected:'',
         options:[],
         time:{
-            timeValue:'20.years-years',
+            timeValue:'15.years-years',
             timeStart:new Date().getFullYear(),
             timeEnd:new Date().getFullYear(),            
         },
@@ -549,7 +311,6 @@ function PriceChart({ticker}){
         }
     },[ticker, options])
 
-    function datasetKeyProvider(){ return Math.random()}
     return(
         <section className='section'
             onClick={e => setChartOptions(priceChartOptions(chart.datasets[0].data,options,chartRef)) }
@@ -558,27 +319,29 @@ function PriceChart({ticker}){
             <div className='tickerScreenChart'>
 
                 <div className='chartContainer'>
-                    <Line            
-                        ref = {chartRef}
-                        id={'canvas'}
-                        datasetKeyProvider={datasetKeyProvider}
-                        data={chart}
-                        options={chartOptions}
-                        plugins={[{
-                            beforeInit: (chart, options) => {
-                                
-                            chart.legend.afterFit = () => {
-                                if (chart.legend.margins) {
-                                chart.legend.options.labels.boxWidth = 100;
-                                chart.legend.height= 70;
-                                chart.legend.paddingLeft= 170;
-                                chart.legend.options.labels.generateLabels(chart)
+                    {navigation.selected.name==='price'&&
+                        <Line            
+                            ref = {chartRef}
+                            id={'canvas'}
+                            datasetKeyProvider={datasetKeyProvider}
+                            data={chart}
+                            options={chartOptions}
+                            plugins={[{
+                                beforeInit: (chart, options) => {
+                                    
+                                chart.legend.afterFit = () => {
+                                    if (chart.legend.margins) {
+                                    chart.legend.options.labels.boxWidth = 100;
+                                    chart.legend.height= 70;
+                                    chart.legend.paddingLeft= 170;
+                                    chart.legend.options.labels.generateLabels(chart)
+                                    }
+                                };
                                 }
-                            };
+                            }]  
                             }
-                        }]  
-                        }
-                    />
+                        />
+                    }
                 </div>                  
             </div>
 
@@ -586,7 +349,7 @@ function PriceChart({ticker}){
     )
 }
 
-function TickerHeader({ticker}){
+function TickerHeader({ticker,navigation}){
     return(
         <header className='tickerScreenHeader'>
             {ticker&&

@@ -1,7 +1,8 @@
-import React,{useEffect,useState} from 'react'
-import { Ticker } from '../utils/tickerUtils';
+import React from 'react'
+import { Ticker } from '../../utils/ticker';
 
-export default function PortfolioList({portfolio}) {
+export default function PortfolioList({portfolio,navigation}) {
+
     return (
         <div className='section'>
             <div className='portfolioList'>
@@ -11,18 +12,20 @@ export default function PortfolioList({portfolio}) {
             <div className='portfolioTickers'>
                 <table className='portfolioListTable'>
                     <thead className='portfolioListHeader'>
-                        <th>Ticker</th>
-                        <th>Count</th>
-                        <th>Average Cost</th>
-                        <th>Purchase Price</th>
-                        <th>Current Price</th>
-                        <th>Win/Loss</th>
-                        <th>%</th>
+                        <tr>
+                            <th>Ticker</th>
+                            <th>Count</th>
+                            <th>Average Cost</th>
+                            <th>Purchase Price</th>
+                            <th>Current Price</th>
+                            <th>Win/Loss</th>
+                            <th>%</th>                            
+                        </tr>
                     </thead>
                     <tbody className='portfolioListBody'>
                         {portfolio&&
                             portfolio.userTickers.map(ticker => 
-                                <UserTicker userTicker={ticker} tickerData={portfolio.tickerData}/>
+                                <UserTicker key={ticker._id} userTicker={ticker} tickerData={portfolio.tickerData}/>
                             )                       
                         }
                     </tbody>

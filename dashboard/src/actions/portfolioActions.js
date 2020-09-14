@@ -39,7 +39,7 @@ const createPortfolio = (name) => async(dispatch, getState) => {
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type:PORTFOLIO_CREATE_SUCCESS})
+        dispatch({type:PORTFOLIO_CREATE_SUCCESS, payload:data})
     } catch(err){
         dispatch({type:PORTFOLIO_CREATE_FAIL, payload: err.message})
     }
@@ -54,7 +54,7 @@ const updatePortfolio = (portfolio ,portfolioId) => async(dispatch,getState) => 
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type: PORTFOLIO_UPDATE_SUCCESS})
+        dispatch({type: PORTFOLIO_UPDATE_SUCCESS, payload:data})
     } catch(err){
         dispatch({type: PORTFOLIO_UPDATE_FAIL, payload: err.message})
     }
@@ -84,7 +84,7 @@ const addTicker = (ticker, portfolioId) => async(dispatch,getState) => {
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type: PORTFOLIO_ADD_TICKER_SUCCESS})
+        dispatch({type: PORTFOLIO_ADD_TICKER_SUCCESS, payload:data})
     } catch(err){
         dispatch({type: PORTFOLIO_ADD_TICKER_FAIL, payload:err.message})
     }
@@ -99,7 +99,7 @@ const deleteTicker = (portfolioId,tickerId) => async(dispatch, getState) => {
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type: PORTFOLIO_DELETE_TICKER_SUCCESS})
+        dispatch({type: PORTFOLIO_DELETE_TICKER_SUCCESS, payload:data})
     } catch(err){
         dispatch({type: PORTFOLIO_DELETE_TICKER_FAIL, payload:err.message})
     }
@@ -114,7 +114,7 @@ const addTransaction = (transaction, portfolioId, tickerId) => async(dispatch, g
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type: PORTFOLIO_ADD_TRANSACTION_SUCCESS})
+        dispatch({type: PORTFOLIO_ADD_TRANSACTION_SUCCESS, payload:data})
     } catch(err){
         dispatch({type: PORTFOLIO_ADD_TRANSACTION_FAIL, payload:err.message})
     }
@@ -129,7 +129,7 @@ const updateTransaction = (transaction, portfolioId, tickerId, transactionId) =>
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type: PORTFOLIO_UPDATE_TRANSACTION_SUCCESS})
+        dispatch({type: PORTFOLIO_UPDATE_TRANSACTION_SUCCESS, payload:data})
     } catch(err){
         dispatch({type: PORTFOLIO_UPDATE_TRANSACTION_FAIL})
     }
@@ -144,7 +144,7 @@ const deleteTransaction = (portfolioId, tickerId, transactionId) => async(dispat
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        dispatch({type: PORTFOLIO_DELETE_TRANSACTION_SUCCESS})
+        dispatch({type: PORTFOLIO_DELETE_TRANSACTION_SUCCESS, payload:data})
     } catch(err){
         dispatch({type: PORTFOLIO_DELETE_TRANSACTION_FAIL})
     }

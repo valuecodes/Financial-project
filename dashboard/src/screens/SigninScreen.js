@@ -18,7 +18,7 @@ export default function SigninScreen(props) {
         if(userInfo){
             props.history.push('/')
         }
-    }, [userInfo])
+    }, [userInfo,props])
 
     const submitHandler=(e)=>{
         e.preventDefault()

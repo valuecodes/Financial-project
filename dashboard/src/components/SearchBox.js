@@ -13,9 +13,9 @@ export default function SearchBox({items, addItem, placeholder}) {
 
     let results=!search?
     []:
-    searchList.filter(ticker=>{
-        return( ticker[1].toLowerCase().includes(search.toLocaleLowerCase())||ticker[2].toLowerCase().includes(search.toLocaleLowerCase()))
-    })
+    searchList.filter(ticker=>
+        ticker[1].toLowerCase().includes(search.toLocaleLowerCase())||ticker[2].toLowerCase().includes(search.toLocaleLowerCase())
+    )
     
     const searchHandler = (ticker) => {
         addItem(ticker)
@@ -39,6 +39,8 @@ export default function SearchBox({items, addItem, placeholder}) {
                             <p>{ticker[1]}</p> 
                             <p>{ticker[2]}</p> 
                         </div>
+                }else{
+                    return null
                 }
             })}
         </div>

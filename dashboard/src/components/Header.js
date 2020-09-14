@@ -10,16 +10,14 @@ export default function Header(props) {
     const history = useHistory();
     const dispatch = useDispatch()
     const tickerList = useSelector(state => state.tickerList)
-    const { loading, tickers, error } = tickerList
+    const { tickers } = tickerList
 
     useEffect(()=>{
         dispatch(listTickers())
-    },[])
+    },[dispatch])
 
     const selectTicker=(ticker)=>{
         history.push("/ticker/"+ticker[1]);
-        console.log(history)
-        console.log(ticker)
     }
 
     return (

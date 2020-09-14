@@ -1,5 +1,5 @@
 import React from 'react'
-import {SetTimePeriod} from './graphComponents'
+import SetTimePeriod  from '../components/SetTimePeriod';
 import { camelCaseToString } from '../utils/utils';
 
 export default function ChartOptions({options,setOptions}) {

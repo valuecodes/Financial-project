@@ -15,13 +15,13 @@ export default function RegisterScreen(props) {
     })
 
     const userSignin = useSelector(state => state.userSignin)
-    const { loading, userInfo, error } = userSignin
+    const { userInfo } = userSignin
 
     useEffect(() => {
         if(userInfo){
             props.history.push('/')
         }
-    }, [userInfo])
+    }, [userInfo,props])
 
     const submitHandler=(e)=>{
         e.preventDefault()
