@@ -7,8 +7,10 @@ export function SetTimePeriod({options,setOptions,type='full', yearsFrom=2020, y
     useEffect(() => {
         
         if(type==='full'){
-            changeTimePeriod('1.years-years')
-            setTimePeriods(['3.month-months', '6.months-months','1.years-years','3.years-years','5.years-years','10.years-years','20.years-years'])
+            changeTimePeriod('20.years-years')
+            setTimePeriods([
+                // '3.month-months', '6.months-months',
+                '1.years-years','2.years-years','3.years-years','5.years-years','10.years-years','15.years-years','20.years-years'])
         }else if(type==='yearly'){
             let years = Array.from({length:(yearsTo+1)-yearsFrom},(v,k)=>k+yearsFrom+'.-fyears')
             if(all){
@@ -54,13 +56,17 @@ export function SetTimePeriod({options,setOptions,type='full', yearsFrom=2020, y
     }
 
     return (
-        <div className='chartTimePeriods chartButtonContainer'>
+        <>
             {timePeriods.map(period =>
-                <button  
+                <li 
                 key={period}
-                style={{backgroundColor:options.time.timeValue===period&&'lightgreen'}}
-                onClick={()=>changeTimePeriod(period)}>{period.replace('.',' ').split('-')[0]}</button>
+                style={{
+                    borderBottom:options.time.timeValue===period&&'0.2rem solid lightgreen',
+                    backgroundColor:options.time.timeValue===period&&'rgba( 3, 252, 119,0.2)'
+                }}
+                onClick={()=>changeTimePeriod(period)}>{period.replace('.',' ').split('-')[0]}
+                </li>
             )}
-        </div>
+        </>
     )
 }

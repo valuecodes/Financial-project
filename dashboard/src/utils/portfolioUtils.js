@@ -1,5 +1,5 @@
 import { formatCurrency, roundToTwoDecimal, formatPercentage, formatValue, getNumberOfWeek } from "./utils";
-import { TickerData } from "./tickerUtils";
+import { Ticker } from "./tickerUtils";
 
 export function Portfolio(tickerData,portfolio){
     this.name = portfolio.name
@@ -11,8 +11,10 @@ export function Portfolio(tickerData,portfolio){
     this.currentValue = (format) => calculateCurrentValue(portfolio,tickerData,format)
     this.priceChange = (format) => calculatePriceChange(portfolio,tickerData,format)
     this.priceChangePercentage = (format) => calculatePriceChangePercentage(portfolio,tickerData,format)
+    this.portofolioUserDividends = (options) => calculatePortfolioUserDividends(this,options)
     this.priceChart = (options) => calculateChart(tickerData,portfolio,options)
     this.returnChart = (options) => calculateReturnChart(tickerData,portfolio,options)
+    this.dividendComponents = (options) => calculateDividendComponents(this,options)
 }
 
 export function calculatePurchasePrice(portfolio,format){
@@ -37,15 +39,31 @@ export function calculatePriceChangePercentage(portfolio,tickerData,format){
     return formatValue(value,format)
 }
 
-export function calculateChart(tickerData,portfolio,options){
+function calculatePortfolioUserDividends(portfolio,options){
+    const { userTickers, tickerData } = portfolio
+    let userDividends=[]
+    let dividends={}
+    userTickers.forEach(userTicker =>{
+        let currentTickerData = tickerData.find(item => item.profile.ticker===userTicker.ticker)
+        let ticker = new Ticker(userTicker,currentTickerData)
+        let myDivs = ticker.getMyDivs(options)
+        userDividends.push(...myDivs)
+    })
+    userDividends = userDividends.sort((a,b) => a.date.getTime()-b.date.getTime())
 
-    if(options.type==='price'){
-        return calculatePriceChart(tickerData,portfolio,options)
-    }else if(options.type==='return'){
-        return calculateReturnChart(tickerData,portfolio,options)
-    }else{
-        return { }
-    }
+    return userDividends
+}
+
+export function calculateChart(tickerData,portfolio,options){
+    // return calculateReturnChart(tickerData,portfolio,options)
+    return calculatePriceChart(tickerData,portfolio,options)
+    // if(options.type==='price'){
+    //     return calculatePriceChart(tickerData,portfolio,options)
+    // }else if(options.type==='return'){
+    //     return calculateReturnChart(tickerData,portfolio,options)        
+    // }else{
+    //     return { }
+    // }
     
 }
 
@@ -55,8 +73,9 @@ function calculatePriceChart(tickerData,portfolio,options){
     let tickers = portfolio.tickers.map(item => item)
     let dates={}
     tickers.forEach(item =>{
-        let ticker = new TickerData(item,tickerData)
-        let data = ticker.priceChartData(options)
+        let currentTickerData = tickerData.find(data => data.profile.ticker === item.ticker)
+        let ticker = new Ticker(item,currentTickerData)
+        let data = ticker.userPriceChart(options)
         data.forEach(item =>{
             let key=item.key
             if(dates[key]){
@@ -114,8 +133,9 @@ export function calculateReturnChart(tickerData,portfolio,options){
     let tickers = portfolio.tickers.map(item => item)
     let dates={}
     tickers.forEach(item =>{
-        let ticker = new TickerData(item,tickerData)
-        let data = ticker.returnChartData(options)
+        let currentTickerData = tickerData.find(data => data.profile.ticker === item.ticker)
+        let ticker = new Ticker(item,currentTickerData)
+        let data = ticker.userReturnChart(options)
         data.forEach(item =>{
             let key=item.key
             if(dates[key]){
@@ -170,7 +190,44 @@ export function calculateReturnChart(tickerData,portfolio,options){
     }
 }
 
+function calculateDividendComponents(portfolio){
 
+    const userDividends = portfolio.portofolioUserDividends()
+    let min = userDividends[0].date.getFullYear()
+    let max = userDividends[userDividends.length-1].date.getFullYear()
+
+    let data=[]    
+    let count=0  
+    let total=0
+    let yearDivs=[]
+
+    for(var i=min;i<=max;i++){
+        for(var a=1;a<=12;a++){
+            let divFound=true
+            let divs=[];
+           
+            while(divFound){
+                if(count===userDividends.length) break
+                if(userDividends[count].year===i&&userDividends[count].month===a){
+                    divs.push(userDividends[count])
+                    count++
+                }else{
+                    divFound=false
+                }
+            }
+            data.push({
+                date:new Date(i,a),
+                divAmount:divs.reduce((a,c)=>a+(c.payment),0),
+                dividends:divs,
+                label:i+'/'+a,
+            })
+
+            if(count===userDividends.length) break
+        }
+    }
+
+    return { data,userDividends }
+}
 
 
 
@@ -523,4 +580,3 @@ function setInsiderTrades(priceData,insider,labels){
     return { points, pointColors, tooltipLabels,tooltipFooters}
 
 }
-

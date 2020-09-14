@@ -12,7 +12,6 @@ import {
     deleteTicker,
     updatePortfolio, 
 } from '../actions/portfolioActions';
-// import { calculateTickerTotal, calculateTickerShareCount,  calculatePortfolioPurchasePrice } from '../utils/portfolioUtils';
 
 export default function TradingScreen() {
 

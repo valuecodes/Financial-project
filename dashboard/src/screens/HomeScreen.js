@@ -14,7 +14,8 @@ export default function HomeScreen() {
     const dispatch = useDispatch()
     const userSignin = useSelector(state => state.userSignin)
     const { userInfo } = userSignin
-    
+    const state  = useSelector(state => state)
+
     useEffect(()=>{
         dispatch(listTickers())
         dispatch(listUserPortfolios())
@@ -59,9 +60,7 @@ function Main(){
     },[portfolios])
 
     useEffect(()=>{
-        console.log(tickerData,portfolioData)
         if(tickerData&&portfolioData){
-            console.log(tickerData,portfolioData)
             setPortfolio(new Portfolio(tickerData,portfolioData))
         }
     },[tickerData,portfolioData])
@@ -73,7 +72,7 @@ function Main(){
     //         }
     //     }
     // },[portfolios])
-    console.log(portfolio)
+    // console.log(portfolio)
 
     return(
         <div 
@@ -88,7 +87,7 @@ function Main(){
                         >{portfolio.name}</button>
                 )}</div>                
             } */}
-            <PortfolioChart portfolio={portfolio}/>
+            {/* <PortfolioChart portfolio={portfolio}/> */}
             {/* <Tickers selectedPortfolio={selectedPortfolio}/> */}
             {/* <Dividends selectedPortfolio={selectedPortfolio}/>                         */}
         </div>

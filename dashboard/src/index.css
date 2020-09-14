@@ -47,7 +47,7 @@ li{
   min-height: 100vh;
 }
 .container{
-  width: 1600px;
+  width: 1200px;
   max-width: 100vw;
   margin: auto;
 }
@@ -199,12 +199,10 @@ li{
   display: flex;
   flex-direction: column;
   margin-left: auto;
-  /* display: grid; */
 }
 
 .headerButtons button{
   height: 2.5rem;
-  /* width: 6rem; */
 }
 
 .smoothInput{
@@ -404,7 +402,14 @@ li{
 }
 
 .searchBox{
-  height: 5rem;
+  margin: auto;
+}
+
+.searchBox input{
+  width: 25rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 0.1rem solid rgb(128, 128, 128)k;
 }
 
 .searchResult{
@@ -412,7 +417,12 @@ li{
   background-color: rgb(199, 199, 199);
   height: 3rem;
   display: grid;
-  grid-template-columns: 10rem 1fr 5rem;
+  font-size: 1.4rem;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+.searchResult:hover{
+  background-color: rgb(150, 150, 150);
 }
 
 .searchResult p{
@@ -420,7 +430,6 @@ li{
   margin: 0;
   display: flex;
   align-items: center;
-  /* position: absolute; */
 }
 
 .outputItem{
@@ -430,11 +439,25 @@ li{
 
 /* TickerScreen */
 .tickerScreen{
-  margin: auto;
-  width: 100rem;
-  height: 50rem;
-  /* background-color: beige */
+  /* background-color: rgb(235, 235, 235); */
+  margin-top: 5rem;
+  border-radius: 1rem;
 }
+
+.tickerScreenHeader{
+  background-color: rgb(230, 230, 230);
+  height: 8rem;
+}
+
+.tickerScreenHeader ul{
+  display: flex;
+  align-items: center;
+}
+.tickerScreenHeader ul li{
+  margin: 0 2rem;
+}
+
+/* ----------------------------- */
 
 .ticker{
   /* height: 50; */
@@ -451,13 +474,11 @@ li{
 
 .portfolioScreen{
   margin-top: 5rem;
-  /* background-color: rgb(245, 245, 245); */
 }
 
 .portfolioHeader{
   min-height:5rem;
   padding: 2rem;
-  margin: 1rem;
   background-color: rgb(196, 196, 196);
   display: grid;
   grid-template-columns:repeat(auto-fit,minmax(15rem,auto));
@@ -473,13 +494,10 @@ li{
 .portfolioSection{
   width: 100%;
   height: 50rem;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
 }
 
 .portfolioListContainer{
-  width: 40rem;
-  margin: 1rem;
   flex-grow: 1;
   background-color: rgb(240, 240, 240);
 }
@@ -489,15 +507,31 @@ li{
 }
 
 .portfolioChart{
-  /* width: 60rem; */
-  margin: 1rem;
-  flex-grow: 2;
+  /* height: 40rem; */
+  /* margin: 1rem; */
+  /* flex-grow: 2; */
 }
 
+.dividendChart{
+  height: 40rem;
+  display: grid;
+  grid-template-columns: 1fr 20rem;
+}
+
+.chartOptions{
+  width: 20rem;
+  height: 40rem;  
+  background-color: rgb(196, 196, 196);
+}
 
 /* PortfolioList */
 .portfolioListTable{
   border-collapse: collapse;
+}
+
+.subOptions{
+  grid-column: 1/3;
+  height: 5rem;
 }
 
 
@@ -523,16 +557,6 @@ li{
 }
 
 /* Chart */
-
-.portfolioChart{
-  display: grid;
-  grid-template-rows: 3rem 1fr;
-}
-
-.portfolioChartContainer{
-  padding-top: 5rem;
-  height: 20rem;
-}
 
 .chartHeader{
   /* background-color: rgb(236, 236, 236); */
@@ -567,7 +591,181 @@ li{
 }
 
 .chartOptions{
+  /* width: 100%;
+  display: flex;
+  justify-content: space-between; */
+}
+.optionContainer{
+  margin: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.optionContainer button{
+  padding: 0.5rem 0.5rem;
+  margin: 0 0.1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+
+.optionHeader{
+  width: 8rem;
+}
+
+.optionContainer label{
+  display: block;
+  font-size: 2rem;
+  color: white;
+}
+
+.subOptions{
+  background-color: rgb(161, 161, 161);
+}
+
+.timeOptions{
+  margin-left: auto;
+}
+
+.section{
+  display: grid;
+  grid-template-rows: 5rem 1fr;
+}
+
+.sectionNav{
+  background-color: rgb(102, 102, 102);
+  height: 6rem;
+}
+
+.sectionNav ul{
+  height: 6rem;
+  padding-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.sectionNav ul li{
+  padding: 1rem;
+  cursor: pointer;
+  color: white;
+  border-bottom: 0.2rem solid rgba(0, 0, 0, 0);
+}
+
+.subOptions ul{
+  height: 6rem;
+  padding-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.sectionContainer{
+  height: auto;
+  overflow: hidden;
+  /* position: relative; */
+}
+
+.sections{
+  /* height: 45rem; */
+  position: relative;
+  display: grid; 
+  grid-template-columns:repeat(10,100%); 
+  transition: 0.3s right;
+}
+.tickerScreenChart{
+  /* height: 50rem; */
+}
+.chartContainer{
+  /* height: auto; */
+  /* background-color: cadetblue; */
+  /* min-height: 30rem; */
+  height: 40rem;
+}
+
+.tickerRatios {
+  height: 80rem;
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+
+.ratioCharts{
+  height: 100rem;
+}
+
+.ratioChartContainer{
+  background-color: rgb(143, 143, 143);
+  height: 25rem;
+}
+
+.tickerScreenChart{
+  /* height: 50rem; */
+}
+
+.tickerFinancials{
+  background-color: rgb(211, 211, 211);
+}
+
+.financialChartContainer{
+  height: 30rem;
+  /* width: 60rem; */
+  padding: 3rem 0;
+}
+
+table {
   width: 100%;
+  border-collapse: collapse;
+}
+
+th, td{
+  padding: 0.2rem;
+}
+
+th{
+  margin: 0 0.2rem;
+  background-color: white;
+  /* border: 0.4rem solid rgb(87, 87, 87); */
+}
+
+td{
+  border-bottom: 1px solid black;
+  background-color: rgb(211, 211, 211);
+}
+
+tr:nth-child(even) {
+  /* background: rgb(160, 160, 160) */
+}
+
+
+
+/* Options */
+.options{
+  /* grid-column: 1/3; */
   display: flex;
   justify-content: space-between;
+  background-color: rgb(165, 165, 165);
+}
+
+.options ul{
+  display: flex;
+  align-items: center;
+  height: 5rem;
+  padding-left: 1rem;
+}
+
+.options ul li{
+  padding: 1rem;
+  cursor: pointer;
+  color: white;
+  border-bottom: 0.2rem solid rgba(0, 0, 0, 0);
+}
+
+.timePeriods{
+  border-radius: 0.5rem;
+}
+
+.timePeriods li{
+  background-color: rgb(128, 128, 128);
+}
+
+.timePeriods li:first-child{
+  border-radius: 0.5rem 0 0 0.5rem;
 }

@@ -1,9 +1,9 @@
 import React,{useEffect,useState} from 'react'
-import { TickerData } from '../utils/tickerUtils';
+import { Ticker } from '../utils/tickerUtils';
 
 export default function PortfolioList({portfolio}) {
     return (
-        <div className='portfolioListContainer'>
+        <div className='section'>
             <div className='portfolioList'>
             <header>
                 <h3>Tickers</h3>
@@ -35,7 +35,7 @@ export default function PortfolioList({portfolio}) {
 
 function UserTicker({ userTicker, tickerData}){
     
-    let ticker = new TickerData(userTicker,tickerData)
+    let ticker = new Ticker(userTicker,tickerData.find(item => item.profile.ticker===userTicker.ticker))
 
     return(
         <tr className='userTicker'

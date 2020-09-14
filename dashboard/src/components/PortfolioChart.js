@@ -2,14 +2,23 @@ import React,{useEffect,useState,useRef} from 'react'
 import { Chart, Line } from 'react-chartjs-2';
 import { SetTimePeriod } from './graphComponents';
 import { formatCurrency } from '../utils/utils';
-import { calculateChartGradient } from '../utils/chartUtils';
+import { calculateChartGradient, calculatePriceChart } from '../utils/chartUtils';
 import ChartOptions from './ChartOptions'
 import { calculateChart } from '../utils/chartUtils';
+import { Options } from '../screens/PortfolioScreen';
 
 export default function PortfolioChart({portfolio}) {
-    const tt=useRef()
-    const ttDate=useRef()
+
     const [tooltip,setTooltip] = useState(0)
+    const [options,setOptions]=useState({
+        selected:'dividends',
+        options:['dividends','yearlyDividends','cumulativeDividends'],
+        time:{
+            timeValue:'20.years-years',
+            timeStart:new Date().getFullYear(),
+            timeEnd:new Date().getFullYear(),            
+        },
+    })
 
     const [chartOptions, setChartOptions] = useState({        
         responsive:true,
@@ -44,14 +53,13 @@ export default function PortfolioChart({portfolio}) {
                 gridLines: {
                     color: "rgba(0, 0, 0, 0)",
                 },
+                stacked:true,
                 ticks: {
                     maxTicksLimit: 20,
                     // minTicksLimit:6
                     // Include a dollar sign in the ticks
                     callback: function(value, index, values) {
-                        console.log(value, index, values)
                         var ctx = document.getElementById('canvas').getContext("2d")
-                        console.log(value, index, values,ctx)
                         return '$' + value;
                     }}
             }]
@@ -111,12 +119,13 @@ export default function PortfolioChart({portfolio}) {
 
                         tooltipLine.style.opacity = 1;
                         tooltipLine.style.position = 'absolute';
-                        tooltipLine.style.left = position.left + window.pageXOffset +tooltipModel.caretX + 'px';
-                        tooltipLine.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y+(i===0?9:-22) + 'px';
+                        tooltipLine.style.left = position.left + window.pageXOffset +tooltipModel.caretX +16+ 'px';
+                        tooltipLine.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y+(i===0?0:-32) + 'px';
                         tooltipLine.style.backgroundColor='dimgray'
                         tooltipLine.style.color='white'
-                        tooltipLine.style.fontSize='10px'
-                        tooltipLine.style.borderRadius='25%'
+                        tooltipLine.style.padding='5px'
+                        tooltipLine.style.fontSize='16px'
+                        tooltipLine.style.borderRadius='5px'
                     }                    
                 }else{
                     for(var i=0;i<2;i++){
@@ -132,12 +141,12 @@ export default function PortfolioChart({portfolio}) {
             callbacks: {
                 label: function (tooltipItem, data) {
                     const { datasetIndex,index } = tooltipItem
-                    tt.current.textContent=`${formatCurrency( tooltipItem.yLabel)}`
-                    let currentData = (datasetIndex===0?data.datasets[datasetIndex].percentageChange[index]:data.datasets[datasetIndex].percentageChangeWithDivs[index])+'%'
-                    if(data.datasets[datasetIndex].options.values.selected==='dividends'){
-                        currentData = data.datasets[datasetIndex].data[index]+'$'
+                    if(datasetIndex===0){
+                        return 'Price: ' + formatCurrency(tooltipItem.yLabel)
                     }
-                    return currentData
+                    if(datasetIndex===1){
+                        return 'Dividends: ' + formatCurrency(tooltipItem.yLabel)
+                    }
                 },
             }
         },
@@ -154,47 +163,29 @@ export default function PortfolioChart({portfolio}) {
         labels: [],
     })
 
-    const [options, setOptions] = useState({
-        type:'price',
-        values:{
-            selected:'total',
-            select:['total','capitalGains','dividends']
-        },
-        time:{
-            timeValue:'1.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
-        }
-    })
-
     useEffect(()=>{
 
         if(portfolio){
             let chartComponents = portfolio.priceChart(options)
-            let chartData = calculateChart(chartComponents,options)
+            let chartData = calculatePriceChart(chartComponents,options)
             setChart(chartData)
-            console.log(chartData._meta)
         }
         
     },[portfolio,options])
     function datasetKeyProvider(){ return Math.random(); }
     return (
-        <div className='portfolioChart'>        
-            <div className='chartHeader'>
-                <ChartOptions options={options} setOptions={setOptions}/>
-            </div>
-            <div className='porfolioChartContainer'>
-                <div className='chartInfo'>
-                    <div className='chartInfoContainer' ref={tt}></div>
+        <div className='section'>
+            <Options options={options} setOptions={setOptions}/>   
+            <div className='portfolioChart'>
+                <div className='chartContainer'>
+                    <Line
+                        id='canvas'
+                        datasetKeyProvider={datasetKeyProvider}
+                        data={chart}
+                        options={chartOptions}
+                    />                  
                 </div>
-                <Line
-                    id='canvas'
-                    datasetKeyProvider={datasetKeyProvider}
-                    data={chart}
-                    // height={'100px'}
-                    options={chartOptions}
-                />  
-            </div>
+            </div>     
         </div>
 
 

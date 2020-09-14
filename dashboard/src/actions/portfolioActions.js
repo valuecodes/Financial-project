@@ -150,8 +150,6 @@ const deleteTransaction = (portfolioId, tickerId, transactionId) => async(dispat
     }
 }
 
-
-
 const listUserPortfolios = () => async(dispatch, getState) => {
     try{
         dispatch({type: PORTFOLIO_USER_LIST_REQUEST})
