@@ -27,6 +27,7 @@ import {
     PORTFOLIO_UPDATE_FAIL,
     PORTFOLIO_UPDATE_SUCCESS,
     PORTFOLIO_UPDATE_REQUEST,
+    PORTFOLIO_SELECT,
 
 } from '../constants/portfolioConstants';
 
@@ -165,8 +166,13 @@ const listUserPortfolios = () => async(dispatch, getState) => {
     }
 }
 
+const selectPortfolio = (portfolio) => (dispatch) =>{
+    dispatch({type: PORTFOLIO_SELECT, payload: portfolio})
+}
+
 export {
     listUserPortfolios,
+    selectPortfolio,
     createPortfolio,
     updatePortfolio,
     deletePortfolio,

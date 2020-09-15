@@ -32,53 +32,28 @@ export default function TickerScreen(props) {
     })
     const [ticker, setTicker] = useState(null)
     const tickerData = useSelector(state => state.tickerData)
-    const { loading:l1, ticker:tickerFullData, error:e1 } = tickerData
-    const portfolioUserList = useSelector(state => state.portfolioUserList)
-    const { loading, portfolios,error } = portfolioUserList
-    const loadings = [l1,loading]
-    const errors = [e1,error]
+    const { loading, tickerFullData, error } = tickerData
+
+    const portfolioSelected = useSelector(state => state.portfolioSelected)
+    const { selectedPortfolio } = portfolioSelected
+
     useEffect(()=>{
         let tickerId = props.match.params.id
         dispatch(getTickerData(tickerId))
-        if(!portfolios.length){
-            dispatch(listUserPortfolios())
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     },[props])
 
-    function searchFromPortfolios(portfolios,tickerFullData){
-        let portfolioTicker=null
-        portfolios.forEach(portfolio =>{
-            let found = portfolio.tickers.find(ticker => ticker.ticker===tickerFullData.profile.ticker)
-            if(found){
-                portfolioTicker=found
-            }
-        })
-
-        if(portfolioTicker){
-            return portfolioTicker
-        }else{
-            return {
-                ticker:tickerFullData.profile.ticker,
-                name:tickerFullData.profile.name,
-                transactions:[]
-            }            
-        }
-    }
-
     useEffect(()=>{
-        if(portfolios&&tickerFullData){
-            let portfolioTicker = searchFromPortfolios(portfolios,tickerFullData)
+        if(tickerFullData&&selectedPortfolio){
+            let portfolioTicker = selectedPortfolio.tickers.find(item => item.ticker===tickerFullData.profile.ticker)
             let newTicker = new Ticker(portfolioTicker,tickerFullData)
             setTicker(newTicker)
         }
-    },[portfolios,tickerFullData,props])
+    },[tickerFullData,selectedPortfolio])
 
     return (
         <div className='tickerScreen container'>
-            {loadings&&<div>Loading...</div>}
-            {errors&&errors.map((item,index) => <div key={index}>{item}</div>)}
-            <TickerHeader ticker={ticker}/>
+            <TickerHeader ticker={ticker} loading={loading}/>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
             {loading?<div>Loading...</div>:error?<div>{error}</div>:
                 <div className='sectionContainer'>
@@ -104,8 +79,8 @@ function Financials({ticker,navigation}){
         options:['incomeStatement','balanceSheet','cashFlow'],
         time:{
             timeValue:'15.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
+            timeStart:new Date(),
+            timeEnd:new Date(),            
         },
     })
     const [financialData, setFinancialData] = useState(null)
@@ -179,8 +154,8 @@ function TickerRatios({ticker,navigation}){
         options:['pe','pb','dividendYield'],
         time:{
             timeValue:'15.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
+            timeStart:new Date(),
+            timeEnd:new Date(),            
         },
     })
 
@@ -249,8 +224,8 @@ function EventChart({ticker,navigation}){
         options:[],
         time:{
             timeValue:'15.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
+            timeStart:new Date(),
+            timeEnd:new Date(),            
         },
     })
     const [chart, setChart] = useState({})
@@ -290,8 +265,8 @@ function PriceChart({ticker,navigation}){
         options:[],
         time:{
             timeValue:'15.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
+            timeStart:new Date(),
+            timeEnd:new Date(),            
         },
     })
     const [chartOptions, setChartOptions] = useState({    
@@ -349,10 +324,10 @@ function PriceChart({ticker,navigation}){
     )
 }
 
-function TickerHeader({ticker,navigation}){
+function TickerHeader({ticker,loading}){
     return(
         <header className='tickerScreenHeader'>
-            {ticker&&
+            {!loading&&ticker&&
                 <ul>
                     <li>
                     <h1>{ticker.ticker}</h1></li>

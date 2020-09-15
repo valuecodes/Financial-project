@@ -32,7 +32,7 @@ export default function SearchBox({items, addItem, placeholder}) {
             {results.map((ticker,index) =>{
                 if(index<10){
                     return <div 
-                        key={ticker.ticker}
+                        key={ticker[0]}
                         className='searchResult' 
                         onClick={() => searchHandler(ticker)}
                         >

@@ -25,7 +25,8 @@ import {
     PORTFOLIO_DELETE_TICKER_FAIL,
     PORTFOLIO_UPDATE_REQUEST,
     PORTFOLIO_UPDATE_SUCCESS,
-    PORTFOLIO_UPDATE_FAIL
+    PORTFOLIO_UPDATE_FAIL,
+    PORTFOLIO_SELECT
 } from "../constants/portfolioConstants";
 
 function portfolioCreateReducer(state={},action){
@@ -138,6 +139,14 @@ function portfolioUserListReducer(state={
     }
 }
 
+function portfolioSelectedReducer(state={},action){
+    switch(action.type){
+        case PORTFOLIO_SELECT:
+            return { selectedPortfolio: action.payload }
+        default: return state
+    }
+}
+
 export{
     portfolioUserListReducer,
     portfolioCreateReducer,
@@ -148,4 +157,5 @@ export{
     portfolioAddTransactionReducer,
     portfolioUpdateTransactionReducer,
     portfolioDeleteTransactionReducer,
+    portfolioSelectedReducer,
 }

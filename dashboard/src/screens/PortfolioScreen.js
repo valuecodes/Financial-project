@@ -10,25 +10,41 @@ import { calculateDividendChart } from '../utils/chart';
 import SectionNav from '../components/SectionNav'
 import Options from '../components/Options'
 import { portfolioDivChartOptions } from '../utils/chartOptions';
+import { useHistory } from 'react-router';
 
 export default function PortfolioScreen(props) {
 
-    const [portfolio, setPortfolio] = useState(null)
+    const history = useHistory();
     const dispatch = useDispatch()
+    const [portfolio, setPortfolio] = useState(null)
+    const portfolioSelected = useSelector(state => state.portfolioSelected)
+    const { selectedPortfolio } = portfolioSelected
     const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
-    const { loading, tickers:tickerData, portfolio:selectedPortfolio, error } = tickerPortfolioData
+    const { loading, portfolioData, error } = tickerPortfolioData
 
     useEffect(()=>{
-        let portfolioId = props.match.params.id
-        dispatch(getPortfolioTickersData(portfolioId))
+        if(!portfolioData){
+            let portfolioId = props.match.params.id
+            dispatch(getPortfolioTickersData(portfolioId))            
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps        
     },[])
 
     useEffect(()=>{
-        if(tickerData&&selectedPortfolio){
-            setPortfolio(new Portfolio(tickerData,selectedPortfolio))
+        if(portfolioData){
+            setPortfolio(new Portfolio(portfolioData))
         }
-    },[tickerData,selectedPortfolio])
+    },[portfolioData])
+
+    useEffect(()=>{
+        if(selectedPortfolio){
+            let portfolioId = props.match.params.id
+            if(portfolioId!==selectedPortfolio._id){
+                history.push("/portfolio/"+selectedPortfolio._id);
+                dispatch(getPortfolioTickersData(selectedPortfolio._id)) 
+            }
+        }
+    },[selectedPortfolio])
 
     const [navigation,setNavigation] = useState({
         selected:{name:'priceChart',index:1},
@@ -70,10 +86,10 @@ function DividendChart({portfolio,navigation}){
     const [chart, setChart] = useState({})
 
     useEffect(()=>{
-        if(portfolio&&dividendComponents===null){
+        if(portfolio){
             setDividendComponents(portfolio.dividendComponents())
         }
-    },[portfolio,dividendComponents])
+    },[portfolio])
 
     useEffect(()=>{
         if(dividendComponents){

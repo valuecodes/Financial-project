@@ -29,7 +29,7 @@ function tickerDataReducer(state={},action){
         case TICKER_DATA_REQUEST:
             return {loading:true}
         case TICKER_DATA_SUCCESS:
-            return {loading:false, ticker:action.payload}
+            return {loading:false, tickerFullData:action.payload}
         case TICKER_DATA_FAIL:
             return {loading:false, error: action.payload}
         default: return state
@@ -41,7 +41,7 @@ function tickerPortfolioDataReducer(state={},action){
         case TICKER_PORTFOLIO_DATA_REQUEST:
             return {loading:true}
         case TICKER_PORTFOLIO_DATA_SUCCESS:
-            return {loading:false, tickers:action.payload.tickerData,portfolio:action.payload.portfolio}
+            return {loading:false, portfolioData:{tickerData:action.payload.tickerData,portfolio:action.payload.portfolio}, tickers:action.payload.tickerData,portfolio:action.payload.portfolio}
         case TICKER_PORTFOLIO_DATA_FAIL:
             return {loading:false, error: action.payload}
         default: return state

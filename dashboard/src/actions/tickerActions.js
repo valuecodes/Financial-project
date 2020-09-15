@@ -40,7 +40,6 @@ const getPortfolioTickersData = (portfolioId) => async (dispatch,getState) => {
                 Authorization: 'Bearer'+userInfo.token
             }
         })
-        console.log(data)
         dispatch({type: TICKER_PORTFOLIO_DATA_SUCCESS, payload: data})
     } catch(err){   
         dispatch({type: TICKER_PORTFOLIO_DATA_FAIL, payload: err.message})

@@ -12,11 +12,12 @@ import {
     portfolioUpdateTransactionReducer,
     portfolioDeleteTransactionReducer, 
     portfolioDeleteTickerReducer,
-    portfolioUpdateReducer
+    portfolioUpdateReducer,
+    portfolioSelectedReducer
 } from './reducers/portfolioReducers';
 
 const userInfo = Cookie.getJSON('userInfo') || null
-const initialState = {userSignin:{userInfo},userPortfolios:[]}
+const initialState = {userSignin:{userInfo},userPortfolios:[],portfolioSelected:{name:''}}
 
 const reducer = combineReducers({
     tickerList: tickerListReducer,
@@ -31,6 +32,7 @@ const reducer = combineReducers({
     portfolioUpdateTransaction: portfolioUpdateTransactionReducer,
     portfolioDeleteTransaction: portfolioDeleteTransactionReducer,
     portfolioUserList: portfolioUserListReducer,
+    portfolioSelected:portfolioSelectedReducer,
     tickerData:tickerDataReducer,
     tickerPortfolioData: tickerPortfolioDataReducer,
 })

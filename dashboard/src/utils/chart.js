@@ -200,7 +200,7 @@ export function calculateDividendChart(chartComponents,options){
 
     let dataSets = [];  
     let labels = data.map(item => item.label)
-
+    console.log(data)
     switch(selected){
         case 'dividends':
             dataSets.push({
@@ -212,6 +212,7 @@ export function calculateDividendChart(chartComponents,options){
             break
         case 'yearlyDividends':
 
+            if(data.length===0) break
             let min=data[0].date.getFullYear()
             let max=data[data.length-1].date.getFullYear()
 
@@ -244,7 +245,7 @@ export function calculateDividendChart(chartComponents,options){
             break
         default: 
     }
-
+    console.log(dataSets,labels)
     return {
         datasets:dataSets,
         labels

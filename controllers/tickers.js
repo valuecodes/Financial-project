@@ -10,7 +10,9 @@ exports.getTickers = async (req,res) => {
     all.forEach(item => tickers.push([
         item.profile._id,
         item.profile.ticker,
-        item.profile.name
+        item.profile.name,
+        item.priceData[0]?item.priceData[0].close:0,
+        item.priceData[1]?item.priceData[1].close:0
     ]))
     res.send({data:tickers})
 }

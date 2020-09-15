@@ -1,9 +1,9 @@
 import { formatValue, getNumberOfWeek } from "./utils";
 
 export function Ticker(portfolioTicker,tickerData){
-    this.ticker=portfolioTicker.ticker
-    this.name=portfolioTicker.name
-    this.transactions=portfolioTicker.transactions
+    this.ticker=tickerData.profile.ticker
+    this.name=tickerData.profile.name
+    this.transactions=portfolioTicker?portfolioTicker.transactions:[]
     this.tickerData=tickerData
     this.latestPrice = (format) => calculateLatestPrice(this,format)
     this.totalCount = (format) => calculateTotalCount(this,format)
@@ -107,6 +107,8 @@ function calculateMyDivs(ticker){
 
 function calculateFilterByDate(ticker,key,options){
     const { time } = options
+    if(!time.timeStart) return []
+    console.log(time.timeStart)
     if(key==='dividendData'){
         return ticker.tickerData[key].filter(item => new Date(item.date).getFullYear()>time.timeStart.getFullYear())
     }else{
@@ -143,7 +145,9 @@ function calculateGetTickerData(ticker, key){
 function calculatePriceChart(ticker,options){
     
     let priceData = ticker.filterByDate('priceData',options)
+    console.log(1)
     let dividends = ticker.filterByDate('dividendData',options)
+    console.log(2)
 
     let data=[] 
     let labels = []
@@ -182,7 +186,11 @@ function calculatePriceChart(ticker,options){
 function calculateEventChart(ticker,options){
     
     let priceData = ticker.filterByDate('priceData',options)
+    console.log(3)
+    
     let dividends = ticker.filterByDate('dividendData',options)
+    console.log(4)
+    
     let myDivs = ticker.getMyDivs(options)
 
     let data=[] 
@@ -226,20 +234,28 @@ function calculateRatioChart(ticker,options){
 
     const key = options.selected
     let priceData = ticker.filterByDate('priceData',options)
+    console.log(5)
+    
     let ratios = [];
     let ratioName=''
 
     switch(key){
         case 'pe':
             ratios = ticker.filterByDate('incomeStatement',options)
+    console.log(6)
+            
             ratioName='eps'
             break
         case 'pb':
             ratios = ticker.filterByDate('balanceSheet',options)
+    console.log(7)
+            
             ratioName='tangibleBookValuePerShare'
             break
         case 'dividendYield':
             ratios = ticker.filterByDate('dividendData',options)
+    console.log(8)
+            
             ratioName='dividend'
             break
         default: return ''
@@ -289,6 +305,7 @@ function calculateFinancialChart(ticker,options){
 
     let selectedStatement = options.selected
     let financialData = ticker.filterByDate(selectedStatement,options)
+    console.log(10)
     
     let data1=[]
     let data2=[]

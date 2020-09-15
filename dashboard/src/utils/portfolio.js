@@ -1,41 +1,44 @@
 import { formatValue } from "./utils";
 import { Ticker } from "./ticker";
 
-export function Portfolio(tickerData,portfolio){
-    this.name = portfolio.name
-    this.userTickers = portfolio.tickers
-    this._id = portfolio._id
-    this.portfolio = portfolio
-    this.tickerData = tickerData
-    this.purchasePrice = (format) => calculatePurchasePrice(portfolio,format);
-    this.currentValue = (format) => calculateCurrentValue(portfolio,tickerData,format)
-    this.priceChange = (format) => calculatePriceChange(portfolio,tickerData,format)
-    this.priceChangePercentage = (format) => calculatePriceChangePercentage(portfolio,tickerData,format)
+export function Portfolio(portfolioData){
+    this.name = portfolioData.portfolio.name
+    this.userTickers = portfolioData.portfolio.tickers
+    this._id = portfolioData.portfolio._id
+    this.portfolio = portfolioData.portfolio
+    this.tickerData = portfolioData.tickerData
+    this.purchasePrice = (format) => calculatePurchasePrice(this,format);
+    this.currentValue = (format) => calculateCurrentValue(this,format)
+    this.priceChange = (format) => calculatePriceChange(this,format)
+    this.priceChangePercentage = (format) => calculatePriceChangePercentage(this,format)
     this.portofolioUserDividends = (options) => calculatePortfolioUserDividends(this,options)
-    this.priceChart = (options) => calculateChart(tickerData,portfolio,options)
-    this.returnChart = (options) => calculateReturnChart(tickerData,portfolio,options)
+    this.priceChart = (options) => calculateChart(this,options)
+    this.returnChart = (options) => calculateReturnChart(this,options)
     this.dividendComponents = (options) => calculateDividendComponents(this,options)
 }
 
 export function calculatePurchasePrice(portfolio,format){
-    let tickerTotals = portfolio.tickers.map(ticker => calculateTickerTotal(ticker))
+    const { userTickers } = portfolio
+    let tickerTotals = userTickers.map(ticker => calculateTickerTotal(ticker))
     let value = tickerTotals.reduce((a,c) => a+c,0)
     return formatValue(value,format)
 }
 
-export function calculateCurrentValue(portfolio,tickerData,format){
-    let tickerTotals = portfolio.tickers.map(ticker => calculateTickerCurrent(ticker,tickerData))
+export function calculateCurrentValue(portfolio,format){
+    const { userTickers } =portfolio
+    let tickerTotals = userTickers.map(ticker => calculateTickerCurrent(ticker,portfolio))
     let value = tickerTotals.reduce((a,c) => a+c,0)
     return formatValue(value,format)
 }
 
-export function calculatePriceChange(portfolio,tickerData,format){
-    let value = calculateCurrentValue(portfolio,tickerData)-calculatePurchasePrice(portfolio)
+export function calculatePriceChange(portfolio,format){
+
+    let value = calculateCurrentValue(portfolio)-calculatePurchasePrice(portfolio)
     return formatValue(value,format)
 }
 
-export function calculatePriceChangePercentage(portfolio,tickerData,format){
-    let value = ((calculateCurrentValue(portfolio,tickerData)-calculatePurchasePrice(portfolio))/calculatePurchasePrice(portfolio))*100
+export function calculatePriceChangePercentage(portfolio,format){
+    let value = ((calculateCurrentValue(portfolio)-calculatePurchasePrice(portfolio))/calculatePurchasePrice(portfolio))*100
     return formatValue(value,format)
 }
 
@@ -53,9 +56,9 @@ function calculatePortfolioUserDividends(portfolio,options){
     return userDividends
 }
 
-export function calculateChart(tickerData,portfolio,options){
+export function calculateChart(portfolio,options){
     // return calculateReturnChart(tickerData,portfolio,options)
-    return calculatePriceChart(tickerData,portfolio,options)
+    return calculatePriceChart(portfolio,options)
     // if(options.type==='price'){
     //     return calculatePriceChart(tickerData,portfolio,options)
     // }else if(options.type==='return'){
@@ -66,9 +69,9 @@ export function calculateChart(tickerData,portfolio,options){
     
 }
 
-function calculatePriceChart(tickerData,portfolio,options){
-
-    let tickers = portfolio.tickers.map(item => item)
+function calculatePriceChart(portfolio,options){
+    const { tickerData,userTickers } = portfolio
+    let tickers = userTickers.map(item => item)
     let dates={}
     tickers.forEach(item =>{
         let currentTickerData = tickerData.find(data => data.profile.ticker === item.ticker)
@@ -190,11 +193,15 @@ export function calculateReturnChart(tickerData,portfolio,options){
 function calculateDividendComponents(portfolio){
 
     const userDividends = portfolio.portofolioUserDividends()
+    let data=[]    
+    let count=0      
+
+    if(userDividends.length===0){
+        return { data, userDividends }
+    }
+
     let min = userDividends[0].date.getFullYear()
     let max = userDividends[userDividends.length-1].date.getFullYear()
-
-    let data=[]    
-    let count=0  
 
     for(var i=min;i<=max;i++){
         for(var a=1;a<=12;a++){
@@ -232,7 +239,8 @@ function calculateDividendComponents(portfolio){
 
 
 
-function calculateTickerCurrent(ticker,tickerData){
+function calculateTickerCurrent(ticker,portfolio){
+    const { tickerData } = portfolio
 
     let price = tickerData.find(item => item.profile.ticker===ticker.ticker).priceData[0].close
     return ticker.transactions.reduce((a,c)=> a+(c.count*price),0)

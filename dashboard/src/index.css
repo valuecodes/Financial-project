@@ -22,6 +22,11 @@ body{
   background-color: rgb(255, 122, 122);
 }
 
+p, h3{
+  margin: 0;
+  padding: 0;
+}
+
 .lightGreen{
   background-color: lightgreen;
 }
@@ -69,86 +74,118 @@ li{
 .card{
   background-color: var(--main-container-color);
   border-radius: 1rem;
-  /* padding: 1rem; */
 }
 
 /* Header */
 .header{
-  /* width: 100vw; */
   background-color: rgb(219, 219, 219);
+}
+
+h1{
+  margin: 0;
 }
 
 .headerContainer{
   height: 5rem;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
 }
 
 .navbar ul{
   display: flex;
+  justify-content: flex-end;
   list-style-type: none;
-  /* margin: 5rem; */
 }
+
 .navbar li{
   margin: 1rem;
 }
 
-/* HomeScreen */
+/* SelectPortfolio */
+.selectPortfolio{
+  display: flex;
+  flex-direction: column;
+}
+
+.selectPortfolio label{
+  font-size: 1.2rem;
+}
+
+ /* HomeScreen */
 .homeScreen{
-  height: 100%;
   display: grid;
   grid-template-columns: 1fr 2fr;
-  grid-column-gap: 2rem;
-  grid-row-gap: 2rem;
-  margin-top: 2rem;
+  margin-top: 5rem;
+  grid-gap: 2rem;
 }
 
-.portfolioMain{
-  margin: 1rem 0;
-  background-color: rgb(238, 238, 238);
-  border-radius: 0.5rem;
+.mainHeader{
+  border-bottom: 0.1rem solid black; 
+  padding: 1rem 0;
 }
 
-.sidePortfolios{
-  padding: 1rem;
-  min-width: 40rem;
+.portfolioListTickers{
+  /* display: flex; */
 }
 
-.portfolioMainHead{
-  padding: 0 1rem;
-  height: 5rem;
+.portfolioSection{
+  padding: 2rem;
+}
+
+.portfolioListTicker{
   display: grid;
-  grid-template-columns: 17rem 1fr auto;
+  grid-template-columns: 10rem 1fr 8rem;
+  height: 3rem;
+  border-bottom: 0.1rem solid rgb(163, 163, 163);
   align-items: center;
-  background-color: rgb(179, 206, 200);
-  border-radius: 0.5rem 0.5rem 0 0;
 }
 
-.portfolioMainHead h3,p{
-  margin: 0;
+.tickerPrice{
+  text-align: end;
+  font-weight: bold;
 }
 
-.portfolioMainTicker{
-  padding: 0 1rem;
+.tickerTable{
   display: grid;
-  grid-template-columns: 7rem 2fr 5rem 5rem 5rem;
+  grid-template-columns: repeat(auto-fill,minmax(10rem,1fr));
+  grid-auto-rows: 6rem;
+  grid-gap: 0.3rem;
+  align-items: center;
+  /* justify-content: space-around; */
 }
 
-.portfolioMainTicker p{
-  font-size: 1rem;
+.tickerTable{
+  font-size: 2rem;
 }
 
-.portfolioMainFooter{
-  height: 1.5rem;
-  background-color: rgb(179, 206, 200);
-  border-radius: 0 0 0.5rem 0.5rem;
+.tickerTableTicker{
+  height: 100%;
+  text-decoration: none;
 }
 
-.mainSection{
-  background-color: lightgray;
+.tickerTableTicker p,h3{
+  padding: 0.2rem;
+  color: rgb(0, 0, 0);
+}
+.tickerTableTicker p{
+  text-align: right;
+  font-weight: bold;
 }
 
+.tickerTableTicker{
+  background-color: rgb(223, 223, 223);
+}
+
+.tickerTableTicker:hover{
+  background-color: rgb(110, 110, 110);
+} 
+
+.tickerTableTicker:hover h3{
+    color: rgb(248, 248, 248);
+} 
+
+/* TradingScreen */
 .tickerList{
   margin: auto;
   width: 70rem;
@@ -162,7 +199,7 @@ li{
   background-color: rgb(161, 228, 191);
   margin: 2rem 2rem;
 }
-
+ 
 .portfolioHead{
   display: grid;
   grid-template-columns: 16rem 1fr 11rem;
@@ -261,90 +298,24 @@ li{
   margin: 0.5rem;
 }
 
+
+
 /* Graph */
 .mainGraphs{
-  /* height: 70rem; */
   display: grid;
   grid-template-rows: 45rem 30rem;
  padding: 2rem; 
-}
-
-.tickerGraph{
-  grid-column: 2/4;
-  /* height: 30rem; */
-}
-
-.graphContainer{
-  height: 27rem;
-  margin-bottom: 5rem;
-  /* margin: 5rem; */
-  /* margin: 2rem; */
-}
-
-.graphHeader{
-  display: flex;
-  justify-content: space-between;
-  margin: 1rem 5rem;
 }
 
 .selectedPortfolio{
   display: flex;
 }
 
-.dividendGraph{
-  /* height:35rem; */
-  grid-column: 2/4;
-}
-
-.graphActions{
-  display: flex;
-  justify-content: space-between;
-}
-
-.calendar{
-  height: 25rem;
-  background-color: rgb(255, 255, 255);
-}
-
-.calendarRows{
-  display: flex;
-  justify-content: space-around;
-}
-
 .labels{
   position: absolute;
 }
 
-.calendarColumn{
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items:center;
-  width: 100%;
-}
-
-.dividendEvent{
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 6rem;
-  height: 4rem;
-  /* border: 0.1rem solid black; */
-  border-radius: 0.5rem;
-  margin: 0.2rem 0;
-  /* color: white; */
-  background-color: rgb(207, 207, 207);
-}
-
 /* SigninScreen */
-.signinScreen{
-
-}
-
-.form{
-
-}
 
 .form ul{
   list-style-type: none;
@@ -364,6 +335,7 @@ li{
   background-color: var(--main-container-color);
 }
 
+/* AddDataScreen */
 .inputPage{
   display: flex;
   margin:5rem;
@@ -413,14 +385,16 @@ li{
 }
 
 .searchResult{
-  position: relative;
+  position: absolute;
   background-color: rgb(199, 199, 199);
   height: 3rem;
   display: grid;
   font-size: 1.4rem;
   padding: 0.5rem;
   cursor: pointer;
+  width: 25rem;
 }
+
 .searchResult:hover{
   background-color: rgb(150, 150, 150);
 }
@@ -439,7 +413,6 @@ li{
 
 /* TickerScreen */
 .tickerScreen{
-  /* background-color: rgb(235, 235, 235); */
   margin-top: 5rem;
   border-radius: 1rem;
 }
@@ -457,12 +430,8 @@ li{
   margin: 0 2rem;
 }
 
-/* ----------------------------- */
-
 .ticker{
-  /* height: 50; */
   margin: auto;
-  /* width: 80rem; */
   background-color: rgb(207, 207, 207);
 }
 
@@ -491,12 +460,6 @@ li{
   padding: 0;
 }
 
-.portfolioSection{
-  width: 100%;
-  height: 50rem;
-  display: grid;
-}
-
 .portfolioListContainer{
   flex-grow: 1;
   background-color: rgb(240, 240, 240);
@@ -504,12 +467,6 @@ li{
 
 .portfolioList header{
   margin: 1rem;
-}
-
-.portfolioChart{
-  /* height: 40rem; */
-  /* margin: 1rem; */
-  /* flex-grow: 2; */
 }
 
 .dividendChart{
@@ -533,7 +490,6 @@ li{
   grid-column: 1/3;
   height: 5rem;
 }
-
 
 .portfolioListHeader th{
   font-size: 1.6rem;
@@ -559,42 +515,14 @@ li{
 /* Chart */
 
 .chartHeader{
-  /* background-color: rgb(236, 236, 236); */
   display: flex;
   justify-content: space-between;
-}
-
-.chartInfo{
-  height: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.chartInfo{
-  /* border: 0.1rem solid black; */
-}
-.chartInfo div{
-  width: 10rem;
-  padding: 0.5rem;
-  margin-top: 6rem;
-  background-color: rgb(231, 231, 231);
-  border-radius: 0.5rem;
 }
 
 .chartTypeOptions button{
   padding: 0.5rem;  
 }
 
-.chartTimePeriods button{
-  padding: 0.5rem;  
-}
-
-.chartOptions{
-  /* width: 100%;
-  display: flex;
-  justify-content: space-between; */
-}
 .optionContainer{
   margin: 1rem;
   padding: 0.5rem;
@@ -661,23 +589,16 @@ li{
 .sectionContainer{
   height: auto;
   overflow: hidden;
-  /* position: relative; */
 }
 
 .sections{
-  /* height: 45rem; */
   position: relative;
   display: grid; 
   grid-template-columns:repeat(10,100%); 
   transition: 0.3s right;
 }
-.tickerScreenChart{
-  /* height: 50rem; */
-}
+
 .chartContainer{
-  /* height: auto; */
-  /* background-color: cadetblue; */
-  /* min-height: 30rem; */
   height: 40rem;
 }
 
@@ -696,17 +617,12 @@ li{
   height: 25rem;
 }
 
-.tickerScreenChart{
-  /* height: 50rem; */
-}
-
 .tickerFinancials{
   background-color: rgb(211, 211, 211);
 }
 
 .financialChartContainer{
   height: 30rem;
-  /* width: 60rem; */
   padding: 3rem 0;
 }
 
@@ -722,7 +638,6 @@ th, td{
 th{
   margin: 0 0.2rem;
   background-color: white;
-  /* border: 0.4rem solid rgb(87, 87, 87); */
 }
 
 td{
@@ -730,15 +645,8 @@ td{
   background-color: rgb(211, 211, 211);
 }
 
-tr:nth-child(even) {
-  /* background: rgb(160, 160, 160) */
-}
-
-
-
 /* Options */
 .options{
-  /* grid-column: 1/3; */
   display: flex;
   justify-content: space-between;
   background-color: rgb(165, 165, 165);
