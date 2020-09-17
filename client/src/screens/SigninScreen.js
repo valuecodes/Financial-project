@@ -47,7 +47,7 @@ export default function SigninScreen(props) {
                     </li>
                     <li>
                         <label htmlFor='password'>Password</label>
-                        <input className='formInput' id='password' name='password' type='text'
+                        <input className='formInput' id='password' name='password' type='password'
                             onChange={e => setUserInput({...userInput,password:e.target.value})}
                         />
                     </li>

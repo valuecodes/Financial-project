@@ -604,6 +604,7 @@ h1{
 
 .chartContainer{
   height: 40rem;
+  background-color: rgb(194, 194, 194);
 }
 
 .tickerRatios {
