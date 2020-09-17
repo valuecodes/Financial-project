@@ -375,9 +375,11 @@ h1{
 
 .searchBox{
   margin: auto;
+  height: 3rem;
 }
 
 .searchBox input{
+  
   width: 25rem;
   height: 2rem;
   border-radius: 0.5rem;
@@ -385,7 +387,8 @@ h1{
 }
 
 .searchResult{
-  position: absolute;
+  position: relative;
+  /* height: 0; */
   background-color: rgb(199, 199, 199);
   height: 3rem;
   display: grid;
@@ -393,6 +396,7 @@ h1{
   padding: 0.5rem;
   cursor: pointer;
   width: 25rem;
+  display: block;
 }
 
 .searchResult:hover{

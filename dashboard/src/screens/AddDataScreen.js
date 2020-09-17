@@ -80,14 +80,17 @@ export default function AddDataScreen() {
                 let key = getKey(array,data)
                 switch (key) {
                     case 'Total Premiums Earned':
+                    case 'Interest Income, Bank':
                     case 'Revenue':
                         setCompanyInfo({...companyInfo,incomeStatement:calculateFinancialIncomeData(array)})
                         break;
                     case 'Cash':
+                    case 'Cash & Due from Banks':
                     case 'Cash & Equivalents':
                         setCompanyInfo({...companyInfo,balanceSheet:calculateFinancialBalanceSheetData(array)})
                         break;
                     case 'Net Income/Starting Line':
+                    case 'Cash Taxes Paid':
                         setCompanyInfo({...companyInfo,cashFlow:calculateFinancialCashFlowData(array)})
                         break;
                     case 'companyInfo':

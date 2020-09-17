@@ -11,6 +11,7 @@ import SectionNav from '../components/SectionNav'
 import Options from '../components/Options'
 import { portfolioDivChartOptions } from '../utils/chartOptions';
 import { useHistory } from 'react-router';
+import Chart from "react-google-charts";
 
 export default function PortfolioScreen(props) {
 
@@ -47,7 +48,7 @@ export default function PortfolioScreen(props) {
     },[selectedPortfolio])
 
     const [navigation,setNavigation] = useState({
-        selected:{name:'priceChart',index:1},
+        selected:{name:'tickers',index:0},
         options:['tickers','priceChart','dividends']
     })
 
@@ -61,6 +62,7 @@ export default function PortfolioScreen(props) {
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >
+                        {/* <PortfolioOverview portfolio={portfolio} navigation={navigation} /> */}
                         <PortfolioList portfolio={portfolio} navigation={navigation}/>
                         <PortfolioChart portfolio={portfolio} navigation={navigation}/>
                         <DividendChart portfolio={portfolio} navigation={navigation}/>
@@ -68,6 +70,33 @@ export default function PortfolioScreen(props) {
                 </div>
             }
         </section>
+    )
+}
+
+function PortfolioOverview({portfolio,navigation}){
+
+    return(
+        <div>
+            <div className='chartContainer'>
+                {/* <Chart
+                    chartType="GeoChart"
+                    loader={<div>Loading Chart</div>}
+                    data={[
+                    ['City', '2010 Population', '2000 Population'],
+                    ['New York City, NY', 8175000, 8008000],
+                    ['Los Angeles, CA', 3792000, 3694000],
+                    ['Chicago, IL', 2695000, 2896000],
+                    ['Houston, TX', 2099000, 1953000],
+                    ['Philadelphia, PA', 1526000, 1517000],
+                    ]}
+                    options={{
+                    title: 'Population of Largest U.S. Cities',
+                    chartArea: { width: '30%' },
+                    }}
+                    legendToggle
+                /> */}
+            </div>
+        </div>
     )
 }
 

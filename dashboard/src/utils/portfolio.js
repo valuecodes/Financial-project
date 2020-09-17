@@ -195,14 +195,14 @@ function calculateDividendComponents(portfolio){
     const userDividends = portfolio.portofolioUserDividends()
     let data=[]    
     let count=0      
-
+    
     if(userDividends.length===0){
         return { data, userDividends }
     }
 
     let min = userDividends[0].date.getFullYear()
     let max = userDividends[userDividends.length-1].date.getFullYear()
-
+    
     for(var i=min;i<=max;i++){
         for(var a=1;a<=12;a++){
             let divFound=true
@@ -210,7 +210,9 @@ function calculateDividendComponents(portfolio){
            
             while(divFound){
                 if(count===userDividends.length) break
+                    console.log(userDividends[count],userDividends[count].year,i,a)                
                 if(userDividends[count].year===i&&userDividends[count].month===a){
+
                     divs.push(userDividends[count])
                     count++
                 }else{
@@ -227,7 +229,7 @@ function calculateDividendComponents(portfolio){
             if(count===userDividends.length) break
         }
     }
-
+    console.log(data)
     return { data,userDividends }
 }
 
