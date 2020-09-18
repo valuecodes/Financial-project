@@ -621,3 +621,15 @@ export function portfolioDivChartOptions(){
         },
     }
 }
+
+export function portfolioStatChartOptions(){
+    return {        
+        responsive:true,
+        maintainAspectRatio: false,
+        plugins: {
+            datalabels: {
+                // display: false,
+            }
+        },
+    }
+}

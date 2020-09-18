@@ -5,11 +5,11 @@ import { Portfolio } from '../utils/portfolio';
 import { datasetKeyProvider } from '../utils/utils';
 import PortfolioList from '../components/portfolio/PortfolioList'
 import PortfolioChart from '../components/portfolio/PortfolioChart'
-import { Line } from 'react-chartjs-2'
-import { calculateDividendChart } from '../utils/chart';
+import { Line,Doughnut } from 'react-chartjs-2'
+import { calculateDividendChart, calculateStatCharts } from '../utils/chart';
 import SectionNav from '../components/SectionNav'
 import Options from '../components/Options'
-import { portfolioDivChartOptions } from '../utils/chartOptions';
+import { portfolioDivChartOptions, portfolioStatChartOptions } from '../utils/chartOptions';
 import { useHistory } from 'react-router';
 import Chart from "react-google-charts";
 
@@ -48,8 +48,8 @@ export default function PortfolioScreen(props) {
     },[selectedPortfolio])
 
     const [navigation,setNavigation] = useState({
-        selected:{name:'tickers',index:0},
-        options:['tickers','priceChart','dividends']
+        selected:{name:'statistics',index:0},
+        options:['statistics','tickers','priceChart','dividends']
     })
 
     return (
@@ -62,7 +62,7 @@ export default function PortfolioScreen(props) {
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >
-                        {/* <PortfolioOverview portfolio={portfolio} navigation={navigation} /> */}
+                        <PortfolioStats portfolio={portfolio} navigation={navigation} />
                         <PortfolioList portfolio={portfolio} navigation={navigation}/>
                         <PortfolioChart portfolio={portfolio} navigation={navigation}/>
                         <DividendChart portfolio={portfolio} navigation={navigation}/>
@@ -73,30 +73,66 @@ export default function PortfolioScreen(props) {
     )
 }
 
-function PortfolioOverview({portfolio,navigation}){
+function PortfolioStats({portfolio,navigation}){
+    
+    // const [chartData,setChartData]=useState({
+    //     sector:{},
+    //     industry:{},
+    //     subIndusty:{}
+    // })
 
+    useEffect(()=>{
+        if(portfolio){
+            const portfolioStatComponents = portfolio.statComponents()
+            const chartData = calculateStatCharts(portfolioStatComponents)
+            console.log(chartData.sectorData)
+            // setSectorData(chartData.sectorData)
+            // console.log(chartData)
+        }
+    },[portfolio])
+    // console.log(sectorData)
     return(
-        <div>
-            <div className='chartContainer'>
-                {/* <Chart
-                    chartType="GeoChart"
-                    loader={<div>Loading Chart</div>}
-                    data={[
-                    ['City', '2010 Population', '2000 Population'],
-                    ['New York City, NY', 8175000, 8008000],
-                    ['Los Angeles, CA', 3792000, 3694000],
-                    ['Chicago, IL', 2695000, 2896000],
-                    ['Houston, TX', 2099000, 1953000],
-                    ['Philadelphia, PA', 1526000, 1517000],
-                    ]}
-                    options={{
-                    title: 'Population of Largest U.S. Cities',
-                    chartArea: { width: '30%' },
-                    }}
-                    legendToggle
-                /> */}
+        <div className='section'>
+            <div className='portfolioStats'>
+                <div className='chartContainer'>
+                    {/* <Doughnut
+                        data={sectorData}
+                        options={portfolioStatChartOptions()} 
+                    />                 */}
+                </div>
+                <div className='chartContainer'>
+                    <Doughnut
+                        data={{
+                            datasets: [{
+                                data: [10, 20, 30]
+                            }],
+                            labels: [
+                                'Red',
+                                'Yellow',
+                                'Blue'
+                            ]
+                        }}
+                        options={portfolioStatChartOptions()} 
+                    />                
+                </div>
+                <div className='chartContainer'>
+                    <Doughnut
+                        data={{
+                            datasets: [{
+                                data: [10, 20, 30]
+                            }],
+                            labels: [
+                                'Red',
+                                'Yellow',
+                                'Blue'
+                            ]
+                        }}
+                        options={portfolioStatChartOptions()} 
+                    />                
+                </div>
             </div>
         </div>
+
     )
 }
 

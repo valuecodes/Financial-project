@@ -445,6 +445,7 @@ h1{
   align-items: center;
 }
 
+/* PortfolioScreen */
 .portfolioScreen{
   margin-top: 5rem;
 }
@@ -514,6 +515,15 @@ h1{
   font-size: 1.2rem;
   text-align: left;
   margin-right: 2rem;
+}
+
+/* PortfolioStats */
+.portfolioStats{
+  /* width: 30rem; */
+  height: 40rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  /* grid-template-rows: 1fr 1fr; */
 }
 
 /* Chart */

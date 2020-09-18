@@ -1,5 +1,5 @@
-import { formatValue } from "./utils";
-import { Ticker } from "./ticker";
+import { formatValue, totalByKey } from "./utils";
+import { Ticker, calculateCurrentPrice } from "./ticker";
 
 export function Portfolio(portfolioData){
     this.name = portfolioData.portfolio.name
@@ -12,9 +12,11 @@ export function Portfolio(portfolioData){
     this.priceChange = (format) => calculatePriceChange(this,format)
     this.priceChangePercentage = (format) => calculatePriceChangePercentage(this,format)
     this.portofolioUserDividends = (options) => calculatePortfolioUserDividends(this,options)
+    this.portfolioStats = () => calculatePortfolioStats(this)
     this.priceChart = (options) => calculateChart(this,options)
     this.returnChart = (options) => calculateReturnChart(this,options)
     this.dividendComponents = (options) => calculateDividendComponents(this,options)
+    this.statComponents = () => calculateStatComponents(this)
 }
 
 export function calculatePurchasePrice(portfolio,format){
@@ -54,6 +56,29 @@ function calculatePortfolioUserDividends(portfolio,options){
     userDividends = userDividends.sort((a,b) => a.date.getTime()-b.date.getTime())
 
     return userDividends
+}
+
+function calculatePortfolioStats(portfolio){
+    const { userTickers, tickerData } = portfolio
+
+    let tickers = []
+    userTickers.forEach(portfolioTicker => {
+        let data = searchTickerData(portfolioTicker.ticker,tickerData)
+        let ticker = new Ticker(portfolioTicker,data)
+        tickers.push({
+            ticker:ticker.ticker,
+            name:ticker.name,
+            shareCount:ticker.totalCount(),
+            currentValue: ticker.currentPrice(),
+            marketCap:ticker.marketCap(),
+            sector:ticker.tickerData.profile.sector,
+            industry:ticker.tickerData.profile.industry,
+            subIndustry:ticker.tickerData.profile.subIndustry,
+            employees:Number(ticker.tickerData.profile.employees)
+        })
+    })
+
+    return tickers
 }
 
 export function calculateChart(portfolio,options){
@@ -209,8 +234,7 @@ function calculateDividendComponents(portfolio){
             let divs=[];
            
             while(divFound){
-                if(count===userDividends.length) break
-                    console.log(userDividends[count],userDividends[count].year,i,a)                
+                if(count===userDividends.length) break            
                 if(userDividends[count].year===i&&userDividends[count].month===a){
 
                     divs.push(userDividends[count])
@@ -229,14 +253,27 @@ function calculateDividendComponents(portfolio){
             if(count===userDividends.length) break
         }
     }
-    console.log(data)
+
     return { data,userDividends }
 }
 
+function calculateStatComponents(portfolio){
+    let stats = portfolio.portfolioStats()
+    
+    let sectors = totalByKey(stats,'sector','currentValue')
+    let industries = totalByKey(stats,'industry','currentValue')
+    let subIndustries = totalByKey(stats,'subIndustry','currentValue')
 
+    return {
+        sectors,
+        industries,
+        subIndustries
+    }
+}
 
-
-
+function searchTickerData(ticker,tickerData){
+    return tickerData.find(item => item.profile.ticker===ticker)
+}
 
 
 

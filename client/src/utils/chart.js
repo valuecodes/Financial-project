@@ -200,7 +200,7 @@ export function calculateDividendChart(chartComponents,options){
 
     let dataSets = [];  
     let labels = data.map(item => item.label)
-    console.log(data)
+
     switch(selected){
         case 'dividends':
             dataSets.push({
@@ -245,7 +245,7 @@ export function calculateDividendChart(chartComponents,options){
             break
         default: 
     }
-    console.log(dataSets,labels)
+
     return {
         datasets:dataSets,
         labels
@@ -391,5 +391,34 @@ export function calculateRatioChart(chartComponents,options){
     return {
         datasets:dataSets,
         labels: labels
+    }
+}
+
+export function calculateStatCharts(chartComponents){
+    const { sectors ,industries, subIndustries } = chartComponents
+
+    let sectorData={
+        datasets: [{
+            data: sectors.map(item => item.value)
+        }],
+        labels: sectors.map(item => item.name)
+    }
+    let industryData={
+        datasets: [{
+            data: industries.map(item => item.value)
+        }],
+        labels: industries.map(item => item.name)
+    }
+    let subIndustryData={
+        datasets: [{
+            data: subIndustries.map(item => item.value)
+        }],
+        labels: subIndustries.map(item => item.name)
+    }
+
+    return{
+        sectorData,
+        industryData,
+        subIndustryData
     }
 }
