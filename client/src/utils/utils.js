@@ -85,23 +85,29 @@ export function randomColor(){
 
  export function datasetKeyProvider(){ return Math.random()} 
 
- export function totalByKey(data,key,valueKey){
+ export function totalByKey(data,key,valueKey,parent=null){
+
     let object={}
     data.forEach(item =>{
         let name = item[key]
         if(object[name]){
             object[name].value+=item[valueKey]
+            object[name].items.push(item)
         }else{
             object[name] = {
                 name,
-                value:item[valueKey]
+                value:item[valueKey],
+                parent:parent?item[parent]:false,
+                items:[item]
             }
         }
     })
     let array = Object.keys(object).map(item =>{
         return {
             name:object[item].name,
-            value:object[item].value
+            value:object[item].value,
+            parent:object[item].parent===object[item].name?object[item].parent+'1':object[item].parent,
+            items:object[item].items
         }
     })
     return array

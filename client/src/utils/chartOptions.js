@@ -602,8 +602,7 @@ export function portfolioDivChartOptions(){
             mode: 'index',
             intersect: false,
             titleFontColor:'rgba(0,0,0,0)',
-        },         
-
+        },
         scales: {            
             xAxes: [{  
                 ticks: {
@@ -622,14 +621,29 @@ export function portfolioDivChartOptions(){
     }
 }
 
-export function portfolioStatChartOptions(){
+export function portfolioStatChartOptions(title){
     return {        
         responsive:true,
         maintainAspectRatio: false,
+        title: {
+            display: true,
+            text: title,
+            fontSize:20
+        },
         plugins: {
             datalabels: {
-                // display: false,
+                display:true,
+                formatter: (value, ctx) => {
+                    let sum = 0;
+                    let dataArr = ctx.chart.data.datasets[0].data;
+                    dataArr.map(data => {
+                        sum += data;
+                    });
+                    let percentage = (value*100 / sum).toFixed(2)+"%";
+                    return percentage;
+                },
+                color: '#fff',
             }
-        },
+        }
     }
 }

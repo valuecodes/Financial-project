@@ -4,8 +4,7 @@ import {
     monthlyDividends,
     getRatioName
 } from "./chartUtils";
-import { randomColor } from "./utils";
-
+import { randomColor, roundToTwoDecimal } from "./utils";
 
 export function calculateRatioFinacialChart(chartComponents,options){
     const { financialData, financialLabels } = chartComponents
@@ -397,21 +396,33 @@ export function calculateRatioChart(chartComponents,options){
 export function calculateStatCharts(chartComponents){
     const { sectors ,industries, subIndustries } = chartComponents
 
+    let total = sectors.reduce((a,c) => a+c.value,0)
+
     let sectorData={
+        title:'Test',
         datasets: [{
-            data: sectors.map(item => item.value)
+            data: sectors.map(item => item.value).sort((a,b)=>b-a),
+            backgroundColor:['#BB533E','#BB7F3E','#2A6175','#2D884F','#E19B8D','#E1B98D','#5B7F8D','#66A37D','#0A7231','#0C4B62'],
+            metaData:sectors,
+            values:sectors.map(item => item.value).sort((a,b)=>b-a),
+            percentages:sectors.map(item => roundToTwoDecimal(item.value/total)),
+            color:'black'
         }],
         labels: sectors.map(item => item.name)
     }
     let industryData={
         datasets: [{
-            data: industries.map(item => item.value)
+            data: industries.map(item => item.value).sort((a,b)=>b-a),
+            backgroundColor:['#BB533E','#BB7F3E','#2A6175','#2D884F','#E19B8D','#E1B98D','#5B7F8D','#66A37D','#0A7231','#0C4B62'],
+            metaData:industries
         }],
         labels: industries.map(item => item.name)
     }
     let subIndustryData={
         datasets: [{
-            data: subIndustries.map(item => item.value)
+            data: subIndustries.map(item => item.value).sort((a,b)=>b-a),
+            backgroundColor:['#BB533E','#BB7F3E','#2A6175','#2D884F','#E19B8D','#E1B98D','#5B7F8D','#66A37D','#0A7231','#0C4B62'],
+            metaData:subIndustries
         }],
         labels: subIndustries.map(item => item.name)
     }
@@ -421,4 +432,24 @@ export function calculateStatCharts(chartComponents){
         industryData,
         subIndustryData
     }
+}
+
+export function calculateStatTreeMap(chartComponents){
+    const { sectors, industries, subIndustries, tickers } = chartComponents  
+    let array = []
+    array.push(['Division','Parent','Portfolio Share','Percentage Change'])
+    array.push(['Portfolio',null,0,0])
+    sectors.forEach(item => {
+        array.push([item.name,'Portfolio',item.value,0])
+    });
+    industries.forEach(item => {
+        array.push([item.name,item.parent,item.value,0])
+    })
+    tickers.forEach(item => {
+        array.push([
+            `${item.name} (${item.items[0].percentageChange})%`,
+            item.parent,
+            item.value,item.items[0].percentageChange])
+    })
+    return array
 }

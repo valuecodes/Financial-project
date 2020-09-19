@@ -5,8 +5,8 @@ import { Portfolio } from '../utils/portfolio';
 import { datasetKeyProvider } from '../utils/utils';
 import PortfolioList from '../components/portfolio/PortfolioList'
 import PortfolioChart from '../components/portfolio/PortfolioChart'
-import { Line,Doughnut } from 'react-chartjs-2'
-import { calculateDividendChart, calculateStatCharts } from '../utils/chart';
+import { Line,Doughnut, Pie } from 'react-chartjs-2'
+import { calculateDividendChart, calculateStatCharts, calculateStatTreeMap } from '../utils/chart';
 import SectionNav from '../components/SectionNav'
 import Options from '../components/Options'
 import { portfolioDivChartOptions, portfolioStatChartOptions } from '../utils/chartOptions';
@@ -74,61 +74,81 @@ export default function PortfolioScreen(props) {
 }
 
 function PortfolioStats({portfolio,navigation}){
-    
-    // const [chartData,setChartData]=useState({
-    //     sector:{},
-    //     industry:{},
-    //     subIndusty:{}
-    // })
+
+    const [treeMapData,setTreeMapData] = useState([])
+    const [chartData,setChartData]=useState({
+        sector:{},
+        industry:{},
+        subIndustry:{}
+    })
 
     useEffect(()=>{
         if(portfolio){
             const portfolioStatComponents = portfolio.statComponents()
             const chartData = calculateStatCharts(portfolioStatComponents)
-            console.log(chartData.sectorData)
-            // setSectorData(chartData.sectorData)
-            // console.log(chartData)
+
+            setTreeMapData(calculateStatTreeMap(portfolioStatComponents))
+            setChartData({
+                sector:chartData.sectorData,
+                industry:chartData.industryData,
+                subIndustry:chartData.subIndustryData
+            })
         }
     },[portfolio])
-    // console.log(sectorData)
+    
     return(
-        <div className='section'>
+        <div 
+            // className='section'
+        >
             <div className='portfolioStats'>
+                <Chart
+                    height={600}
+                    chartType="TreeMap"
+                    maxDepth={1}
+                    maxPostDepth={2}
+                    loader={<div>Loading Chart</div>}
+                    data={treeMapData}
+
+                    options={{
+                        maxDepth: 3,
+                        maxPostDepth: 3,
+                        title: 'Portfolio',
+                        chartArea: { width: '30%' },
+                        fontSize:14,
+                        fontColor:'white',
+                        headerColor:'rgb(white)',
+                        textStyle:{
+                            color:'black',
+                            bold:true
+                        },  
+                        hAxis: {
+                            title: 'Total Population',
+                            minValue: 0,
+                        },
+                        vAxis: {
+                            title: 'City',
+                        },
+                        useWeightedAverageForAggregation: true
+                    }}
+                    legendToggle
+                />
                 <div className='chartContainer'>
-                    {/* <Doughnut
-                        data={sectorData}
-                        options={portfolioStatChartOptions()} 
-                    />                 */}
-                </div>
-                <div className='chartContainer'>
-                    <Doughnut
-                        data={{
-                            datasets: [{
-                                data: [10, 20, 30]
-                            }],
-                            labels: [
-                                'Red',
-                                'Yellow',
-                                'Blue'
-                            ]
-                        }}
-                        options={portfolioStatChartOptions()} 
+                    <Pie
+                        data={chartData.sector}
+                        options={portfolioStatChartOptions('Sectors')} 
                     />                
                 </div>
                 <div className='chartContainer'>
                     <Doughnut
-                        data={{
-                            datasets: [{
-                                data: [10, 20, 30]
-                            }],
-                            labels: [
-                                'Red',
-                                'Yellow',
-                                'Blue'
-                            ]
-                        }}
-                        options={portfolioStatChartOptions()} 
-                    />                
+                        data={chartData.industry}
+                        options={portfolioStatChartOptions('Industries')} 
+                    />                 
+                </div>
+                <div className='chartContainer'>
+                    <Doughnut
+                        data={chartData.subIndustry}
+                        options={portfolioStatChartOptions('SubIndustries')} 
+                    />                   
                 </div>
             </div>
         </div>

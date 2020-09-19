@@ -71,6 +71,7 @@ function calculatePortfolioStats(portfolio){
             shareCount:ticker.totalCount(),
             currentValue: ticker.currentPrice(),
             marketCap:ticker.marketCap(),
+            percentageChange:ticker.percentageChange(),
             sector:ticker.tickerData.profile.sector,
             industry:ticker.tickerData.profile.industry,
             subIndustry:ticker.tickerData.profile.subIndustry,
@@ -261,13 +262,15 @@ function calculateStatComponents(portfolio){
     let stats = portfolio.portfolioStats()
     
     let sectors = totalByKey(stats,'sector','currentValue')
-    let industries = totalByKey(stats,'industry','currentValue')
-    let subIndustries = totalByKey(stats,'subIndustry','currentValue')
+    let industries = totalByKey(stats,'industry','currentValue','sector')
+    let subIndustries = totalByKey(stats,'subIndustry','currentValue','industry')
+    let tickers = totalByKey(stats,'ticker','currentValue','industry')
 
     return {
         sectors,
         industries,
-        subIndustries
+        subIndustries,
+        tickers
     }
 }
 
