@@ -1,5 +1,6 @@
 import React,{ useState, useRef, useEffect } from 'react'
 import axios from 'axios'
+import { useSelector } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
 import Output from '../components/addDataComponents/Output'
 import {
@@ -15,7 +16,8 @@ import {
 } from '../components/calculations/inputCalculations'
 
 export default function AddDataScreen() {
-
+    const userSignin = useSelector(state => state.userSignin)
+    const { loading, userInfo, error } = userSignin
     const inputRef=useRef()
 
     const [companyInfo, setCompanyInfo] = useState({
@@ -50,7 +52,11 @@ export default function AddDataScreen() {
     
     useEffect(()=>{
         async function getData(){
-            let res = await axios.get('/dataInput/')
+            let res = await axios.get('/dataInput/',{
+                headers:{
+                    Authorization: 'Bearer'+userInfo.token
+                }
+            })
             setCurrentTickers(res.data.data)
         }
         getData()
@@ -59,7 +65,11 @@ export default function AddDataScreen() {
     const [data, setData] = useState('')
     const processData= async ()=>{
         try{
-            let res = await axios.post('/dataInput/',companyInfo)
+            let res = await axios.post('/dataInput/',companyInfo,{
+                headers:{
+                    Authorization: 'Bearer'+userInfo.token
+                }
+            })
             setCompanyInfo(res.data.data)
         } catch(err){
 
@@ -68,7 +78,11 @@ export default function AddDataScreen() {
 
     const saveTickers = async()=>{
         try{
-            let res = await axios.post('/dataInput/saveTickers',tickers)
+            let res = await axios.post('/dataInput/saveTickers',tickers,{
+                headers:{
+                    Authorization: 'Bearer'+userInfo.token
+                }
+            })
         } catch(err){
 
         }
@@ -126,7 +140,11 @@ export default function AddDataScreen() {
 
     async function selectTicker(id) {
         try{
-            let res = await axios.get('/dataInput/'+id)
+            let res = await axios.get('/dataInput/'+id,{
+                headers:{
+                    Authorization: 'Bearer'+userInfo.token
+                }
+            })
             setCompanyInfo(res.data.data)
         } catch(err){
 
@@ -141,6 +159,15 @@ export default function AddDataScreen() {
             handleData(text)
         });
         reader.readAsText(file);
+    }
+
+    const updateTickerList = async () =>{
+        try{
+            let res = await axios.get('/dataInput/updateList')
+            setCompanyInfo(res)
+        } catch(err){
+
+        }
     }
 
     return (
@@ -162,8 +189,14 @@ export default function AddDataScreen() {
                             onChange={e => handleFileData(e)}
                         className='financeInput' type='file'/>
                     </div>
-                    <button onClick={processData} className='button'>Save Company Data</button>
-                    <button onClick={saveTickers} className='button'>save tickers</button>            
+                    <div className='inputButtons'>
+                        <button onClick={processData} className='button'>Save Company Data</button>
+                        <button onClick={saveTickers} className='button'>save tickers</button>            
+                        <button className='button' onClick={updateTickerList}>
+                            Update Tickerlist
+                        </button>
+                    </div>
+
                 </div>
             </div>
             <div className='inputInfoContainer'>

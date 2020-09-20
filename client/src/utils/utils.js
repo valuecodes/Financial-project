@@ -102,6 +102,7 @@ export function randomColor(){
             }
         }
     })
+    
     let array = Object.keys(object).map(item =>{
         return {
             name:object[item].name,

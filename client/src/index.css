@@ -346,6 +346,11 @@ h1{
   margin-top: 1rem;
 }
 
+.inputButtons{
+  display: grid;
+  grid-auto-rows: 4rem;
+}
+
 .button{
   height: 3rem;
   min-width: 5rem;

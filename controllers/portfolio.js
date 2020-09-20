@@ -1,4 +1,3 @@
-// const Ticker = require('../models/tickerModel')
 const Portfolio = require('../models/portfolioModel')
 const User = require('../models/userModel')
 
