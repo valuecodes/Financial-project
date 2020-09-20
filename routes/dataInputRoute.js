@@ -13,10 +13,4 @@ router
     .route('/:id')
     .get(isAuth, isAdmin,getTicker)
 
-
-router.get('/updateList', async (req,res) =>{
-    let tickers=await Ticker.find()
-})
-
-
 module.exports = router

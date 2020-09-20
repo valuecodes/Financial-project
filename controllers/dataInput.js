@@ -35,8 +35,32 @@ exports.updateTicker = async ( req, res ) => {
 
 exports.updateTickerList = async ( req,res,next ) => {
     console.log('Updating ticker list...')
-
+    let id = req.body._id
+    const tickerSlim = await TickerSlim.findOne({tickerId:id})
+    if(tickerSlim){
+        tickerSlim.price = calculatePrice(req.body) 
+        await tickerSlim.save()
+    }else{
+        let newTicker = new TickerSlim({
+            tickerId:id,
+            ticker:req.body.profile.ticker,
+            name:req.body.profile.name,
+            price:calculatePrice(req.body),
+            sector:req.body.profile.sector,
+            industry:req.body.profile.industry,
+            subIndustry:req.body.profile.subIndustry,
+            country:req.body.profile.country,
+        })
+        await newTicker.save()
+    }
     return next()
+}
+
+function calculatePrice(data){
+    return [
+        {date:data.priceData[0].date,close:data.priceData[0].close},
+        {date:data.priceData[1].date,close:data.priceData[1].close},
+    ]
 }
 
 // @desc      Get ticker by id

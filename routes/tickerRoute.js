@@ -7,6 +7,7 @@ router
     .route('/')
     .get(getTickers)
 
+
 router
     .route('/:id')
     .get(getTickerData)

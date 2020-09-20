@@ -1,9 +1,10 @@
 const mongoose = require('mongoose')
 
-const priceSchema = new mongoose.Schema({
+const priceSchema = {
     date:{type:Date, required:true},
     close:{type:Number},
-})
+    _id : false  
+}
 
 const tickerSlimSchema = new mongoose.Schema({
     tickerId:{type:mongoose.Schema.Types.ObjectId, ref: 'Ticker', required:true},
