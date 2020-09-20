@@ -1,4 +1,5 @@
 const Ticker = require('../models/tickerModel')
+const TickerSlim = require('../models/tickerSlimModel')
 const Portfolio = require('../models/portfolioModel')
 
 // @desc      Get all Tickers
@@ -15,6 +16,14 @@ exports.getTickers = async (req,res) => {
         item.priceData[1]?item.priceData[1].close:0
     ]))
     res.send({data:tickers})
+}
+
+// @desc      Get all Tickers
+// @route     GET /
+// @ access   
+exports.getTickersList = async (req,res) => {
+    let list = await TickerSlim.find()
+    res.send({data:list})
 }
 
 // @desc      Get Ticker data

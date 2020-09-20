@@ -52,11 +52,7 @@ export default function AddDataScreen() {
     
     useEffect(()=>{
         async function getData(){
-            let res = await axios.get('/dataInput/',{
-                headers:{
-                    Authorization: 'Bearer'+userInfo.token
-                }
-            })
+            let res = await axios.get('/api/tickers')
             setCurrentTickers(res.data.data)
         }
         getData()

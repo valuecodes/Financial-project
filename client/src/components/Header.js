@@ -18,14 +18,14 @@ export default function Header(props) {
     },[dispatch])
 
     const selectTicker=(ticker)=>{
-        history.push("/ticker/"+ticker[1]);
+        history.push("/ticker/"+ticker.ticker);
     }
 
     return (
         <header className='header'>
             <div className='headerContainer container'>
                 <MainLogo/>
-                <SearchBox items={tickers} addItem={selectTicker} placeholder={'Search tickers'}/>
+                <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Search tickers'}/>
                 <Navbar/>
             </div>
         </header>

@@ -1,20 +1,20 @@
 import React,{useState,useEffect} from 'react'
 
-export default function SearchBox({items, addItem, placeholder}) {
+export default function SearchBox({tickers, addItem, placeholder}) {
 
     const [searchList, setSearchList] = useState([])
     const [search, setSearch] = useState('')
 
     useEffect(() => {
-        if(items){
-            setSearchList(items)
+        if(tickers){
+            setSearchList(tickers)
         }
-    }, [items])
+    }, [tickers])
 
     let results=!search?
     []:
     searchList.filter(ticker=>
-        ticker[1].toLowerCase().includes(search.toLocaleLowerCase())||ticker[2].toLowerCase().includes(search.toLocaleLowerCase())
+        ticker.ticker.toLowerCase().includes(search.toLocaleLowerCase())||ticker.name.toLowerCase().includes(search.toLocaleLowerCase())
     )
     
     const searchHandler = (ticker) => {
@@ -32,12 +32,12 @@ export default function SearchBox({items, addItem, placeholder}) {
             {results.map((ticker,index) =>{
                 if(index<10){
                     return <div 
-                        key={ticker[0]}
+                        key={ticker.tickerId}
                         className='searchResult' 
                         onClick={() => searchHandler(ticker)}
                         >
-                            <p>{ticker[1]}</p> 
-                            <p>{ticker[2]}</p> 
+                            <p>{ticker.ticker}</p> 
+                            <p>{ticker.name}</p> 
                         </div>
                 }else{
                     return null

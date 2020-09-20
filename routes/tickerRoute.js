@@ -1,12 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const { getTickers, getTickerData, getPortfolioTickerData } = require('../controllers/tickers')
+const { getTickers, getTickersList, getTickerData, getPortfolioTickerData } = require('../controllers/tickers')
 const { isAuth } = require('../util')
 
 router
     .route('/')
-    .get(getTickers)
-
+    .get(getTickersList)
 
 router
     .route('/:id')

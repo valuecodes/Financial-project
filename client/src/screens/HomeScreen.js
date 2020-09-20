@@ -37,7 +37,8 @@ function TickerTableTicker({ticker}){
     return(
         <Link to={'/ticker/'+tickerSlim.ticker} className='tickerTableTicker'>
             <h3>{tickerSlim.ticker} </h3>
-            <p            style={{
+            <p           
+                style={{
                 color:tickerSlim.percentageChangeColor(),
             }}>{tickerSlim.percentageChange()}%</p>
         </Link>
@@ -94,6 +95,6 @@ function TickerPrice({ticker,tickers}){
 
 function getTickerPriceFromList(ticker,tickers){
     if(tickers){
-        return roundToTwoDecimal(tickers.find(item => item[1]===ticker.ticker)[3])
+        return roundToTwoDecimal(tickers.find(item => item.ticker===ticker.ticker).price[0].close)
     }
 }

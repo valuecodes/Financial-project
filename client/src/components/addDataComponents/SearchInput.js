@@ -1,13 +1,13 @@
 import React,{useState} from 'react'
 
 export default function SearchInput({currentTickers,selectTicker }) {
-    console.log(currentTickers,selectTicker)
+
     const [search, setSearch] = useState('')
 
     const results=!search?
     []:
     currentTickers.filter(ticker=>{
-        return( ticker.ticker.toLowerCase().includes(search.toLocaleLowerCase())||   ticker.name.toLowerCase().includes(search.toLocaleLowerCase()))
+        return( ticker.ticker.toLowerCase().includes(search.toLocaleLowerCase())||ticker.name.toLowerCase().includes(search.toLocaleLowerCase()))
     })
 
     return (
@@ -21,7 +21,7 @@ export default function SearchInput({currentTickers,selectTicker }) {
                         key={ticker.ticker}
                         className='searchResult' 
                         onClick={e => 
-                        {selectTicker(ticker.id)
+                        {selectTicker(ticker.tickerId)
                         setSearch('')}
                         }>
                             <p>{ticker.ticker}</p> 

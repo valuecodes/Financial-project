@@ -1,11 +1,11 @@
 import { roundToTwoDecimal } from "./utils";
 
 export function TickerSlim(ticker){
-    this.id = ticker[0]
-    this.ticker = ticker[1]
-    this.name = ticker[2]
-    this.latestPrice = ticker[3]
-    this.secondPrice = ticker[4]
+    this.id = ticker.tickerId
+    this.ticker = ticker.ticker
+    this.name = ticker.name
+    this.latestPrice = ticker.price[0].close
+    this.secondPrice = ticker.price[1].close
     this.percentageChange = () => {
         return roundToTwoDecimal(((this.latestPrice-this.secondPrice)/this.latestPrice)*100)
     }
