@@ -1,6 +1,6 @@
 import React,{ useState, useRef, useEffect } from 'react'
 import axios from 'axios'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
 import Output from '../components/addDataComponents/Output'
 import {
@@ -14,10 +14,18 @@ import {
     calculateInsiderMarketBeat,
     calculateMacroTrendsAnnual
 } from '../components/calculations/inputCalculations'
+import { getTickerData, saveTicker } from '../actions/tickerActions';
 
 export default function AddDataScreen() {
+
+    const dispatch = useDispatch()
     const userSignin = useSelector(state => state.userSignin)
     const { loading, userInfo, error } = userSignin
+    const tickerList = useSelector(state => state.tickerList)
+    const { tickers } = tickerList
+    const tickerData = useSelector(state => state.tickerData)
+    const { tickerFullData } = tickerData
+
     const inputRef=useRef()
 
     const [companyInfo, setCompanyInfo] = useState({
@@ -42,8 +50,6 @@ export default function AddDataScreen() {
         dividendData:[],
         priceData:[]
     })
-
-    const [tickers, setTickers] = useState([])
     const [currentTickers, setCurrentTickers] = useState([])
     const [selectedData, setSelectedData] = useState({
         key:'', 
@@ -51,37 +57,23 @@ export default function AddDataScreen() {
     })
     
     useEffect(()=>{
-        async function getData(){
-            let res = await axios.get('/api/tickers')
-            setCurrentTickers(res.data.data)
+        if(tickers){
+            setCurrentTickers(tickers)
         }
-        getData()
-    },[])
+    },[tickers])
 
-    const [data, setData] = useState('')
+    useEffect(()=>{
+        if(tickerFullData){
+            setCompanyInfo(tickerFullData)
+        }
+    },[tickerFullData])
+    
     const processData= async ()=>{
-        try{
-            let res = await axios.post('/dataInput/',companyInfo,{
-                headers:{
-                    Authorization: 'Bearer'+userInfo.token
-                }
-            })
-            setCompanyInfo(res.data.data)
-        } catch(err){
-
-        }
+        dispatch(saveTicker(companyInfo))
     }
 
-    const saveTickers = async()=>{
-        try{
-            let res = await axios.post('/dataInput/saveTickers',tickers,{
-                headers:{
-                    Authorization: 'Bearer'+userInfo.token
-                }
-            })
-        } catch(err){
-
-        }
+    function selectTicker(id) {
+        dispatch(getTickerData(id))
     }
 
     const handleData=(data)=>{
@@ -115,12 +107,6 @@ export default function AddDataScreen() {
                     case 'insiderMarketBeat':
                          setCompanyInfo({...companyInfo,insiderTrading:calculateInsiderMarketBeat(data)})
                         break
-                    case 'tickers':
-                        setTickers([...tickers,...getTickers(array)])
-                        break
-                    case 'helsinki':
-                        setTickers([...tickers,...getHelsinkiTickers(array)])
-                        break
                     case 'macroTrendsAnnual':
                         calculateMacroTrendsAnnual(array,companyInfo,setCompanyInfo)
                         break
@@ -134,19 +120,6 @@ export default function AddDataScreen() {
             inputRef.current.value=''
     }
 
-    async function selectTicker(id) {
-        try{
-            let res = await axios.get('/dataInput/'+id,{
-                headers:{
-                    Authorization: 'Bearer'+userInfo.token
-                }
-            })
-            setCompanyInfo(res.data.data)
-        } catch(err){
-
-        }
-    }
-
     const handleFileData=(e)=>{
         const file = e.target.files[0]
         const reader = new FileReader();
@@ -155,15 +128,6 @@ export default function AddDataScreen() {
             handleData(text)
         });
         reader.readAsText(file);
-    }
-
-    const updateTickerList = async () =>{
-        try{
-            let res = await axios.get('/dataInput/updateList')
-            setCompanyInfo(res)
-        } catch(err){
-
-        }
     }
 
     return (
@@ -186,36 +150,45 @@ export default function AddDataScreen() {
                         className='financeInput' type='file'/>
                     </div>
                     <div className='inputButtons'>
-                        <button onClick={processData} className='button'>Save Company Data</button>
-                        <button onClick={saveTickers} className='button'>save tickers</button>            
-                        <button className='button' onClick={updateTickerList}>
-                            Update Tickerlist
-                        </button>
+                        <button onClick={processData} className='button'>Save Company Data</button>        
                     </div>
 
                 </div>
             </div>
-            <div className='inputInfoContainer'>
-                <InputInfo text={'Profile'} dataText={'profile'} state={companyInfo.profile} setSelectedData={setSelectedData}/>
-                <InputInfo text={'Income Statement'} dataText={'incomeStatement'} state={companyInfo.incomeStatement} setSelectedData={setSelectedData}/>
-                <InputInfo text={'Balance Sheet'} dataText={'balanceSheet'} state={companyInfo.balanceSheet} setSelectedData={setSelectedData}/>
-                <InputInfo text={'Cash Flow'} dataText={'cashFlow'} state={companyInfo.cashFlow} setSelectedData={setSelectedData}/>
-                <InputInfo text={'Price Data'} dataText={'priceData'} state={companyInfo.priceData} setSelectedData={setSelectedData}/>
-                <InputInfo text={'Dividend Data'} dataText={'dividendData'} state={companyInfo.dividendData} setSelectedData={setSelectedData}/>
-                <InputInfo text={'Insider Trades'} dataText={'insiderTrading'} state={companyInfo.insiderTrading} setSelectedData={setSelectedData}/>
+            <div className='output'>
+                <InputInfoHeader profile={companyInfo.profile}/>
+                <div className='inputInfoContainer'>    
+                    <InputInfo text={'Profile'} dataText={'profile'} state={companyInfo.profile} setSelectedData={setSelectedData}/>
+                    <InputInfo text={'Income Statement'} dataText={'incomeStatement'} state={companyInfo.incomeStatement} setSelectedData={setSelectedData}/>
+                    <InputInfo text={'Balance Sheet'} dataText={'balanceSheet'} state={companyInfo.balanceSheet} setSelectedData={setSelectedData}/>
+                    <InputInfo text={'Cash Flow'} dataText={'cashFlow'} state={companyInfo.cashFlow} setSelectedData={setSelectedData}/>
+                    <InputInfo text={'Price Data'} dataText={'priceData'} state={companyInfo.priceData} setSelectedData={setSelectedData}/>
+                    <InputInfo text={'Dividend Data'} dataText={'dividendData'} state={companyInfo.dividendData} setSelectedData={setSelectedData}/>
+                    <InputInfo text={'Insider Trades'} dataText={'insiderTrading'} state={companyInfo.insiderTrading} setSelectedData={setSelectedData}/>
+                </div>
+                <Output selectedData={selectedData.state} setSelectedData={setSelectedData} dataText={selectedData.dataText} setCompanyInfo={setCompanyInfo} companyInfo={companyInfo}/>
             </div>
-            <Output selectedData={selectedData.state} setSelectedData={setSelectedData} dataText={selectedData.dataText} setCompanyInfo={setCompanyInfo} companyInfo={companyInfo}/>
+
+        </div>
+    )
+}
+
+function InputInfoHeader({profile}){
+    return(
+        <div className='inputInfoHeader'>
+            <h4>{profile.name}</h4>
+            <h4>{profile.ticker}</h4>
+            <h4>{profile.sector}</h4>
+            <h4>{profile.industry}</h4>        
         </div>
     )
 }
 
 function getKey(array,data){
-
         if(array[1].split('\t')[0]==='Trend'){
             array.splice(1,2)
         }
         let key = array[1].split('\t')[0]
-        console.log(array)
         if(array[2]==='CURRENT PRICE') key = 'companyInfo'
         if(checkInsider(data)) key = 'insider'
         if(array[0]==='Date,Open,High,Low,Close,Adj Close,Volume') key = 'yahooPrice'
@@ -227,35 +200,6 @@ function getKey(array,data){
         if(array[0]==="Date,Dividends") key='dividends'
         if(key==='Annual Data | Millions of US $ except per share data') key = 'macroTrendsAnnual'
         return key
-}
-
-function getHelsinkiTickers(data){
-    let tickers = []
-    for(var i=0;i<data.length;i++){
-        tickers.push({
-            ticker: data[i].split('\t')[1],
-            name: data[i].split('\t')[0],
-            sector: '',
-            stockExhange: '',
-            country: data[i].split('\t')[3].substring(0, 2),
-            currency: data[i].split('\t')[2],
-            description:'',
-            industry:'',
-            subIndustry:'',
-            founded:'',
-            address:'',
-            phone:'',
-            website:'',
-            employees:'',
-            incomeStatement:[],
-            balanceSheet:[],
-            cashFlow:[],
-            insiderTrading:[],
-            priceData:[]                
-        })
-    }
-
-    return tickers
 }
 
 function CompanyInfo({state}){

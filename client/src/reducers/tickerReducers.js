@@ -7,7 +7,10 @@ import {
     TICKER_DATA_FAIL, 
     TICKER_PORTFOLIO_DATA_REQUEST, 
     TICKER_PORTFOLIO_DATA_SUCCESS, 
-    TICKER_PORTFOLIO_DATA_FAIL
+    TICKER_PORTFOLIO_DATA_FAIL,
+    TICKER_SAVE_REQUEST,
+    TICKER_SAVE_SUCCESS,
+    TICKER_SAVE_FAIL
 } from "../constants/tickerConstants";
 
 function tickerListReducer(state={
@@ -48,8 +51,21 @@ function tickerPortfolioDataReducer(state={},action){
     }
 }
 
+function tickerSaveReducer(state={},action){
+    switch(action.type){
+        case TICKER_SAVE_REQUEST:
+            return { loading:true }
+        case TICKER_SAVE_SUCCESS:
+            return { loading:false, ticker:action.payload }
+        case TICKER_SAVE_FAIL:
+            return { loading:false, error:action.payload }
+        default: return state
+    }
+}
+
 export {
     tickerListReducer,
     tickerDataReducer,
     tickerPortfolioDataReducer,
+    tickerSaveReducer
 }

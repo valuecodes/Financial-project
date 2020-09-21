@@ -21,7 +21,7 @@ export default function SearchInput({currentTickers,selectTicker }) {
                         key={ticker.ticker}
                         className='searchResult' 
                         onClick={e => 
-                        {selectTicker(ticker.tickerId)
+                        {selectTicker(ticker.ticker)
                         setSearch('')}
                         }>
                             <p>{ticker.ticker}</p> 

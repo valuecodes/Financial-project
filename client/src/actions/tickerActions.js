@@ -8,7 +8,10 @@ import {
     TICKER_DATA_FAIL, 
     TICKER_PORTFOLIO_DATA_REQUEST,
     TICKER_PORTFOLIO_DATA_SUCCESS,
-    TICKER_PORTFOLIO_DATA_FAIL
+    TICKER_PORTFOLIO_DATA_FAIL,
+    TICKER_SAVE_REQUEST,
+    TICKER_SAVE_SUCCESS,
+    TICKER_SAVE_FAIL
 } from '../constants/tickerConstants';
 
 const listTickers = () => async(dispatch) => {
@@ -46,8 +49,25 @@ const getPortfolioTickersData = (portfolioId) => async (dispatch,getState) => {
     }
 }
 
+const saveTicker = (companyInfo) => async (dispatch,getState) => {
+    try{
+        dispatch({type: TICKER_SAVE_REQUEST})
+        const {userSignin:{userInfo}} = getState()
+        const { data } = await axios.post('/dataInput/',companyInfo,{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        dispatch({type: TICKER_SAVE_SUCCESS, payload: data})
+    } catch(err){   
+        dispatch({type: TICKER_SAVE_FAIL, payload: err.message})
+    }
+}
+
+
 export{
     listTickers,
     getTickerData,
     getPortfolioTickersData,
+    saveTicker
 }

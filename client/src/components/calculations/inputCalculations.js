@@ -2,7 +2,6 @@ export function calculateFinancialIncomeData(data){
     let newData={}
     let dates=data[0].split('\t')
     let keyData=calculateKeyData(data)
-    console.log(dates)
     let fData=[];
     for(var i=0;i<dates.length;i++){
         if(dates[i]){
@@ -226,7 +225,7 @@ export function calculateInsiderData(data){
         price:Number(data.split('Volume weighted average price:')[1].split('\n')[0].split(' ')[1]),
         volume: Number(data.split('Aggregated transactions')[1].split('Volume')[1].replace(/[:, ]/g, ""))
     }
-    // newData.price=Number(newData.price)?newData.price:NaN
+
     return newData
 }
 
