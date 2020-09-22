@@ -1,3 +1,5 @@
+import { uuidv4 } from "../../utils/utils";
+
 export function calculateFinancialIncomeData(data){
     let newData={}
     let dates=data[0].split('\t')
@@ -379,6 +381,7 @@ function calculateMacroTrendsCashflow(numberOfYears,data){
             'foreignExchangeEffects':parseMacroNumber('-'),
             'netChangeinCash':parseMacroNumber(data[a+(numberOfYears*27)]),
             'issuanceRetirementOfStock':parseMacroNumber('-'),
+            'id': uuidv4()
         }
         fData.push(namedDataBlock)  
     } 
@@ -422,6 +425,7 @@ function calculateMacroTrendsBalance(numberOfYears,data){
             'totalEquity':parseMacroNumber(data[a+(numberOfYears*22)]),
             'tangibleBookValuePerShare':parseMacroNumber('-'),
             'treasuryStock':parseMacroNumber('-'),
+            'id': uuidv4()
         }
         fData.push(namedDataBlock)  
     } 
@@ -452,6 +456,7 @@ function calculateMacroTrendsIncome(numberOfYears,data){
             'sharesOutstanding': parseMacroNumber(data[a+(numberOfYears*20)]),
             'dividendsPerShare': parseMacroNumber('-'),
             'eps': parseMacroNumber(data[a+(numberOfYears*22)]),
+            'id': uuidv4()
         }
         fData.push(namedDataBlock)
     }
@@ -462,9 +467,8 @@ function calculateMacroTrendsIncome(numberOfYears,data){
 function parseMacroNumber(text){
 
     let num = Number(text.replace(/[,$ ]/g,''))
-    console.log(text.charAt(1),text)
     if(text.charAt(1)==='−') num = Number(text.replace(/[,$− ]/g,''))*-1
-    return num
+    return Number.isNaN(num)?null:num
 }
 
 function letterCounter (x) {

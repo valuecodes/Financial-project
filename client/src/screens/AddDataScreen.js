@@ -13,7 +13,7 @@ import {
     calculateInsiderMarketBeat,
     calculateMacroTrendsAnnual
 } from '../components/calculations/inputCalculations'
-import { getTickerData, saveTicker } from '../actions/tickerActions';
+import { getTickerData, saveTicker, deleteTicker } from '../actions/tickerActions';
 import { camelCaseToString, uuidv4 } from '../utils/utils'
 import { tickerDataModel } from '../utils/dataModels'
 
@@ -26,8 +26,6 @@ export default function AddDataScreen() {
     const { tickers } = tickerList
     const tickerData = useSelector(state => state.tickerData)
     const { tickerFullData } = tickerData
-
-    const inputRef=useRef()
 
     const [companyInfo, setCompanyInfo] = useState({
         profile:{
@@ -53,6 +51,7 @@ export default function AddDataScreen() {
     })
     const [currentTickers, setCurrentTickers] = useState([])
     const [selectedKey, setSelectedKey] = useState(null)
+
     useEffect(()=>{
         if(tickers){
             setCurrentTickers(tickers)
@@ -65,66 +64,8 @@ export default function AddDataScreen() {
         }
     },[tickerFullData])
     
-    const processData= async ()=>{
-        dispatch(saveTicker(companyInfo))
-    }
-
     function selectTicker(id) {
         dispatch(getTickerData(id))
-    }
-
-    const handleData=(data)=>{
-            let array=data.split('\n')
-            if(array.length>1){
-                let key = getKey(array,data)
-                switch (key) {
-                    case 'Total Premiums Earned':
-                    case 'Interest Income, Bank':
-                    case 'Revenue':
-                        setCompanyInfo({...companyInfo,incomeStatement:calculateFinancialIncomeData(array)})
-                        break;
-                    case 'Cash':
-                    case 'Cash & Due from Banks':
-                    case 'Cash & Equivalents':
-                        setCompanyInfo({...companyInfo,balanceSheet:calculateFinancialBalanceSheetData(array)})
-                        break;
-                    case 'Net Income/Starting Line':
-                    case 'Cash Taxes Paid':
-                        setCompanyInfo({...companyInfo,cashFlow:calculateFinancialCashFlowData(array)})
-                        break;
-                    case 'companyInfo':
-                        setCompanyInfo({...companyInfo, profile:calculateCompanyInfo(data,companyInfo)})
-                        break
-                    case 'insider':
-                        setCompanyInfo({...companyInfo,insiderTrading:[...companyInfo.insiderTrading,calculateInsiderData(data)]})
-                        break
-                    case 'yahooPrice':
-                        setCompanyInfo({...companyInfo,priceData:calculateYahooPrice(array)})
-                        break
-                    case 'insiderMarketBeat':
-                         setCompanyInfo({...companyInfo,insiderTrading:calculateInsiderMarketBeat(data)})
-                        break
-                    case 'macroTrendsAnnual':
-                        calculateMacroTrendsAnnual(array,companyInfo,setCompanyInfo)
-                        break
-                    case 'dividends':
-                        setCompanyInfo({...companyInfo,dividendData:calculateYahooDividend(array)})
-                        break
-                    default:
-                        break;
-                }          
-            }
-            inputRef.current.value=''
-    }
-
-    const handleFileData=(e)=>{
-        const file = e.target.files[0]
-        const reader = new FileReader();
-        reader.addEventListener('load', function(e) {   
-            var text = e.target.result;
-            handleData(text)
-        });
-        reader.readAsText(file);
     }
 
     return (
@@ -134,22 +75,10 @@ export default function AddDataScreen() {
                     currentTickers={currentTickers}
                     selectTicker={selectTicker}    
                 />
-                <div className='inputActions'>
-                    <div className='dataInputs'>
-                        <textarea 
-                            className='financeInput' 
-                            type='text' 
-                            onChange={e => handleData(e.target.value)}
-                            ref={inputRef}
-                        />
-                        <input
-                            onChange={e => handleFileData(e)}
-                        className='financeInput' type='file'/>
-                    </div>
-                </div>
+                <InputActions companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
             </div>
             <div className='output'>
-                <InputInfoHeader companyInfo={companyInfo} setCompanyInfo={setCompanyInfo} processData={processData}/>
+                <InputInfoHeader companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
                 <div className='inputInfoButtons'>    
                     <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                     <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
@@ -160,7 +89,81 @@ export default function AddDataScreen() {
                 </div>
                 <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
             </div>
+        </div>
+    )
+}
 
+function InputActions({ companyInfo, setCompanyInfo }){
+
+    const inputRef=useRef()
+
+    const handleData=(data)=>{
+        let array=data.split('\n')
+        if(array.length>1){
+            let key = getKey(array,data)
+            switch (key) {
+                case 'Total Premiums Earned':
+                case 'Interest Income, Bank':
+                case 'Revenue':
+                    setCompanyInfo({...companyInfo,incomeStatement:calculateFinancialIncomeData(array)})
+                    break;
+                case 'Cash':
+                case 'Cash & Due from Banks':
+                case 'Cash & Equivalents':
+                    setCompanyInfo({...companyInfo,balanceSheet:calculateFinancialBalanceSheetData(array)})
+                    break;
+                case 'Net Income/Starting Line':
+                case 'Cash Taxes Paid':
+                    setCompanyInfo({...companyInfo,cashFlow:calculateFinancialCashFlowData(array)})
+                    break;
+                case 'companyInfo':
+                    setCompanyInfo({...companyInfo, profile:calculateCompanyInfo(data,companyInfo)})
+                    break
+                case 'insider':
+                    setCompanyInfo({...companyInfo,insiderTrading:[...companyInfo.insiderTrading,calculateInsiderData(data)]})
+                    break
+                case 'yahooPrice':
+                    setCompanyInfo({...companyInfo,priceData:calculateYahooPrice(array)})
+                    break
+                case 'insiderMarketBeat':
+                     setCompanyInfo({...companyInfo,insiderTrading:calculateInsiderMarketBeat(data)})
+                    break
+                case 'macroTrendsAnnual':
+                    calculateMacroTrendsAnnual(array,companyInfo,setCompanyInfo)
+                    break
+                case 'dividends':
+                    setCompanyInfo({...companyInfo,dividendData:calculateYahooDividend(array)})
+                    break
+                default:
+                    break;
+            }          
+        }
+        inputRef.current.value=''
+    }   
+    
+    const handleFileData=(e)=>{
+        const file = e.target.files[0]
+        const reader = new FileReader();
+        reader.addEventListener('load', function(e) {   
+            var text = e.target.result;
+            handleData(text)
+        });
+        reader.readAsText(file);
+    }
+    
+    return(
+        <div className='inputActions'>
+            <div className='dataInputs'>
+                <textarea 
+                    className='financeInput' 
+                    type='text' 
+                    onChange={e => handleData(e.target.value)}
+                    ref={inputRef}
+                />
+                <input
+                    onChange={e => handleFileData(e)}
+                className='financeInput' type='file'/>
+            </div>
         </div>
     )
 }
@@ -190,13 +193,27 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
             let headers =[]
             let body = []
 
+            function parseDate(date){
+                function isIsoDate(str) {
+                    if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)) return false;
+                    var d = new Date(str); 
+                    return d.toISOString()===str;
+                  }
+                if(isIsoDate(date)){
+                    return date
+                }else{
+                    return date.toISOString()
+                }                  
+            }
+
             switch(key){
                 case 'incomeStatement':
                 case 'balanceSheet':
                 case 'cashFlow':
                     headers = selectedData.map(item =>{ 
+                        let date = parseDate(item.date)
                         return{
-                            value:item.date.split('-')[0],
+                            value:date.split('-')[0],
                             key,
                             id:item._id?item._id:item.id
                         }
@@ -204,7 +221,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                     let dataKeys = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
                     dataKeys.forEach(item =>{
                         let data=selectedData.map(data =>{
-                            let value = item==='date'?data[item].split('T')[0]:data[item]  
+                            let value = item==='date'?parseDate(data[item]).split('T')[0]:data[item]  
                             return{
                             dataKey:key,
                             key:item,
@@ -232,7 +249,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                     })
                     selectedData.forEach(item =>{
                         let data = Object.keys(item).map(data => {
-                            let value = data==='date'?item[data].split('T')[0]:item[data]
+                            let value = data==='date'?parseDate(item[data]).split('T')[0]:item[data]
                             return{
                                 dataKey:key,
                                 key:data,
@@ -261,6 +278,8 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         if(e.target.value!==''){
             switch(key){
                 case 'date':
+                    newValue=new Date(e.target.value).toISOString()
+                    break
                 case 'name':
                 case 'position':
                 case 'type':
@@ -312,6 +331,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 
     const deleteDataHandler = (row) => {
         const { key, id } = row
+        console.log(row)
         const updatedCompanyInfo = {...companyInfo}
         let index = updatedCompanyInfo[key].findIndex(item => item._id === id||item.id===id)
         updatedCompanyInfo[key].splice(index,1)
@@ -373,10 +393,21 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
     )
 }
 
-function InputInfoHeader({companyInfo, setCompanyInfo,processData}){
+function InputInfoHeader({companyInfo, setCompanyInfo}){
 
     let keys = Object.keys(companyInfo.profile).filter(item => item!=='_id')
+    const dispatch = useDispatch()
+    
+    const processData = async () => {
+        dispatch(saveTicker(companyInfo))
+    }
 
+    const deleteTickerHandler=()=>{
+        if(companyInfo._id){
+            dispatch(deleteTicker(companyInfo._id))
+        }
+    }    
+    
     const modifyData=(e,key)=>{
         const newValue = e.target.value
         const updatedCompanyInfo = {...companyInfo}
@@ -396,6 +427,7 @@ function InputInfoHeader({companyInfo, setCompanyInfo,processData}){
             </ul>  
             <div>
                 <button onClick={processData} className='button'>Save Company Data</button> 
+                <button onClick={deleteTickerHandler}>Delete Ticker</button>
             </div>
         </div>
     )
@@ -452,41 +484,6 @@ function InputInfo({ dataKey, data, setSelectedKey}){
             {camelCaseToString(dataKey)} {Object.keys(data[dataKey]).length}
         </div>
     )
-}
-
-function getTickers(data){
-
-    let tickers=[]
-
-    for(var i=10;i<data.length-2;i++){
-        tickers.push({
-            ticker: findData(data,i,'Ticker'),
-            name: findData(data,i,'Name'),
-            sector: findData(data,i,'Sector'),
-            stockExhange: findData(data,i,'Exchange'),
-            country: findData(data,i,'Location'),
-            currency: findData(data,i,'Market Currency'),
-            description:'',
-            industry:'',
-            subIndustry:'',
-            founded:'',
-            address:'',
-            phone:'',
-            website:'',
-            employees:'',
-            incomeStatement:[],
-            balanceSheet:[],
-            cashFlow:[],
-            insiderTrading:[],
-            priceData:[]
-        })
-    }
-    return tickers
-}
-
-function findData(data,index,search){
-    let key = data[9].split(',').findIndex(item => item===search)
-    return data[index].split('",')[key].replace('"','')
 }
 
 function checkInsider(data){

@@ -4,7 +4,7 @@ const TickerSlim = require('../models/tickerSlimModel')
 // @desc      Get ticker by id
 // @route     GET /:id
 // @ access   Auth Admin
-exports.updateTicker = async ( req, res ) => {
+exports.updateTicker = async ( req, res, next ) => {
     const ticker = await Ticker.findById(req.body._id)
     if(ticker){
         ticker.profile=req.body.profile,
@@ -16,6 +16,7 @@ exports.updateTicker = async ( req, res ) => {
         ticker.insiderTrading=req.body.insiderTrading
         let saved = await ticker.save()
         console.log('ticker saved')
+        next()
         res.send({message:'Ticker saved',data:saved})   
     }else{
         let newTicker = new Ticker({
@@ -29,11 +30,13 @@ exports.updateTicker = async ( req, res ) => {
         })
         console.log('ticker created')
         let saved = await newTicker.save()
+        req.body._id=saved._id
+        next()
         res.send({message:'Ticker created',data:saved})  
     }
 }
 
-exports.updateTickerList = async ( req,res,next ) => {
+exports.updateTickerList = async ( req,res ) => {
     console.log('Updating ticker list...')
     let id = req.body._id
     const tickerSlim = await TickerSlim.findOne({tickerId:id})
@@ -53,7 +56,6 @@ exports.updateTickerList = async ( req,res,next ) => {
         })
         await newTicker.save()
     }
-    return next()
 }
 
 function calculatePrice(data){
@@ -83,4 +85,25 @@ exports.getTickerList = async ( req, res ) => {
         name:item.profile.name
     }))
     res.send({data:tickers})
+}
+
+// @desc      Delete Ticker
+// @route     DELETE /:id
+// @ access   Auth Admin
+exports.deleteTicker = async ( req,res ) => {
+    const tickerId = req.params.id
+    const ticker = await Ticker.findById(tickerId)
+    if(ticker){
+        await ticker.remove()
+        console.log('Ticker removed succesfully')
+        const tickerSlim = await TickerSlim.findOne({tickerId:tickerId})
+        if(tickerSlim){
+            await tickerSlim.remove()
+            console.log('TickerSlim removed succesfully')
+        } 
+        return res.send({message:'Ticker deleted'})
+    }else{
+        return res.status(404).send({message: 'Ticker not found'})
+    }
+    console.log(ticker)
 }

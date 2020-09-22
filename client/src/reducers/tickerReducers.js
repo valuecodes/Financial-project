@@ -10,7 +10,10 @@ import {
     TICKER_PORTFOLIO_DATA_FAIL,
     TICKER_SAVE_REQUEST,
     TICKER_SAVE_SUCCESS,
-    TICKER_SAVE_FAIL
+    TICKER_SAVE_FAIL,
+    TICKER_DELETE_REQUEST,
+    TICKER_DELETE_SUCCESS,
+    TICKER_DELETE_FAIL
 } from "../constants/tickerConstants";
 
 function tickerListReducer(state={
@@ -63,9 +66,22 @@ function tickerSaveReducer(state={},action){
     }
 }
 
+function tickerDeleteReducer(state={},action){
+    switch(action.type){
+        case TICKER_DELETE_REQUEST:
+            return { loading:true }
+        case TICKER_DELETE_SUCCESS:
+            return { loading:false, success:true }
+        case TICKER_DELETE_FAIL:
+            return { loading:false, error:action.payload }
+        default: return state
+    }
+}
+
 export {
     tickerListReducer,
     tickerDataReducer,
     tickerPortfolioDataReducer,
-    tickerSaveReducer
+    tickerSaveReducer,
+    tickerDeleteReducer
 }

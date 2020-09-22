@@ -11,7 +11,10 @@ import {
     TICKER_PORTFOLIO_DATA_FAIL,
     TICKER_SAVE_REQUEST,
     TICKER_SAVE_SUCCESS,
-    TICKER_SAVE_FAIL
+    TICKER_SAVE_FAIL,
+    TICKER_DELETE_REQUEST,
+    TICKER_DELETE_SUCCESS,
+    TICKER_DELETE_FAIL
 } from '../constants/tickerConstants';
 
 const listTickers = () => async(dispatch) => {
@@ -64,10 +67,25 @@ const saveTicker = (companyInfo) => async (dispatch,getState) => {
     }
 }
 
+const deleteTicker = (tickerId) => async (dispatch, getState) => {
+    try{
+        dispatch({type: TICKER_DELETE_REQUEST})
+        const {userSignin:{userInfo}} = getState()
+        const { data } = await axios.delete('/dataInput/'+tickerId,{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        dispatch({type: TICKER_DELETE_SUCCESS, payload: data})
+    } catch(err){   
+        dispatch({type: TICKER_DELETE_FAIL, payload: err.message})
+    }
+}
 
 export{
     listTickers,
     getTickerData,
     getPortfolioTickersData,
-    saveTicker
+    saveTicker,
+    deleteTicker
 }
