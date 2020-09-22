@@ -5,7 +5,7 @@ const { getToken, isAuth, isAdmin } = require('../util')
 // @route     POST /
 // @ access   
 exports.userSignin = async (req,res) => {
-console.log( await User.find())
+
     const signinUser = await User.findOne({
         email: req.body.email,
         password: req.body.password

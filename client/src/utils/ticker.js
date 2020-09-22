@@ -11,7 +11,6 @@ export function Ticker(portfolioTicker,tickerData){
     this.purchasePrice = (format) => calculatePurchasePrice(this,format)
     this.currentPrice = (format) => calculateCurrentPrice(this,format)
     this.priceChange = (format) => calculatePriceChange(this,format)
-    this.percentageChange = () => calculatePercentageChange(this)
     this.marketCap = () => calculateMarketCap(this)
     this.priceChangePercentage = (format) => calculatePriceChangePercentage(this,format)
     this.getMyDivs = (options) => calculateMyDivs(this,options)
@@ -54,12 +53,6 @@ export function calculateCurrentPrice(ticker,format){
 function calculatePriceChange(ticker,format){
     let value = calculateCurrentPrice(ticker)-calculatePurchasePrice(ticker)
     return formatValue(value,format)
-}
-
-function calculatePercentageChange(ticker){
-    return roundToTwoDecimal(((
-        ticker.tickerData.priceData[0].close-ticker.tickerData.priceData[1].close)/ticker.tickerData.priceData[1].close
-    )*100)
 }
 
 function calculateMarketCap(ticker){

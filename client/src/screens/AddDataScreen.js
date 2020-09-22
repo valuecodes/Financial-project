@@ -2,7 +2,6 @@ import React,{ useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
-import Output from '../components/addDataComponents/Output'
 import {
     calculateFinancialIncomeData,
     calculateFinancialBalanceSheetData,
@@ -15,6 +14,8 @@ import {
     calculateMacroTrendsAnnual
 } from '../components/calculations/inputCalculations'
 import { getTickerData, saveTicker } from '../actions/tickerActions';
+import { camelCaseToString, uuidv4 } from '../utils/utils'
+import { tickerDataModel } from '../utils/dataModels'
 
 export default function AddDataScreen() {
 
@@ -51,11 +52,7 @@ export default function AddDataScreen() {
         priceData:[]
     })
     const [currentTickers, setCurrentTickers] = useState([])
-    const [selectedData, setSelectedData] = useState({
-        key:'', 
-        state:[]
-    })
-    
+    const [selectedKey, setSelectedKey] = useState(null)
     useEffect(()=>{
         if(tickers){
             setCurrentTickers(tickers)
@@ -149,37 +146,257 @@ export default function AddDataScreen() {
                             onChange={e => handleFileData(e)}
                         className='financeInput' type='file'/>
                     </div>
-                    <div className='inputButtons'>
-                        <button onClick={processData} className='button'>Save Company Data</button>        
-                    </div>
-
                 </div>
             </div>
             <div className='output'>
-                <InputInfoHeader profile={companyInfo.profile}/>
-                <div className='inputInfoContainer'>    
-                    <InputInfo text={'Profile'} dataText={'profile'} state={companyInfo.profile} setSelectedData={setSelectedData}/>
-                    <InputInfo text={'Income Statement'} dataText={'incomeStatement'} state={companyInfo.incomeStatement} setSelectedData={setSelectedData}/>
-                    <InputInfo text={'Balance Sheet'} dataText={'balanceSheet'} state={companyInfo.balanceSheet} setSelectedData={setSelectedData}/>
-                    <InputInfo text={'Cash Flow'} dataText={'cashFlow'} state={companyInfo.cashFlow} setSelectedData={setSelectedData}/>
-                    <InputInfo text={'Price Data'} dataText={'priceData'} state={companyInfo.priceData} setSelectedData={setSelectedData}/>
-                    <InputInfo text={'Dividend Data'} dataText={'dividendData'} state={companyInfo.dividendData} setSelectedData={setSelectedData}/>
-                    <InputInfo text={'Insider Trades'} dataText={'insiderTrading'} state={companyInfo.insiderTrading} setSelectedData={setSelectedData}/>
+                <InputInfoHeader companyInfo={companyInfo} setCompanyInfo={setCompanyInfo} processData={processData}/>
+                <div className='inputInfoButtons'>    
+                    <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                    <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                    <InputInfo dataKey={'cashFlow'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                    <InputInfo dataKey={'priceData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                    <InputInfo dataKey={'dividendData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                    <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                 </div>
-                <Output selectedData={selectedData.state} setSelectedData={setSelectedData} dataText={selectedData.dataText} setCompanyInfo={setCompanyInfo} companyInfo={companyInfo}/>
+                <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
             </div>
 
         </div>
     )
 }
 
-function InputInfoHeader({profile}){
+function Output({selectedKey, companyInfo, setCompanyInfo}){
+
+    const [direction,setDirection]=useState('')
+    const [table, setTable] = useState({
+        headers:[],
+        body:[],
+    })
+
+    useEffect(()=>{
+
+        if(selectedKey){
+            let selectedData = companyInfo[selectedKey].sort((a,b)=>new Date(b.date)-new Date(a.date))
+            let key = selectedKey
+
+            if(!selectedData[0]){
+                setTable({
+                    headers:[],
+                    body:[],
+                })
+                return
+            }    
+
+            let headers =[]
+            let body = []
+
+            switch(key){
+                case 'incomeStatement':
+                case 'balanceSheet':
+                case 'cashFlow':
+                    headers = selectedData.map(item =>{ 
+                        return{
+                            value:item.date.split('-')[0],
+                            key,
+                            id:item._id?item._id:item.id
+                        }
+                    })
+                    let dataKeys = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
+                    dataKeys.forEach(item =>{
+                        let data=selectedData.map(data =>{
+                            let value = item==='date'?data[item].split('T')[0]:data[item]  
+                            return{
+                            dataKey:key,
+                            key:item,
+                            value:value,
+                            date:data.date,
+                            id:data._id?data._id:data.id
+                        }})
+                        body.push({
+                            key:item,
+                            data:data,
+                            id:data._id?data._id:data.id
+                        })
+                    })
+                    setTable({headers,body})
+                    setDirection('row')
+                    break
+                case 'priceData':
+                case 'dividendData':
+                case 'insiderTrading':
+                    headers = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
+                    headers = headers.map(item =>{
+                        return{
+                            value:item
+                        }
+                    })
+                    selectedData.forEach(item =>{
+                        let data = Object.keys(item).map(data => {
+                            let value = data==='date'?item[data].split('T')[0]:item[data]
+                            return{
+                                dataKey:key,
+                                key:data,
+                                value:value,
+                                date:item.date,
+                                id:item._id?item._id:item.id
+                            }
+                        })
+                        data = data.filter(item => item.key!=='_id'&&item.key!=='id')
+                        body.push({
+                            key:key,
+                            data:data,
+                            id:item._id?item._id:item.id
+                        })
+                    })
+                    setTable({headers,body})
+                    setDirection('col')
+                    break
+            }
+        }
+    },[selectedKey,companyInfo])
+
+    const modifyDataHandler=(e,item)=>{
+        const { dataKey, key, date, value,id } = item
+        let newValue=''
+        if(e.target.value!==''){
+            switch(key){
+                case 'date':
+                case 'name':
+                case 'position':
+                case 'type':
+                case 'instrument':
+                    newValue=e.target.value
+                    break
+                default:
+                    newValue = Number(e.target.value)
+            } 
+        }
+        let index = companyInfo[dataKey].findIndex(item => item._id === id||item.id===id)
+        const updatedCompanyInfo = {...companyInfo}
+        if(index>=0){
+            updatedCompanyInfo[dataKey][index][key] = newValue
+            setCompanyInfo(updatedCompanyInfo)             
+        }
+    }
+
+    const calculateInputWidth=(data,key)=>{
+        if(data.length>8){
+            return '6.5rem'
+        }else if(key==='date'&&direction==='col'){
+            return '14rem'
+        }else{
+            return '8rem'
+        }
+    }
+
+    const addRowHandler=(key)=>{
+        let template = Object.assign({}, tickerDataModel[key]);
+        template.id = uuidv4()
+        const updatedCompanyInfo = {...companyInfo}
+        updatedCompanyInfo[key].push(template)
+        setCompanyInfo(updatedCompanyInfo)
+    }
+
+    const calculateType=(key)=>{
+        switch(key){
+            case 'date':
+                return 'date'
+            case 'name':
+            case 'position':
+            case 'type':
+            case 'instrument':
+                return 'text'
+            default: return 'number'
+        }
+    }
+
+    const deleteDataHandler = (row) => {
+        const { key, id } = row
+        const updatedCompanyInfo = {...companyInfo}
+        let index = updatedCompanyInfo[key].findIndex(item => item._id === id||item.id===id)
+        updatedCompanyInfo[key].splice(index,1)
+        setCompanyInfo(updatedCompanyInfo)
+    }
+
+    return(
+        <table className='inputDataTable'>
+
+            <thead>
+                <tr>
+                    <th>{selectedKey&&<h3>{camelCaseToString(selectedKey)}</h3>}</th>
+                </tr>
+                <tr>
+                    <th>
+                    {selectedKey&&
+                        <button 
+                            onClick={e => addRowHandler(selectedKey)}
+                            className='addRowButton'>Add row</button>
+                    }
+                    </th>
+                    {table.headers.map((item,index) =>
+                        <th className='tableHeader' key={index}>
+                           <span>{camelCaseToString(item.value)}</span>
+                            {direction==='row'&&
+                                <button onClick={e => deleteDataHandler(item)}>X</button>
+                            }
+                        </th>
+                    )}
+                </tr>                
+            </thead>
+            <tbody>
+            {table.body.map((row,index) => 
+                <tr key={index}>
+                    <td>{camelCaseToString(row.key)}</td>
+                    {row.data.map((item,index) =>
+                        <td key={index}>
+                            <input
+                                onChange={(e)=>modifyDataHandler(e,item)}
+                                style={{
+                                    width:calculateInputWidth(row.data,item.key),
+                                    backgroundColor:item.value===null?'rgba(247, 103, 87,0.4)':'rgba(87, 247, 154,0.4)'
+                                }}
+                                className='inputTableInput' 
+                                value={item.value===null?'':item.value}
+                                type={calculateType(item.key) }
+                            />
+                        </td>  
+                    )}   
+                    {direction==='col'&&
+                        <td>
+                            <button onClick={() => deleteDataHandler(row)}>Delete</button>
+                        </td>                   
+                    }
+                </tr>
+            )}                
+            </tbody>
+        </table>
+    )
+}
+
+function InputInfoHeader({companyInfo, setCompanyInfo,processData}){
+
+    let keys = Object.keys(companyInfo.profile).filter(item => item!=='_id')
+
+    const modifyData=(e,key)=>{
+        const newValue = e.target.value
+        const updatedCompanyInfo = {...companyInfo}
+        updatedCompanyInfo.profile[key] = newValue
+        setCompanyInfo(updatedCompanyInfo)
+    }
+
     return(
         <div className='inputInfoHeader'>
-            <h4>{profile.name}</h4>
-            <h4>{profile.ticker}</h4>
-            <h4>{profile.sector}</h4>
-            <h4>{profile.industry}</h4>        
+            <ul>
+                {keys.map(item =>
+                    <li className='inputInfoItem'>
+                        <label>{camelCaseToString(item)}</label>
+                        <input value={companyInfo.profile[item]} onChange={e => modifyData(e,item)}/>
+                    </li>                
+                )}
+            </ul>  
+            <div>
+                <button onClick={processData} className='button'>Save Company Data</button> 
+            </div>
         </div>
     )
 }
@@ -212,13 +429,27 @@ function CompanyInfo({state}){
     )
 }
 
-function InputInfo({ text, dataText,  state, setSelectedData}){
+function InputInfoProfile({ dataKey, data, setSelectedKey}){
+
+    let length = Object.values(data[dataKey]).filter(item => item!=='').length
+
     return(
         <div className='inputInfo'
-            style={{backgroundColor:Object.keys(state).length?'#CBFFCE':'#FFD5CB'}}
-            onClick={e => setSelectedData({dataText,state})}
+            style={{backgroundColor:length?'#CBFFCE':'#FFD5CB'}}
+            onClick={e => setSelectedKey(dataKey)}
         >
-            {text} {Object.keys(state).length}
+            {camelCaseToString(dataKey)} {length}
+        </div>
+    )
+}
+
+function InputInfo({ dataKey, data, setSelectedKey}){
+    return(
+        <div className='inputInfo'
+            style={{backgroundColor:Object.keys(data[dataKey]).length?'#CBFFCE':'#FFD5CB'}}
+            onClick={e => setSelectedKey(dataKey)}
+        >
+            {camelCaseToString(dataKey)} {Object.keys(data[dataKey]).length}
         </div>
     )
 }

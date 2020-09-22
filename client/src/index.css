@@ -374,32 +374,55 @@ h1{
 }
 
 .output{
+  margin: 2rem;
+}
+
+
+
+.inputInfoHeader{
+  width: 120rem;
+  height: 10rem;
+  background-color: rgb(193, 194, 199);
   display: grid;
-  grid-template-columns:20rem auto;
+  grid-template-columns: 1fr 20rem;
+}
+
+.inputInfoHeader ul{
+  display: grid;
+  grid-template-columns: repeat(6,1fr);
+  align-items: center;
+  padding: 1rem;
+}
+
+.inputInfoItem input{
+  width: 15rem;
+  border: none;
+  border-radius: 0.1rem;
+  height: 2rem;
+}
+
+.inputInfoItem label{
+  font-size: 1.4rem;
+}
+
+.inputInfoButtons{
+  width: 120rem;
+  display: grid;
+  grid-template-columns: auto repeat(5, 1fr);
+  gap:0.5rem;
 }
 
 .inputInfo{
-  margin: 1rem;
   padding: 1rem;
-  border: 0.1rem solid black;
+  border-bottom: 0.2rem solid black;
+  cursor: pointer;
 }
-
-.inputInfoHeader{
-  min-width: 90rem;
-  height: 6rem;
-  background-color: rgb(199, 199, 199);
-  grid-column: 2/3;
-display: grid;
-grid-template-columns: repeat(4,20rem)
-}
-
 .searchBox{
   margin: auto;
   height: 3rem;
 }
 
 .searchBox input{
-  
   width: 25rem;
   height: 2rem;
   border-radius: 0.5rem;
@@ -408,7 +431,6 @@ grid-template-columns: repeat(4,20rem)
 
 .searchResult{
   position: relative;
-  /* height: 0; */
   background-color: rgb(199, 199, 199);
   height: 3rem;
   display: grid;
@@ -430,12 +452,42 @@ grid-template-columns: repeat(4,20rem)
   align-items: center;
 }
 
-
-
 .outputItem{
   display: flex;
 }
 
+.inputDataTable{
+  margin-top: 2rem;
+}
+.inputDataTable h3{
+  margin:2rem 0;
+}
+
+.inputTableInput{
+  width: auto;
+  border: none;
+  height: 2.5rem;
+}
+
+.tableHeader span{
+  height: 0;
+  width: 100%;
+  display: block;
+}
+
+.tableHeader button{
+  width: 3rem;
+  display: block;
+  margin-left: auto;
+  background-color: rgb(241, 158, 158);
+  border: none;
+  cursor: pointer;
+}
+
+.addRowButton{
+  width: 22rem;
+  height: 3rem;
+}
 
 /* TickerScreen */
 .tickerScreen{
@@ -541,11 +593,7 @@ grid-template-columns: repeat(4,20rem)
 
 /* PortfolioStats */
 .portfolioStats{
-  /* width: 30rem; */
-  /* height: 40rem; */
   display: grid;
-  /* grid-template-columns: 1fr 1fr 1fr; */
-  /* grid-template-rows: 1fr 1fr; */
 }
 
 /* Chart */
@@ -664,17 +712,20 @@ grid-template-columns: repeat(4,20rem)
 }
 
 table {
-  width: 100%;
+  /* width: 100%; */
   border-collapse: collapse;
 }
 
 th, td{
   padding: 0.2rem;
+  max-height: 3rem;
+  text-align: left;
 }
 
 th{
   margin: 0 0.2rem;
   background-color: white;
+  margin-right: auto;
 }
 
 td{
