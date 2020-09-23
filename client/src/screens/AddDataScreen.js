@@ -16,6 +16,7 @@ import {
 import { getTickerData, saveTicker, deleteTicker } from '../actions/tickerActions';
 import { camelCaseToString, uuidv4 } from '../utils/utils'
 import { tickerDataModel } from '../utils/dataModels'
+import { getExhangeRates, updateExhangeRates } from '../actions/exhangeRateActions';
 
 export default function AddDataScreen() {
 
@@ -25,7 +26,17 @@ export default function AddDataScreen() {
     const tickerList = useSelector(state => state.tickerList)
     const { tickers } = tickerList
     const tickerData = useSelector(state => state.tickerData)
-    const { tickerFullData } = tickerData
+    const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
+    const tickerSave = useSelector(state => state.tickerSave)
+    const { loading:saveLoading, ticker:tickerSaved, error:saveError } = tickerSave
+
+    let messages = {
+        tickerLoading,
+        saveLoading,
+        tickerError,
+        saveError,
+        tickerSaved
+    }
 
     const [companyInfo, setCompanyInfo] = useState({
         profile:{
@@ -53,6 +64,10 @@ export default function AddDataScreen() {
     const [selectedKey, setSelectedKey] = useState(null)
 
     useEffect(()=>{
+        dispatch(getExhangeRates())
+    },[])
+
+    useEffect(()=>{
         if(tickers){
             setCurrentTickers(tickers)
         }
@@ -78,7 +93,8 @@ export default function AddDataScreen() {
                 <InputActions companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
             </div>
             <div className='output'>
-                <InputInfoHeader companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
+                <ControlPanel/>
+                <InputInfoHeader companyInfo={companyInfo} setCompanyInfo={setCompanyInfo} messages={messages}/>
                 <div className='inputInfoButtons'>    
                     <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                     <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
@@ -88,6 +104,38 @@ export default function AddDataScreen() {
                     <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                 </div>
                 <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
+            </div>
+        </div>
+    )
+}
+function ControlPanel(){
+
+    const exhangeRateList = useSelector(state => state.exhangeRateList)
+    const { loading, exhangeRate, error } = exhangeRateList
+
+    const dispatch = useDispatch()
+
+    const updateExhangeRatesHandler=()=>{
+        dispatch(updateExhangeRates())
+    }
+
+    const parseTimeStamp = (timestamp) => {
+        let date = new Date(exhangeRate.timestamp*1000).toISOString()
+        return date.split('.')[0].replace('T',' ')
+    }
+    
+    return(
+        <div className='controlPanel'>
+            <div className='exhangeRates'>
+                <button onClick={updateExhangeRatesHandler}>Update Exhange rates</button>
+                {exhangeRate&&
+                    <div className='exhangeRate'>
+                        <label>Date:</label>
+                        <p>{exhangeRate.date}</p>
+                        <label>Updated:</label>
+                        <p>{parseTimeStamp(exhangeRate.timestamp)}</p>
+                    </div>                
+                }
             </div>
         </div>
     )
@@ -331,7 +379,6 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 
     const deleteDataHandler = (row) => {
         const { key, id } = row
-        console.log(row)
         const updatedCompanyInfo = {...companyInfo}
         let index = updatedCompanyInfo[key].findIndex(item => item._id === id||item.id===id)
         updatedCompanyInfo[key].splice(index,1)
@@ -340,7 +387,6 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 
     return(
         <table className='inputDataTable'>
-
             <thead>
                 <tr>
                     <th>{selectedKey&&<h3>{camelCaseToString(selectedKey)}</h3>}</th>
@@ -393,7 +439,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
     )
 }
 
-function InputInfoHeader({companyInfo, setCompanyInfo}){
+function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
 
     let keys = Object.keys(companyInfo.profile).filter(item => item!=='_id')
     const dispatch = useDispatch()
@@ -418,15 +464,19 @@ function InputInfoHeader({companyInfo, setCompanyInfo}){
     return(
         <div className='inputInfoHeader'>
             <ul>
-                {keys.map(item =>
-                    <li className='inputInfoItem'>
+                {keys.map((item,index) =>
+                    <li key={index} className='inputInfoItem'>
                         <label>{camelCaseToString(item)}</label>
                         <input value={companyInfo.profile[item]} onChange={e => modifyData(e,item)}/>
                     </li>                
                 )}
             </ul>  
-            <div>
+            <div className='inputInfoActions'>
                 <button onClick={processData} className='button'>Save Company Data</button> 
+                <div className='messages'>
+                    {messages.tickerLoading && <div>Loading Ticker Data...</div>}
+                    {messages.saveLoading && <div>Saving Ticker...</div>}
+                </div>
                 <button onClick={deleteTickerHandler}>Delete Ticker</button>
             </div>
         </div>

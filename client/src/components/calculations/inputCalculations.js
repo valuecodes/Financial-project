@@ -25,6 +25,7 @@ export function calculateFinancialIncomeData(data){
                 'sharesOutstanding': calculateFinancialStatement('weightedAverageShares',i,keyData),
                 'dividendsPerShare': calculateFinancialStatement('dividendsPerShare',i,keyData),
                 'eps': calculateFinancialStatement('eps',i,keyData),
+                id: uuidv4() 
             }
             fData.push(namedDataBlock)
         }
@@ -50,7 +51,7 @@ function calculateFinancialStatement(key,i,keyData){
         netIncome:['Net Income'],
         sharesOutstanding:['Diluted Weighted Average Shares'],
         dividendsPerShare:['DPS - Common Stock Primary Issue'],
-        eps:['Diluted Normalized EPS']
+        eps:['Diluted Normalized EPS'],
     }
     return calculateFinancialNumber(keys[key],i,keyData)
 }
@@ -95,6 +96,7 @@ export function calculateFinancialBalanceSheetData(data){
                 'totalEquity':calculatebalanceSheet('totalEquity',i,keyData),
                 'tangibleBookValuePerShare':calculatebalanceSheet('tangibleBookValuePerShare',i,keyData),
                 'treasuryStock':calculatebalanceSheet('treasuryStock',i,keyData),
+                id: uuidv4() 
             }
 
             fData.push(namedDataBlock)            
@@ -137,7 +139,7 @@ function calculatebalanceSheet(key,i,keyData){
         retainedEarnigs:['Retained Earnings (Accumulated Deficit)'],
         totalEquity:['Total Equity'],
         tangibleBookValuePerShare:['Tangible Book Value per Share, Common Eq'],
-        treasuryStock:['Treasury Stock - Common'],
+        treasuryStock:['Treasury Stock - Common']
     }
     return calculateFinancialNumber(keys[key],i,keyData)
 }
@@ -167,6 +169,7 @@ export function calculateFinancialCashFlowData(data){
                 'foreignExchangeEffects':calculateCashFlowStatement('foreignExchangeEffects',i,keyData),
                 'netChangeinCash':calculateCashFlowStatement('netChangeinCash',i,keyData),
                 'issuanceRetirementOfStock':calculateCashFlowStatement('issuanceRetirementOfStock',i,keyData),
+                id: uuidv4() 
             }
 
             fData.push(namedDataBlock)            
@@ -193,7 +196,7 @@ function calculateCashFlowStatement(key,i,keyData){
         financingCashFlow:['Cash from Financing Activities'],
         foreignExchangeEffects:['Foreign Exchange Effects'],
         netChangeinCash:['Net Change in Cash'],
-        issuanceRetirementOfStock:['Issuance (Retirement) of Stock, Net'],
+        issuanceRetirementOfStock:['Issuance (Retirement) of Stock, Net']
     }
     return calculateFinancialNumber(keys[key],i,keyData)
 }
@@ -211,7 +214,8 @@ export function calculateCompanyInfo(data,info){
         address:data[14],
         phone:data[16],
         website:data[18],
-        employees:data[20],        
+        employees:data[20],
+        id: uuidv4()        
     }
     return newData
 }
@@ -225,7 +229,8 @@ export function calculateInsiderData(data){
         type: calculateTransactionType(data.split('Nature of the transaction:')[1].split('\n')[0].trim()),
         instrument: data.split('Instrument type:')[1].split('\n')[0].trim(),
         price:Number(data.split('Volume weighted average price:')[1].split('\n')[0].split(' ')[1]),
-        volume: Number(data.split('Aggregated transactions')[1].split('Volume')[1].replace(/[:, ]/g, ""))
+        volume: Number(data.split('Aggregated transactions')[1].split('Volume')[1].replace(/[:, ]/g, "")),
+        id: uuidv4() 
     }
 
     return newData
@@ -258,6 +263,7 @@ export function calculateInsiderMarketBeat(data){
             instrument: 'SHARE',
             price: array[i].split('\t')[5].replace(/[$,]/g, ""),
             volume: array[i].split('\t')[4].replace(/[$,]/g, ""),
+            id: uuidv4() 
         }
         insiderData.push(newData)
     }
@@ -271,7 +277,8 @@ export function calculateYahooDividend(data){
         if(new Date(row[0]).getFullYear()>=2000){
             divData.push({
                 date:new Date(row[0]),
-                dividend:Number(row[1])
+                dividend:Number(row[1]),
+                id: uuidv4() 
             })
         }
     }
@@ -290,7 +297,8 @@ export function calculateYahooPrice(data){
                 high:row[2],
                 low:row[3],
                 close:row[4],
-                volume:row[6]
+                volume:row[6],
+                id: uuidv4()   
             })            
         }
     }

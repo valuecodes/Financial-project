@@ -15,14 +15,16 @@ import {
     portfolioUpdateReducer,
     portfolioSelectedReducer
 } from './reducers/portfolioReducers';
+import { exhangeRateListReducer, exhangeRateUpdateReducer } from './reducers/exhangeRateReducer';
 
 const userInfo = Cookie.getJSON('userInfo') || null
 const initialState = {userSignin:{userInfo},userPortfolios:[],portfolioSelected:{name:''}}
 
 const reducer = combineReducers({
-    tickerList: tickerListReducer,
+    
     userSignin: userSigninReducer,
     userRgister: userRegisterReducer,
+    
     portfolioCreate: portfolioCreateReducer,
     portfolioUpdate: portfolioUpdateReducer,
     portfolioDelete: portfolioDeleteReducer,
@@ -33,10 +35,15 @@ const reducer = combineReducers({
     portfolioDeleteTransaction: portfolioDeleteTransactionReducer,
     portfolioUserList: portfolioUserListReducer,
     portfolioSelected:portfolioSelectedReducer,
+    
+    tickerList: tickerListReducer,
     tickerData:tickerDataReducer,
     tickerPortfolioData: tickerPortfolioDataReducer,
     tickerSave: tickerSaveReducer,
-    tickerDelete: tickerDeleteReducer
+    tickerDelete: tickerDeleteReducer,
+
+    exhangeRateList:exhangeRateListReducer,
+    exhangeRateUpdate:exhangeRateUpdateReducer
 })
 
 const composeEnchancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__||compose

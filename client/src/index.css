@@ -374,10 +374,23 @@ h1{
 }
 
 .output{
-  margin: 2rem;
+  margin: 0 2rem;
 }
 
+.controlPanel{
+  height: 8rem;
+  margin-bottom: 1rem;
+  background-color: rgb(224, 224, 224);
+}
 
+.exhangeRate{
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+}
+
+.exhangeRate label{
+  font-size: 1.2rem;
+}
 
 .inputInfoHeader{
   width: 120rem;
@@ -405,6 +418,15 @@ h1{
   font-size: 1.4rem;
 }
 
+.inputInfoActions{
+  display: grid;
+  grid-template-rows: 3rem 1fr 3rem; 
+}
+
+.messages{
+  
+}
+
 .inputInfoButtons{
   width: 120rem;
   display: grid;
@@ -417,6 +439,7 @@ h1{
   border-bottom: 0.2rem solid black;
   cursor: pointer;
 }
+
 .searchBox{
   margin: auto;
   height: 3rem;
