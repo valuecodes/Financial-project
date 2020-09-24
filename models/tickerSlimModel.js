@@ -8,13 +8,15 @@ const priceSchema = {
 
 const tickerSlimSchema = new mongoose.Schema({
     tickerId:{type:mongoose.Schema.Types.ObjectId, ref: 'Ticker', required:true},
-    ticker:{type:String,required:true},
+    ticker:{type:String,required:true, unique:true},
     name:{type:String,required:true},
     price:[priceSchema],
     sector:{type:String},
     industry:{type:String},
     subIndustry:{type:String},
     country:{type: String},
+},{
+    timestamps:true
 })
 
 const tickerSlimModel = mongoose.model('TickerSlim',tickerSlimSchema)

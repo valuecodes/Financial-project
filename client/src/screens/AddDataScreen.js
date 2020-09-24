@@ -11,7 +11,10 @@ import {
     calculateYahooPrice,
     calculateYahooDividend,
     calculateInsiderMarketBeat,
-    calculateMacroTrendsAnnual
+    calculateMacroTrendsAnnual,
+    calculateFinancialIncomeReuters,
+    calculateFinancialBalanceSheetReuters,
+    getReuterCurrency
 } from '../components/calculations/inputCalculations'
 import { getTickerData, saveTicker, deleteTicker } from '../actions/tickerActions';
 import { camelCaseToString, uuidv4 } from '../utils/utils'
@@ -29,7 +32,7 @@ export default function AddDataScreen() {
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
     const tickerSave = useSelector(state => state.tickerSave)
     const { loading:saveLoading, ticker:tickerSaved, error:saveError } = tickerSave
-
+    
     let messages = {
         tickerLoading,
         saveLoading,
@@ -49,9 +52,11 @@ export default function AddDataScreen() {
             subIndustry:'',
             founded:'',
             address:'',
-            phone:'',
             website:'',
             employees:'',
+            country:'',
+            tickerCurrency:'',
+            financialDataCurrency:'',
         },
         incomeStatement:[],
         balanceSheet:[],
@@ -64,15 +69,11 @@ export default function AddDataScreen() {
     const [selectedKey, setSelectedKey] = useState(null)
 
     useEffect(()=>{
-        dispatch(getExhangeRates())
-    },[])
-
-    useEffect(()=>{
         if(tickers){
             setCurrentTickers(tickers)
         }
     },[tickers])
-
+    console.log(companyInfo)
     useEffect(()=>{
         if(tickerFullData){
             setCompanyInfo(tickerFullData)
@@ -110,30 +111,50 @@ export default function AddDataScreen() {
 }
 function ControlPanel(){
 
-    const exhangeRateList = useSelector(state => state.exhangeRateList)
-    const { loading, exhangeRate, error } = exhangeRateList
-
     const dispatch = useDispatch()
+    const [exchangeRate, setExchangeRate]=useState(null)
+    const exhangeRateList = useSelector(state => state.exhangeRateList)
+    const { loading, exhangeRate:eRate, error } = exhangeRateList
+    const exhangeRateUpdate = useSelector(state => state.exhangeRateUpdate)
+    const { loading:updateLoading, success, exhangeRate:eRateUpdate, error:updateError } = exhangeRateUpdate 
+    
+    useEffect(()=>{
+        if(eRate){
+            console.log(eRate,'set')
+            setExchangeRate(eRate)
+        }
+    },[eRate])
 
-    const updateExhangeRatesHandler=()=>{
+    useEffect(()=>{ 
+        if(eRateUpdate){
+            console.log(eRate,'update')  
+            setExchangeRate(eRateUpdate)
+        } 
+    },[eRateUpdate])
+
+    useEffect(()=>{
+        dispatch(getExhangeRates())
+    },[])
+
+    const updateExchangeRatesHandler=()=>{
         dispatch(updateExhangeRates())
     }
 
     const parseTimeStamp = (timestamp) => {
-        let date = new Date(exhangeRate.timestamp*1000).toISOString()
+        let date = new Date(exchangeRate.timestamp*1000).toISOString()
         return date.split('.')[0].replace('T',' ')
     }
     
     return(
         <div className='controlPanel'>
             <div className='exhangeRates'>
-                <button onClick={updateExhangeRatesHandler}>Update Exhange rates</button>
-                {exhangeRate&&
+                <button onClick={updateExchangeRatesHandler}>Update Exhange rates</button>
+                {exchangeRate&&
                     <div className='exhangeRate'>
                         <label>Date:</label>
-                        <p>{exhangeRate.date}</p>
+                        <p>{exchangeRate.date}</p>
                         <label>Updated:</label>
-                        <p>{parseTimeStamp(exhangeRate.timestamp)}</p>
+                        <p>{parseTimeStamp(exchangeRate.timestamp)}</p>
                     </div>                
                 }
             </div>
@@ -150,19 +171,25 @@ function InputActions({ companyInfo, setCompanyInfo }){
         if(array.length>1){
             let key = getKey(array,data)
             switch (key) {
-                case 'Total Premiums Earned':
-                case 'Interest Income, Bank':
-                case 'Revenue':
-                    setCompanyInfo({...companyInfo,incomeStatement:calculateFinancialIncomeData(array)})
+                case 'reutersIncome':
+                    setCompanyInfo({
+                        ...companyInfo,
+                        profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},
+                        incomeStatement:calculateFinancialIncomeReuters(array)
+                    })
                     break;
-                case 'Cash':
-                case 'Cash & Due from Banks':
-                case 'Cash & Equivalents':
-                    setCompanyInfo({...companyInfo,balanceSheet:calculateFinancialBalanceSheetData(array)})
+                case 'reutersBalance':
+                    setCompanyInfo({
+                        ...companyInfo,
+                        profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},
+                        balanceSheet:calculateFinancialBalanceSheetReuters(array)})
                     break;
-                case 'Net Income/Starting Line':
-                case 'Cash Taxes Paid':
-                    setCompanyInfo({...companyInfo,cashFlow:calculateFinancialCashFlowData(array)})
+                case 'reutersCash':
+                    setCompanyInfo({
+                        ...companyInfo,
+                        profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},  
+                        cashFlow:calculateFinancialCashFlowData(array)
+                    })
                     break;
                 case 'companyInfo':
                     setCompanyInfo({...companyInfo, profile:calculateCompanyInfo(data,companyInfo)})
@@ -492,13 +519,37 @@ function getKey(array,data){
         if(checkInsider(data)) key = 'insider'
         if(array[0]==='Date,Open,High,Low,Close,Adj Close,Volume') key = 'yahooPrice'
         if(key==='Transaction Date') key='insiderMarketBeat'
-        if(array.length>9){
-            if(array[9].split(',')[0]==="Ticker") key='tickers'
-        }
-        if(key==='Cargotec Oyj') key='helsinki'
         if(array[0]==="Date,Dividends") key='dividends'
         if(key==='Annual Data | Millions of US $ except per share data') key = 'macroTrendsAnnual'
+        let reuterKey = checkReuters(array)
+        if(reuterKey){
+            key=reuterKey
+            console.log(reuterKey)
+        }
+        
         return key
+}
+
+function checkReuters(array){
+    if(array[14]){
+        let incomeKeys=['Revenue','Total Premiums Earned','Interest Income, Bank']
+        let balanceKeys=['Cash','Cash & Due from Banks','Cash & Equivalents']
+        let cashflowKeys=['Net Income/Starting Line','Cash Taxes Paid']
+        let key = array[14].split('\t')[0]
+
+        let keyFound=null;
+        if(incomeKeys.find(item => item===key)){
+            keyFound='reutersIncome'
+        }else if(balanceKeys.find(item => item===key)){
+            keyFound='reutersBalance'
+        }else if(cashflowKeys.find(item => item===key)){
+            keyFound='reutersCash'
+        }
+        return keyFound
+    }else{
+        return null
+    }
+
 }
 
 function CompanyInfo({state}){

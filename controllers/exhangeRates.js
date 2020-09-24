@@ -25,11 +25,14 @@ exports.updateExhangeRates = async (req, res) => {
     const rate = await axios.get(`http://data.fixer.io/api/latest?access_key=${process.env.FIXER_API_KEY}`)
     const { data } = rate
     
-    if(exhangeRate){
-        exhangeRate.rates=JSON.stringify(data.rates)
-        await exhangeRate.save()
+    if(exhangeRate){        
+        exhangeRate.base = data.base
+        exhangeRate.timestamp = data.timestamp
+        exhangeRate.date = data.date
+        exhangeRate.rates = JSON.stringify(data.rates)
+        const updated = await exhangeRate.save()
         console.log('Updated exhange rate')
-        res.send({message:'Update successfulle'})  
+        res.send({message:'Update successfully',data:updated})  
     }else{
         let newRate = new ExhangeRate({
             base:data.base,

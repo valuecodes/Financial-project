@@ -99,20 +99,21 @@ const dividendDataSchema = new mongoose.Schema({
 })
 
 const profileSchema = new mongoose.Schema({
-    ticker:{type: String, required:true},
+    ticker:{type: String, required:true, unique:true},
     name:{type: String, required: true},
     description:{type: String, required: true},
     sector:{type: String, required: true},
     industry:{type: String, required: true},
     subIndustry:{type: String, required:true},
     stockExhange:{type: String},
-    country:{type: String},
-    currency:{type: String},
-    founded:{type:String, required: true},
+    founded:{type:Date},
     address:{type: String, required: true},
-    phone:{type: String, required: true},
+    phone:{type: String},
     website:{type: String, required: true},
-    employees:{type: String, required: true},    
+    employees:{type: Number},
+    country:{type: String},
+    tickerCurrency:{type: String},
+    financialDataCurrency:{type:String}    
 })
 
 const tickerSchema = new mongoose.Schema({

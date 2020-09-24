@@ -24,7 +24,7 @@ function exhangeRateUpdateReducer(state={},action){
         case EXHANGE_RATES_UPDATE_REQUEST:
             return {loading:true}
         case EXHANGE_RATES_UPDATE_SUCCESS:
-            return {loading:false, exhangeRate:action.payload}
+            return {loading:false, success:true, exhangeRate:action.payload}
         case EXHANGE_RATES_UPDATE_FAIL:
             return {loading:false, error: action.payload}
         default: return state

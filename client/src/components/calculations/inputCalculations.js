@@ -1,9 +1,49 @@
 import { uuidv4 } from "../../utils/utils";
 
+
+
+export function calculateFinancialIncomeReuters(data){
+    let dates=data[11].split('\t')
+    let keyData=calculateKeyData(data)
+    let fData=[];
+    for(var i=0;i<dates.length;i++){
+        if(dates[i]){
+            let namedDataBlock={
+                'date':new Date(dates[i]),
+                'revenue': calculateFinancialStatement('revenue',i,keyData),
+                'costOfRevenue': calculateFinancialStatement('costOfRevenue',i,keyData),
+                'grossProfit': calculateFinancialStatement('grossProfit',i,keyData),
+                'sgaExpenses': calculateFinancialStatement('sgaExpenses',i,keyData),
+                'depreciationAmortization': calculateFinancialStatement('depreciationAmortization',i,keyData),
+                'otherOperatingExp': calculateFinancialStatement('otherOperatingExp',i,keyData),
+                'totalOperationgExp': calculateFinancialStatement('totalOperationgExp',i,keyData),
+                'operatingIncome': calculateFinancialStatement('operatingIncome',i,keyData),
+                'interestIncome': calculateFinancialStatement('interestIncome',i,keyData),
+                'otherNetIncome': calculateFinancialStatement('otherNetIncome',i,keyData),
+                'ebit': calculateFinancialStatement('ebit',i,keyData),
+                'incomeTaxProvision': calculateFinancialStatement('incomeTaxProvision',i,keyData),
+                'netIncome': calculateFinancialStatement('netIncome',i,keyData),
+                'sharesOutstanding': calculateFinancialStatement('weightedAverageShares',i,keyData),
+                'dividendsPerShare': calculateFinancialStatement('dividendsPerShare',i,keyData),
+                'eps': calculateFinancialStatement('eps',i,keyData),
+                id: uuidv4() 
+            }
+            fData.push(namedDataBlock)
+        }
+
+    }
+    return fData
+}
+
+export function getReuterCurrency(data){
+    return data[0].split('.')[0].split(', ')[1]
+}
+
 export function calculateFinancialIncomeData(data){
     let newData={}
     let dates=data[0].split('\t')
     let keyData=calculateKeyData(data)
+    console.log(keyData)
     let fData=[];
     for(var i=0;i<dates.length;i++){
         if(dates[i]){
@@ -56,9 +96,9 @@ function calculateFinancialStatement(key,i,keyData){
     return calculateFinancialNumber(keys[key],i,keyData)
 }
 
-export function calculateFinancialBalanceSheetData(data){
+export function calculateFinancialBalanceSheetReuters(data){
     let newData={}
-    let dates=data[0].split('\t')
+    let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
     let fData=[];
     for(var i=0;i<dates.length;i++){
@@ -146,7 +186,7 @@ function calculatebalanceSheet(key,i,keyData){
 
 export function calculateFinancialCashFlowData(data){
     let newData={}
-    let dates=data[0].split('\t')
+    let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
     let fData=[];
     for(var i=0;i<dates.length;i++){
@@ -203,6 +243,7 @@ function calculateCashFlowStatement(key,i,keyData){
 
 export function calculateCompanyInfo(data,info){
     data=data.split('\n')
+    console.log(data)
     let newData={
         ticker:data[4].split(':')[0],
         name:data[0],
@@ -210,14 +251,38 @@ export function calculateCompanyInfo(data,info){
         sector:data[6],
         industry:data[8],
         subIndustry:data[10],
-        founded:data[12],
+        founded:new Date(data[12]),
         address:data[14],
-        phone:data[16],
         website:data[18],
-        employees:data[20],
-        id: uuidv4()        
+        employees:Number(data[20]),
+        country:calculateTickerCountry(data),
+        tickerCurrency:calculateTickerCurrency(data),
+        financialDataCurrency:info.financialDataCurrency,
+        // id: uuidv4()        
     }
     return newData
+}
+
+function calculateTickerCountry(data){
+    if(data[14]){
+        let array = data[14].split(' ')
+        let country = array[array.length-1]
+        if(country==='States'){
+            country = `${array[array.length-2]} ${country}`
+        }
+        return country
+    }
+    return ''
+}
+
+function calculateTickerCurrency(data){
+    if(data[4]){
+        let currency= data[4].split('.')[1].replace(/[^A-Za-z]/g, '')
+        if(currency){
+            return currency.toUpperCase()
+        }
+    }
+    return null
 }
 
 export function calculateInsiderData(data){
@@ -302,20 +367,18 @@ export function calculateYahooPrice(data){
             })            
         }
     }
-    console.log(priceData)
     return priceData
 }
 
 function calculateFinancialNumber(keys,index,keyData){
-    console.log(keys,index,keyData)
     if(keys){
         for(var i=0;i<keys.length;i++){
             if(keyData[keys[i]]){
+                console.log((keyData[keys[i]]),keys[i])
                 return parseNumber(keyData[keys[i]][index])
             }
         }        
     }
-
     return NaN
 }
 
@@ -326,13 +389,15 @@ function parseNumber(number){
         number = Number(number)
         number*=-1
     }
+    if(number==='--') return null
     return Number(number)
 }
 
 function calculateKeyData(data){
     let fData={}
-    for(var i=0;i<data.length;i++){
+    for(var i=14;i<data.length;i++){
         let row=data[i].split('\t')
+        if(!row[0]) break
         fData[row[0]]=row
         fData[row[0]].shift()
     }
@@ -352,16 +417,26 @@ export function calculateMacroTrendsAnnual(data,companyInfo,setCompanyInfo){
             break
         }
     }
-    console.log(key)
+
     switch(key){
         case 'Revenue':
-            setCompanyInfo({...companyInfo,incomeStatement:calculateMacroTrendsIncome(numberOfYears,data)}) 
+            setCompanyInfo({
+                ...companyInfo,
+                profile:{...companyInfo.profile,financialDataCurrency:'USD'},                 
+                incomeStatement:calculateMacroTrendsIncome(numberOfYears,data)}) 
             break
         case 'Cash On Hand':
-            setCompanyInfo({...companyInfo,balanceSheet:calculateMacroTrendsBalance(numberOfYears,data)}) 
+            setCompanyInfo({
+                ...companyInfo,
+                profile:{...companyInfo.profile,financialDataCurrency:'USD'},                 
+                balanceSheet:calculateMacroTrendsBalance(numberOfYears,data)}) 
             break
         case 'Net Income/Loss':
-                setCompanyInfo({...companyInfo,cashFlow:calculateMacroTrendsCashflow(numberOfYears,data)}) 
+                setCompanyInfo({
+                    ...companyInfo,
+                    profile:{...companyInfo.profile,financialDataCurrency:'USD'},        
+                    cashFlow:calculateMacroTrendsCashflow(numberOfYears,data)
+                }) 
             break
         default: return
     }
