@@ -435,7 +435,6 @@ h1{
 
 .inputInfoHeader{
   width: 120rem;
-  /* height: 10rem; */
   background-color: rgb(193, 194, 199);
   display: grid;
   grid-template-columns: 1fr 20rem;
@@ -459,15 +458,41 @@ h1{
   /* width: 20rem; */
 }
 
-.inputInfoItem label{
+.itemLabel{
   margin:0.5rem 0;
   display: block;
   font-size: 1.4rem;
 }
 
+.inputInfoRatios{
+  grid-column: 1;
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  padding: 1rem;
+}
+
+.inputInfoRatios .inputInfoItem input{
+  width: 10rem;
+}
+.inputInfoRatios .inputInfoItem label{
+  font-size: 1.2rem;
+}
+
+.inputInfoRatios button{
+  height: 3rem;
+  margin-top: auto;
+  background-color: rgb(201, 201, 201);
+  cursor: pointer;
+}
+.inputInfoRatios button:hover{
+  background-color: lightgreen;
+}
+
 .inputInfoActions{
   display: grid;
   grid-template-rows: 3rem 1fr 3rem; 
+  grid-row: 1/2;
+  grid-column: 2/3;
 }
 
 .messages{

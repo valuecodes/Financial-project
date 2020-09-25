@@ -54,6 +54,7 @@ const getPortfolioTickersData = (portfolioId) => async (dispatch,getState) => {
 
 const saveTicker = (companyInfo) => async (dispatch,getState) => {
     try{
+        console.log(companyInfo)
         dispatch({type: TICKER_SAVE_REQUEST})
         const {userSignin:{userInfo}} = getState()
         const { data } = await axios.post('/dataInput/',companyInfo,{

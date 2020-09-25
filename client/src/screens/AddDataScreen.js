@@ -13,10 +13,11 @@ import {
     calculateFinancialBalanceSheetReuters,
     getReuterCurrency
 } from '../components/calculations/inputCalculations'
-import { getTickerData, saveTicker, deleteTicker } from '../actions/tickerActions';
+import { getTickerData, saveTicker, deleteTicker, listTickers } from '../actions/tickerActions';
 import { camelCaseToString, uuidv4 } from '../utils/utils'
 import { tickerDataModel } from '../utils/dataModels'
 import { getExhangeRates, updateExhangeRates } from '../actions/exhangeRateActions';
+import { TickerData } from '../utils/tickerData';
 
 export default function AddDataScreen() {
 
@@ -39,30 +40,7 @@ export default function AddDataScreen() {
         saveSuccess
     }
 
-    const [companyInfo, setCompanyInfo] = useState({
-        profile:{
-            ticker:'',
-            name:'',
-            description:'',
-            sector:'',
-            stockExhange: '',
-            industry:'',
-            subIndustry:'',
-            founded:'',
-            address:'',
-            website:'',
-            employees:'',
-            country:'',
-            tickerCurrency:'',
-            financialDataCurrency:'',
-        },
-        incomeStatement:[],
-        balanceSheet:[],
-        cashFlow:[],
-        insiderTrading:[],
-        dividendData:[],
-        priceData:[]
-    })
+    const [companyInfo, setCompanyInfo] = useState(new TickerData({}))
     const [currentTickers, setCurrentTickers] = useState([])
     const [selectedKey, setSelectedKey] = useState(null)
 
@@ -74,10 +52,15 @@ export default function AddDataScreen() {
 
     useEffect(()=>{
         if(tickerFullData){
-            setCompanyInfo(tickerFullData)
+            let ticker = new TickerData(tickerFullData)
+            setCompanyInfo({...ticker,ratios:ticker.tickerRatios()})
         }
     },[tickerFullData])
     
+    useEffect(()=>{
+        dispatch(listTickers())
+    },[saveSuccess])
+
     function selectTicker(id) {
         dispatch(getTickerData(id))
     }
@@ -98,7 +81,11 @@ export default function AddDataScreen() {
             </div>
             <div className='output'>
                 <ControlPanel/>
-                <InputInfoHeader companyInfo={companyInfo} setCompanyInfo={setCompanyInfo} messages={messages}/>
+                <InputInfoHeader 
+                    companyInfo={companyInfo} 
+                    setCompanyInfo={setCompanyInfo} 
+                    messages={messages}
+                />
                 <div className='inputInfoButtons'>    
                     <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                     <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
@@ -550,8 +537,9 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
 
     let keys = Object.keys(companyInfo.profile).filter(item => item!=='_id')
+    let ratios = Object.keys(companyInfo.ratios)
     const dispatch = useDispatch()
-    
+
     const processData = async () => {
         dispatch(saveTicker(companyInfo))
     }
@@ -574,11 +562,22 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
             <ul>
                 {keys.map((item,index) =>
                     <li key={index} className='inputInfoItem'>
-                        <label>{camelCaseToString(item)}</label>
+                        <label className='itemLabel'>{camelCaseToString(item)}</label>
                         <input value={companyInfo.profile[item]} onChange={e => modifyData(e,item)}/>
                     </li>                
                 )}
             </ul>  
+            <div className='inputInfoRatios'>
+                {ratios.map(ratio=>
+                    <div className='inputInfoItem'>
+                        <label className='itemLabel'>{camelCaseToString(ratio)}</label>
+                        <input value={companyInfo.ratios[ratio]}/>
+                    </div>
+                )}
+                <button
+                    onClick={() => updateRatios(companyInfo,setCompanyInfo)}
+                >Update Ratios</button>
+            </div>
             <div className='inputInfoActions'>
                 <button onClick={processData} className='button'>Save Company Data</button> 
                 <div className='messages'>
@@ -591,6 +590,10 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
             </div>
         </div>
     )
+}
+
+function updateRatios(companyInfo,setCompanyInfo){
+    setCompanyInfo({...companyInfo,ratios:companyInfo.tickerRatios()})
 }
 
 function getKey(array,data){

@@ -6,6 +6,7 @@ const TickerSlim = require('../models/tickerSlimModel')
 // @ access   Auth Admin
 exports.updateTicker = async ( req, res, next ) => {
     const ticker = await Ticker.findById(req.body._id)
+    console.log(req.body._id)
     if(ticker){
         ticker.profile=req.body.profile,
         ticker.incomeStatement=req.body.incomeStatement,
@@ -41,7 +42,8 @@ exports.updateTickerList = async ( req,res ) => {
     let id = req.body._id
     const tickerSlim = await TickerSlim.findOne({tickerId:id})
     if(tickerSlim){
-        tickerSlim.price = calculatePrice(req.body) 
+        tickerSlim.price = calculatePrice(req.body)
+        tickerSlim.ratios = req.body.ratios
         await tickerSlim.save()
     }else{
         let newTicker = new TickerSlim({
@@ -53,6 +55,7 @@ exports.updateTickerList = async ( req,res ) => {
             industry:req.body.profile.industry,
             subIndustry:req.body.profile.subIndustry,
             country:req.body.profile.country,
+            ratios:req.body.ratios
         })
         await newTicker.save()
     }

@@ -6,6 +6,23 @@ const priceSchema = {
     _id : false  
 }
 
+const ratioSchema = {
+    pe:{type:Number},
+    pb:{type:Number},
+    divYield:{type:Number},
+    payoutRatio:{type:Number},
+    marketCap:{type:Number},
+    currentRatio:{type:Number},
+    operatingMargin:{type:Number},
+    profitMargin:{type:Number},
+    profitGrowth5Years:{type:Number},
+    revenueGrowth5Years:{type:Number},
+    peg:{type:Number},
+    roe:{type:Number},
+    roa:{type:Number},
+    _id : false 
+}
+
 const tickerSlimSchema = new mongoose.Schema({
     tickerId:{type:mongoose.Schema.Types.ObjectId, ref: 'Ticker', required:true},
     ticker:{type:String,required:true, unique:true},
@@ -15,6 +32,7 @@ const tickerSlimSchema = new mongoose.Schema({
     industry:{type:String},
     subIndustry:{type:String},
     country:{type: String},
+    ratios:ratioSchema
 },{
     timestamps:true
 })
