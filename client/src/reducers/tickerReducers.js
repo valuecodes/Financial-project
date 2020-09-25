@@ -59,7 +59,7 @@ function tickerSaveReducer(state={},action){
         case TICKER_SAVE_REQUEST:
             return { loading:true }
         case TICKER_SAVE_SUCCESS:
-            return { loading:false, ticker:action.payload }
+            return { loading:false, success:true, ticker:action.payload }
         case TICKER_SAVE_FAIL:
             return { loading:false, error:action.payload }
         default: return state

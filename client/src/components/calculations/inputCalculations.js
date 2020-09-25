@@ -243,7 +243,6 @@ function calculateCashFlowStatement(key,i,keyData){
 
 export function calculateCompanyInfo(data,info){
     data=data.split('\n')
-    console.log(data)
     let newData={
         ticker:data[4].split(':')[0],
         name:data[0],
@@ -257,8 +256,7 @@ export function calculateCompanyInfo(data,info){
         employees:Number(data[20]),
         country:calculateTickerCountry(data),
         tickerCurrency:calculateTickerCurrency(data),
-        financialDataCurrency:info.financialDataCurrency,
-        // id: uuidv4()        
+        financialDataCurrency:info.profile.financialDataCurrency,   
     }
     return newData
 }

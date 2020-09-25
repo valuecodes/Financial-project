@@ -1,10 +1,7 @@
 import React,{ useState, useRef, useEffect } from 'react'
-import axios from 'axios'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
 import {
-    calculateFinancialIncomeData,
-    calculateFinancialBalanceSheetData,
     calculateFinancialCashFlowData,
     calculateCompanyInfo,
     calculateInsiderData,
@@ -31,14 +28,15 @@ export default function AddDataScreen() {
     const tickerData = useSelector(state => state.tickerData)
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
     const tickerSave = useSelector(state => state.tickerSave)
-    const { loading:saveLoading, ticker:tickerSaved, error:saveError } = tickerSave
-    
+    const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
+
     let messages = {
         tickerLoading,
         saveLoading,
         tickerError,
         saveError,
-        tickerSaved
+        tickerSaved,
+        saveSuccess
     }
 
     const [companyInfo, setCompanyInfo] = useState({
@@ -73,7 +71,7 @@ export default function AddDataScreen() {
             setCurrentTickers(tickers)
         }
     },[tickers])
-    console.log(companyInfo)
+
     useEffect(()=>{
         if(tickerFullData){
             setCompanyInfo(tickerFullData)
@@ -91,7 +89,12 @@ export default function AddDataScreen() {
                     currentTickers={currentTickers}
                     selectTicker={selectTicker}    
                 />
-                <InputActions companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
+                <InputActions 
+                    companyInfo={companyInfo} 
+                    setCompanyInfo={setCompanyInfo}
+                    tickers={tickers}
+                    selectTicker={selectTicker}    
+                />
             </div>
             <div className='output'>
                 <ControlPanel/>
@@ -109,6 +112,7 @@ export default function AddDataScreen() {
         </div>
     )
 }
+
 function ControlPanel(){
 
     const dispatch = useDispatch()
@@ -162,9 +166,42 @@ function ControlPanel(){
     )
 }
 
-function InputActions({ companyInfo, setCompanyInfo }){
+function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
+
+    const [tickerList,setTickerList]=useState({
+        ready:[],
+        notReady:[]        
+    })
+    const [tickerSort, setTickerSort]=useState({
+        selected:'UpdatedAt',
+        values:['All','UpdatedAt'],
+    })
 
     const inputRef=useRef()
+
+    useEffect(()=>{
+        if(tickers){
+
+            const { selected } = tickerSort
+            let ready = []
+            let notReady = []
+
+            switch(selected){
+                case 'UpdatedAt':
+                    tickers.forEach(ticker =>{
+                        if(ticker.updatedAt){
+                            ready.push(ticker)
+                        }else{
+                            notReady.push(ticker)
+                        }
+                    })                    
+                    break
+                default: ready = tickers
+            }
+
+            setTickerList({ready,notReady})
+        }
+    },[tickers,tickerSort])
 
     const handleData=(data)=>{
         let array=data.split('\n')
@@ -225,7 +262,7 @@ function InputActions({ companyInfo, setCompanyInfo }){
         });
         reader.readAsText(file);
     }
-    
+
     return(
         <div className='inputActions'>
             <div className='dataInputs'>
@@ -234,10 +271,54 @@ function InputActions({ companyInfo, setCompanyInfo }){
                     type='text' 
                     onChange={e => handleData(e.target.value)}
                     ref={inputRef}
+                    placeholder={'Copy paste text here...'}
                 />
-                <input
-                    onChange={e => handleFileData(e)}
-                className='financeInput' type='file'/>
+                <div className='financeFileInputContainer'>
+                    <p className='financeFileInputText'>Drag files here</p>  
+                    <input
+                        onChange={e => handleFileData(e)}
+                        className='financeFileInput' type='file'
+                        placeholder={'Copy paste text here...'}                    
+                    />                  
+                </div>
+            </div>
+            <div className='tickerUpdated'>
+                <label>Since last updated days</label>
+                <input type='range'/>
+                {tickerSort.values.map(item =>
+                    <button 
+                        key={item}
+                        style={{backgroundColor:item===tickerSort.selected&&'lightgreen'}}
+                        onClick={() => setTickerSort({...tickerSort,selected:item})}
+                        >{item}
+                    </button>
+                )}                
+                <div className='tickerUpdateList ready'>
+                    <h3>Ready</h3>
+                    {tickerList.ready.map(ticker =>
+                        <div 
+                            key={ticker.tickerId}
+                            onClick={() => selectTicker(ticker.ticker)}
+                            className='tickerUpdateListTicker'
+                            style={{backgroundColor:companyInfo.profile.ticker===ticker.ticker&&'lightgreen'}}
+                        >
+                            <p>{ticker.ticker}</p>
+                        </div>
+                    )}
+                </div>
+                <div className='tickerUpdateList notReady'>
+                    <h3>Not Ready</h3>
+                    {tickerList.notReady.map(ticker =>
+                        <div 
+                            key={ticker.tickerId}
+                            onClick={() => selectTicker(ticker.ticker)}
+                            className='tickerUpdateListTicker'
+                            style={{backgroundColor:companyInfo.profile.ticker===ticker.ticker&&'lightgreen'}}
+                        >
+                            <p>{ticker.ticker}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )
@@ -348,7 +429,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
     },[selectedKey,companyInfo])
 
     const modifyDataHandler=(e,item)=>{
-        const { dataKey, key, date, value,id } = item
+        const { dataKey, key, id } = item
         let newValue=''
         if(e.target.value!==''){
             switch(key){
@@ -503,6 +584,8 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
                 <div className='messages'>
                     {messages.tickerLoading && <div>Loading Ticker Data...</div>}
                     {messages.saveLoading && <div>Saving Ticker...</div>}
+                    {messages.saveSuccess&&<div>Ticker saved Succesfully</div>}
+                    {messages.saveError&&<div>Error saving ticker</div>}
                 </div>
                 <button onClick={deleteTickerHandler}>Delete Ticker</button>
             </div>
