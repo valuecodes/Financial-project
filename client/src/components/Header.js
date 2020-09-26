@@ -6,12 +6,21 @@ import { listTickers } from '../actions/tickerActions';
 import SearchBox from './SearchBox'
 import { useHistory } from 'react-router';
 import { listUserPortfolios, selectPortfolio } from '../actions/portfolioActions';
+import { getExhangeRates } from '../actions/exhangeRateActions';
 
 export default function Header(props) {
+    
+    const [page, setPage]=useState('')
     const history = useHistory();
     const dispatch = useDispatch()
     const tickerList = useSelector(state => state.tickerList)
     const { tickers } = tickerList
+    const userSignin = useSelector(state => state.userSignin)
+    const { userInfo } = userSignin
+
+    useEffect(()=>{
+        dispatch(getExhangeRates())
+    },[])
 
     useEffect(()=>{
         dispatch(listTickers())
@@ -24,22 +33,86 @@ export default function Header(props) {
     return (
         <header className='header'>
             <div className='headerContainer container'>
-                <MainLogo/>
-                <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Search tickers'}/>
-                <Navbar/>
+                <MainLogo setPage={setPage}/>
+                <SearchBox  tickers={tickers} addItem={selectTicker} placeholder={'Search tickers...'}/>
+                <Navbar userInfo={userInfo}/>
             </div>
+            <SubHeader userInfo={userInfo} setPage={setPage}/>
         </header>
     )
 }
 
+function SubHeader({userInfo,setPage}){
 
+    const exhangeRateList = useSelector(state => state.exhangeRateList)
+    const { loading, exhangeRate, error } = exhangeRateList
+    const [eRate,setERate] = useState('USD')
+    const history = useHistory();
+    let path = history.location.pathname
 
-function Navbar(){
+    return(
+        <div className='subHeader'>
+            <div className='container subHeaderNav'>
+                <ul>
+                    <li>
+                        <Link
+                            style={{
+                                backgroundColor: path==='/'&&'rgba(0, 0, 0, 0.2)',
+                                borderBottom: path==='/'&&'0.2rem solid lightgreen'}}
+                            onClick={()=>setPage('/')} to='/'
+                        >
+                            Home
+                        </Link>
+                    </li>
+                    {userInfo &&   
+                        <li><Link
+                                style={{
+                                backgroundColor: path==='/trading'&&'rgba(0, 0, 0, 0.2)',
+                                borderBottom: path==='/trading'&&'0.2rem solid lightgreen'}} 
+                                onClick={()=>setPage('/trading')} 
+                                to='/trading'
+                            >
+                                Trading
+                            </Link></li>
+                    }
+                    
+                    {userInfo?userInfo.isAdmin &&
+                        <li>
+                            <Link 
+                                style={{
+                                    backgroundColor: path==='/addData'&&'rgba(0, 0, 0, 0.2)',
+                                    borderBottom: path==='/addData'&&'0.2rem solid lightgreen'}} 
+                                onClick={()=>setPage('/addData')} 
+                                to='/addData'
+                            >
+                                Admin
+                            </Link>
+                        </li>:<div></div>} 
+                </ul>
+                {exhangeRate&&
+                    <div className='headerCurrencies'>
+                        <p className='currencyText'>EUR / </p>
+                            <select 
+                                className='selectERate currencyText' name='eRates' 
+                                id={'eRates'}
+                                value={eRate}
+                                onChange={(e) => setERate(e.target.value)}
+                            >
+                                {Object.keys(exhangeRate.rates).map(rate =>
+                                    <option key={rate} value={rate}>{rate}</option>
+                                )}
+                            </select>
+                        <p className='currencyText'>{exhangeRate.rates[eRate]}</p>
+                    </div>
+                }
+            </div>
+        </div>
+    )
+}
+
+function Navbar({userInfo}){
 
     const dispatch = useDispatch()
-    const userSignin = useSelector(state => state.userSignin)
-    const { userInfo } = userSignin
-    
     const logOutHandler=()=>{
         dispatch(logout())
     }
@@ -50,19 +123,12 @@ function Navbar(){
                 {userInfo &&
                     <SelectUserPortfolio/>
                 }
-                <li><Link to='/'>Home</Link></li>
+                
                 {!userInfo &&
                     <li><Link to='/signin'>Signin</Link></li>
                 } 
-                {userInfo &&
-                    <>    
-                    <li><Link to='/trading'>Trading</Link></li>
-                    <button onClick={logOutHandler}>Log out</button>
-                    {userInfo.isAdmin &&
-                        <li>
-                            <Link to='/addData'>Admin</Link>
-                        </li>}
-                    </>
+                {userInfo &&                    
+                    <button className='button' onClick={logOutHandler}>Log out</button>
                 } 
             </ul>
         </nav>   
@@ -114,10 +180,10 @@ function SelectUserPortfolio(){
         </div>
     )
 }
-function MainLogo(){
+function MainLogo({setPage}){
     return(
         <div className='mainLogo'>
-            <h1><Link to='/'>My logo</Link></h1> 
+            <Link onClick={() => setPage('/')} to='/'>Financial Project</Link>
         </div>
     )
 }

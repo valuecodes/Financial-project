@@ -29,20 +29,23 @@ export default function SearchBox({tickers, addItem, placeholder}) {
                 value={search}
                 placeholder={placeholder}
             />
-            {results.map((ticker,index) =>{
-                if(index<10){
-                    return <div 
-                        key={ticker.tickerId}
-                        className='searchResult' 
-                        onClick={() => searchHandler(ticker)}
-                        >
-                            <p>{ticker.ticker}</p> 
-                            <p>{ticker.name}</p> 
-                        </div>
-                }else{
-                    return null
-                }
-            })}
+            <div className='resultContainer'>
+                {results.map((ticker,index) =>{
+                    if(index<10){
+                        return <div 
+                            key={ticker.tickerId}
+                            className='searchResult' 
+                            onClick={() => searchHandler(ticker)}
+                            >
+                                <p>{ticker.ticker}</p> 
+                                <p>{ticker.name}</p> 
+                            </div>
+                    }else{
+                        return null
+                    }
+                })}                
+            </div>
+
         </div>
     )
 }

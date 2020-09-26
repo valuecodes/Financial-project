@@ -25,7 +25,7 @@ function TickerTable({tickers}){
         <div className='tickerTable'>
             {tickers&&
                 tickers.map(ticker =>
-                    <TickerTableTicker ticker={ticker}/>
+                    <TickerTableTicker key={ticker._id} ticker={ticker}/>
                 )           
             }
         </div>

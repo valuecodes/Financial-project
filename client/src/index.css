@@ -5,6 +5,7 @@
 
 :root{
   --main-container-color:rgb(236, 236, 236);
+  --primary-color:rgb(102, 102, 102);
 }
 
 html{
@@ -57,8 +58,16 @@ li{
   margin: auto;
 }
 
+button, select{
+  cursor: pointer;
+}
+
 .button{
-  border-radius: 0.5rem;
+  padding: 0 2rem;
+  height: 4rem;
+  border-radius: 0.2rem;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .chart{
@@ -103,12 +112,19 @@ li{
 
 /* Header */
 .header{
-  background-color: rgb(219, 219, 219);
+  background-color: rgb(241, 241, 241);
 }
 
-h1{
-  margin: 0;
+.mainLogo a{
+  text-decoration: none;
+  color: dimgray;
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  height: 5rem;
+  width: 25rem;
 }
+
 
 .headerContainer{
   height: 5rem;
@@ -127,13 +143,80 @@ h1{
   margin: 1rem;
 }
 
+/* SubHeader */
+.subHeader{
+  grid-column: 1/3;
+  height: 5rem;
+  background-color: var(--primary-color);
+}
+
+.subHeaderNav{
+  display: flex;
+  justify-content: space-between;
+}
+
+.subHeaderNav ul{
+  height: 5rem;
+  display: flex;
+  align-content: center;
+}
+
+.subHeaderNav ul li{
+  display: flex;
+  align-items: center;
+}
+
+.subHeaderNav ul li a{
+  width: 7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin:auto;
+  height: 4rem;
+  border-bottom: 0.2rem solid rgba(0, 0, 0, 0);
+}
+
+.subHeaderNav ul li a:hover{
+  background-color: rgb(163, 163, 163);
+}
+
+.headerCurrencies{
+  display: flex;
+  align-items: center;
+}
+
+.selectERate{
+  height: 4rem;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.2);
+  margin: 0 0.5rem;
+}
+
+.currencyText{
+  color: white;
+  font-size: 2rem;
+}
+
 /* SelectPortfolio */
 .selectPortfolio{
   display: flex;
   flex-direction: column;
+  margin: 0 1rem;
+  height: 4rem;
+}
+
+.selectPortfolio select{
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 1.6rem;
+  padding: 0.2rem;
+  border-radius: 0.2rem;
+  height: 3rem;
 }
 
 .selectPortfolio label{
+  height: 2rem;
   font-size: 1.2rem;
 }
 
@@ -371,11 +454,6 @@ h1{
   width: 30rem;
 }
 
-.button{
-  height: 3rem;
-  min-width: 5rem;
-}
-
 .dataInputs{
   display: flex;
   flex-direction: column;
@@ -535,14 +613,14 @@ h1{
 
 .searchBox{
   margin: auto;
-  height: 3rem;
 }
 
 .searchBox input{
   width: 25rem;
-  height: 2rem;
+  height: 2.5rem;
+  font-size: 1.8rem;
   border-radius: 0.5rem;
-  border: 0.1rem solid rgb(128, 128, 128)k;
+  border: 0.1rem solid rgb(128, 128, 128);
 }
 
 .searchResult{
@@ -553,8 +631,12 @@ h1{
   font-size: 1.4rem;
   padding: 0.5rem;
   cursor: pointer;
-  width: 25rem;
+  width: 23rem;
   display: block;
+}
+
+.resultContainer{
+  height: 0;
 }
 
 .searchResult:hover{
@@ -761,7 +843,7 @@ h1{
 }
 
 .sectionNav{
-  background-color: rgb(102, 102, 102);
+  background-color: var(--primary-color);
   height: 6rem;
 }
 

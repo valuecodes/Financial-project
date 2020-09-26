@@ -382,7 +382,7 @@ export function calculateMacroTrendsAnnual(data,companyInfo,setCompanyInfo){
         case 'Revenue':
             setCompanyInfo({
                 ...companyInfo,
-                profile:{...companyInfo.profile,financialDataCurrency:'USD'},                 
+                profile:{...companyInfo.profile,financialDataCurrency:'USD'},         
                 incomeStatement:calculateMacroTrendsIncome(numberOfYears,data)}) 
             break
         case 'Cash On Hand':

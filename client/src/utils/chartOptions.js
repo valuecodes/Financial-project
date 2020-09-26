@@ -379,18 +379,22 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef){
                         function setTooltipPoint(item,chart){                    
                             let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
                             let position = chart.chartInstance.canvas.getBoundingClientRect()
-                            if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
-                                item.style.opacity = 1;
-                                item.style.position = 'absolute';
-                                item.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';
-                                item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
-                                item.style.pointerEvents = 'none';
-                                item.style.width = '10px';
-                                item.style.height = '10px';
-                                item.style.borderRadius = '20px';
-                                item.style.border = '2px solid black';
-                                item.style.backgroundColor = 'white';                                   
-                            }         
+                            if(chart.props){
+                                if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
+
+                                    item.style.opacity = 1;
+                                    item.style.position = 'absolute';
+                                    item.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';
+                                    item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
+                                    item.style.pointerEvents = 'none';
+                                    item.style.width = '10px';
+                                    item.style.height = '10px';
+                                    item.style.borderRadius = '20px';
+                                    item.style.border = '2px solid black';
+                                    item.style.backgroundColor = 'white';                                   
+                                }                                   
+                            }
+      
                         }
 
                         

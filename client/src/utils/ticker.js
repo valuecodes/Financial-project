@@ -242,7 +242,7 @@ function calculateRatioChart(ticker,options){
     
     let ratios = [];
     let ratioName=''
-
+    console.log(ticker)
     switch(key){
         case 'pe':
             ratios = ticker.filterByDate('incomeStatement',options)
@@ -251,8 +251,7 @@ function calculateRatioChart(ticker,options){
             break
         case 'pb':
             ratios = ticker.filterByDate('balanceSheet',options)
-            
-            ratioName='tangibleBookValuePerShare'
+            ratioName='bookValuePerShare'
             break
         case 'dividendYield':
             ratios = ticker.filterByDate('dividendData',options)
@@ -474,9 +473,11 @@ function calculateChartEvents(data,labels,ticker,options,myDivs){
     trades.forEach(item => {
         let insiderDate = new Date(item.date)
         let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<1604800000)
-        tradeTooltipLabels[index].push(item.type+` ${item.count}pcs ${item.price}$` )
-        tradePoints[index]=10 
-        tradePointColors[index] = item.type==='buy'?'rgba(0, 255, 128,0.9)':'rgba(255, 89, 0,0.9)'
+        if(tradeTooltipLabels[index]){
+            tradeTooltipLabels[index].push(item.type+` ${item.count}pcs ${item.price}$` )
+            tradePoints[index]=10 
+            tradePointColors[index] = item.type==='buy'?'rgba(0, 255, 128,0.9)':'rgba(255, 89, 0,0.9)'            
+        }
     }) 
 
     return { 

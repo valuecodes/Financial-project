@@ -128,10 +128,6 @@ function ControlPanel(){
         } 
     },[eRateUpdate])
 
-    useEffect(()=>{
-        dispatch(getExhangeRates())
-    },[])
-
     const updateExchangeRatesHandler=()=>{
         dispatch(updateExhangeRates())
     }

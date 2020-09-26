@@ -71,7 +71,7 @@ function calculatePortfolioStats(portfolio){
             shareCount:ticker.totalCount(),
             currentValue: ticker.currentPrice(),
             marketCap:ticker.marketCap(),
-            percentageChange:ticker.percentageChange(),
+            percentageChange:ticker.priceChangePercentage(),
             sector:ticker.tickerData.profile.sector,
             industry:ticker.tickerData.profile.industry,
             subIndustry:ticker.tickerData.profile.subIndustry,
