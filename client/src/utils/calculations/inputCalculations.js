@@ -1,8 +1,10 @@
 import { uuidv4 } from "../../utils/utils";
 
+export function getReuterCurrency(data){
+    return data[0].split('.')[0].split(', ')[1]
+}
 
-
-export function calculateFinancialIncomeReuters(data){
+export function calculateIncomeStatementReuters(data){
     let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
     let fData=[];
@@ -23,46 +25,7 @@ export function calculateFinancialIncomeReuters(data){
                 'ebit': calculateFinancialStatement('ebit',i,keyData),
                 'incomeTaxProvision': calculateFinancialStatement('incomeTaxProvision',i,keyData),
                 'netIncome': calculateFinancialStatement('netIncome',i,keyData),
-                'sharesOutstanding': calculateFinancialStatement('weightedAverageShares',i,keyData),
-                'dividendsPerShare': calculateFinancialStatement('dividendsPerShare',i,keyData),
-                'eps': calculateFinancialStatement('eps',i,keyData),
-                id: uuidv4() 
-            }
-            fData.push(namedDataBlock)
-        }
-
-    }
-    return fData
-}
-
-export function getReuterCurrency(data){
-    return data[0].split('.')[0].split(', ')[1]
-}
-
-export function calculateFinancialIncomeData(data){
-    let newData={}
-    let dates=data[0].split('\t')
-    let keyData=calculateKeyData(data)
-    console.log(keyData)
-    let fData=[];
-    for(var i=0;i<dates.length;i++){
-        if(dates[i]){
-            let namedDataBlock={
-                'date':new Date(dates[i]),
-                'revenue': calculateFinancialStatement('revenue',i,keyData),
-                'costOfRevenue': calculateFinancialStatement('costOfRevenue',i,keyData),
-                'grossProfit': calculateFinancialStatement('grossProfit',i,keyData),
-                'sgaExpenses': calculateFinancialStatement('sgaExpenses',i,keyData),
-                'depreciationAmortization': calculateFinancialStatement('depreciationAmortization',i,keyData),
-                'otherOperatingExp': calculateFinancialStatement('otherOperatingExp',i,keyData),
-                'totalOperationgExp': calculateFinancialStatement('totalOperationgExp',i,keyData),
-                'operatingIncome': calculateFinancialStatement('operatingIncome',i,keyData),
-                'interestIncome': calculateFinancialStatement('interestIncome',i,keyData),
-                'otherNetIncome': calculateFinancialStatement('otherNetIncome',i,keyData),
-                'ebit': calculateFinancialStatement('ebit',i,keyData),
-                'incomeTaxProvision': calculateFinancialStatement('incomeTaxProvision',i,keyData),
-                'netIncome': calculateFinancialStatement('netIncome',i,keyData),
-                'sharesOutstanding': calculateFinancialStatement('weightedAverageShares',i,keyData),
+                'sharesOutstanding': calculateFinancialStatement('sharesOutstanding',i,keyData),
                 'dividendsPerShare': calculateFinancialStatement('dividendsPerShare',i,keyData),
                 'eps': calculateFinancialStatement('eps',i,keyData),
                 id: uuidv4() 
@@ -96,7 +59,7 @@ function calculateFinancialStatement(key,i,keyData){
     return calculateFinancialNumber(keys[key],i,keyData)
 }
 
-export function calculateFinancialBalanceSheetReuters(data){
+export function calculateBalanceSheetReuters(data){
     let newData={}
     let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
@@ -134,7 +97,7 @@ export function calculateFinancialBalanceSheetReuters(data){
                 'apic':calculatebalanceSheet('apic',i,keyData),
                 'retainedEarnigs':calculatebalanceSheet('retainedEarnigs',i,keyData),
                 'totalEquity':calculatebalanceSheet('totalEquity',i,keyData),
-                'tangibleBookValuePerShare':calculatebalanceSheet('tangibleBookValuePerShare',i,keyData),
+                'bookValuePerShare':calculatebalanceSheet('tangibleBookValuePerShare',i,keyData),
                 'treasuryStock':calculatebalanceSheet('treasuryStock',i,keyData),
                 id: uuidv4() 
             }
@@ -178,13 +141,13 @@ function calculatebalanceSheet(key,i,keyData){
         apic:['Additional Paid-In Capital'],
         retainedEarnigs:['Retained Earnings (Accumulated Deficit)'],
         totalEquity:['Total Equity'],
-        tangibleBookValuePerShare:['Tangible Book Value per Share, Common Eq'],
+        bookValuePerShare:['Tangible Book Value per Share, Common Eq'],
         treasuryStock:['Treasury Stock - Common']
     }
     return calculateFinancialNumber(keys[key],i,keyData)
 }
 
-export function calculateFinancialCashFlowData(data){
+export function calculateCashFlowReuters(data){
     let newData={}
     let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
@@ -372,7 +335,6 @@ function calculateFinancialNumber(keys,index,keyData){
     if(keys){
         for(var i=0;i<keys.length;i++){
             if(keyData[keys[i]]){
-                console.log((keyData[keys[i]]),keys[i])
                 return parseNumber(keyData[keys[i]][index])
             }
         }        
@@ -426,7 +388,7 @@ export function calculateMacroTrendsAnnual(data,companyInfo,setCompanyInfo){
         case 'Cash On Hand':
             setCompanyInfo({
                 ...companyInfo,
-                profile:{...companyInfo.profile,financialDataCurrency:'USD'},                 
+                profile:{...companyInfo.profile,financialDataCurrency:'USD'},              
                 balanceSheet:calculateMacroTrendsBalance(numberOfYears,data)}) 
             break
         case 'Net Income/Loss':
@@ -504,7 +466,7 @@ function calculateMacroTrendsBalance(numberOfYears,data){
             'apic':parseMacroNumber('-'),
             'retainedEarnigs':parseMacroNumber(data[a+(numberOfYears*19)]),
             'totalEquity':parseMacroNumber(data[a+(numberOfYears*22)]),
-            'tangibleBookValuePerShare':parseMacroNumber('-'),
+            'bookValuePerShare':parseMacroNumber('-'),
             'treasuryStock':parseMacroNumber('-'),
             'id': uuidv4()
         }

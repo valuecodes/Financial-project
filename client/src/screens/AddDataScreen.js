@@ -2,17 +2,17 @@ import React,{ useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
 import {
-    calculateFinancialCashFlowData,
     calculateCompanyInfo,
     calculateInsiderData,
     calculateYahooPrice,
     calculateYahooDividend,
     calculateInsiderMarketBeat,
     calculateMacroTrendsAnnual,
-    calculateFinancialIncomeReuters,
-    calculateFinancialBalanceSheetReuters,
+    calculateIncomeStatementReuters,
+    calculateBalanceSheetReuters,
+    calculateCashFlowReuters,
     getReuterCurrency
-} from '../components/calculations/inputCalculations'
+} from '../utils/calculations/inputCalculations'
 import { getTickerData, saveTicker, deleteTicker, listTickers } from '../actions/tickerActions';
 import { camelCaseToString, uuidv4 } from '../utils/utils'
 import { tickerDataModel } from '../utils/dataModels'
@@ -22,13 +22,16 @@ import { TickerData } from '../utils/tickerData';
 export default function AddDataScreen() {
 
     const dispatch = useDispatch()
-    const userSignin = useSelector(state => state.userSignin)
+    const { 
+        userSignin, 
+        tickerList, 
+        tickerData, 
+        tickerSave 
+    } = useSelector(state => state)
+    
     const { loading, userInfo, error } = userSignin
-    const tickerList = useSelector(state => state.tickerList)
     const { tickers } = tickerList
-    const tickerData = useSelector(state => state.tickerData)
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
-    const tickerSave = useSelector(state => state.tickerSave)
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
 
     let messages = {
@@ -53,7 +56,9 @@ export default function AddDataScreen() {
     useEffect(()=>{
         if(tickerFullData){
             let ticker = new TickerData(tickerFullData)
-            setCompanyInfo({...ticker,ratios:ticker.tickerRatios()})
+            ticker.update()
+            setCompanyInfo(ticker)
+            // setCompanyInfo({...ticker,ratios:ticker.tickerRatios()})
         }
     },[tickerFullData])
     
@@ -199,20 +204,20 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
                     setCompanyInfo({
                         ...companyInfo,
                         profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},
-                        incomeStatement:calculateFinancialIncomeReuters(array)
+                        incomeStatement:calculateIncomeStatementReuters(array)
                     })
                     break;
                 case 'reutersBalance':
                     setCompanyInfo({
                         ...companyInfo,
                         profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},
-                        balanceSheet:calculateFinancialBalanceSheetReuters(array)})
-                    break;
+                        balanceSheet:calculateBalanceSheetReuters(array)})
+                    break;                   
                 case 'reutersCash':
                     setCompanyInfo({
                         ...companyInfo,
                         profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},  
-                        cashFlow:calculateFinancialCashFlowData(array)
+                        cashFlow:calculateCashFlowReuters(array)
                     })
                     break;
                 case 'companyInfo':
@@ -571,7 +576,7 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
                 {ratios.map(ratio=>
                     <div className='inputInfoItem'>
                         <label className='itemLabel'>{camelCaseToString(ratio)}</label>
-                        <input value={companyInfo.ratios[ratio]}/>
+                        <input value={companyInfo.ratios[ratio]|| ''}/>
                     </div>
                 )}
                 <button
@@ -581,10 +586,10 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
             <div className='inputInfoActions'>
                 <button onClick={processData} className='button'>Save Company Data</button> 
                 <div className='messages'>
-                    {messages.tickerLoading && <div>Loading Ticker Data...</div>}
-                    {messages.saveLoading && <div>Saving Ticker...</div>}
-                    {messages.saveSuccess&&<div>Ticker saved Succesfully</div>}
-                    {messages.saveError&&<div>Error saving ticker</div>}
+                    {messages.tickerLoading && <div className='loadingMessage'>Loading Ticker Data...</div>}
+                    {messages.saveLoading && <div className='loadingMessage'>Saving Ticker...</div>}
+                    {messages.saveSuccess && <div className='successMessage'>{messages.saveSuccess}</div>}
+                    {messages.saveError && <div className='errorMessage'>{messages.saveError}</div>}
                 </div>
                 <button onClick={deleteTickerHandler}>Delete Ticker</button>
             </div>
@@ -593,6 +598,8 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
 }
 
 function updateRatios(companyInfo,setCompanyInfo){
+    console.log(companyInfo)
+    companyInfo.update()
     setCompanyInfo({...companyInfo,ratios:companyInfo.tickerRatios()})
 }
 

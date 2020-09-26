@@ -49,7 +49,7 @@ export const tickerDataModel={
         apic:null,
         retainedEarnigs:null,
         totalEquity:null,
-        tangibleBookValuePerShare:null,
+        bookValuePerShare:null,
         treasuryStock:null,
     },
     cashFlow:{

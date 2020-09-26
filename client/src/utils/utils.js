@@ -15,6 +15,20 @@ export function roundToTwoDecimal(number){
     return Math.round(number*Math.pow(10,2))/Math.pow(10,2)
 }
 
+export function roundFinancialNumber(value){
+    if(isNaN(value)||value===Infinity||value===-Infinity) value=null
+    if(value) value = roundToTwoDecimal(value)
+    return value
+}
+
+export function getYear(date){
+    if(typeof date==='object'){
+        return  JSON.stringify(date.getFullYear())
+    }else{
+        return date.split('-')[0]
+    }
+}
+
 export function formatValue(value,format){
     if(format === 'currency'){
         value = formatCurrency(value)

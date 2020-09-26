@@ -61,7 +61,7 @@ const balanceSheetSchema = new mongoose.Schema({
     apic:{type:Number},
     retainedEarnigs:{type:Number},
     totalEquity:{type:Number},
-    tangibleBookValuePerShare:{type:Number},
+    bookValuePerShare:{type:Number},
     treasuryStock:{type:Number},
 })
 

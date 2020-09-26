@@ -18,7 +18,7 @@ exports.updateTicker = async ( req, res, next ) => {
         let saved = await ticker.save()
         console.log('ticker saved')
         next()
-        res.send({message:'Ticker saved',data:saved})   
+        res.send({message:`${saved.profile.ticker} saved succesfully!`,data:saved})   
     }else{
         let newTicker = new Ticker({
             profile:req.body.profile,

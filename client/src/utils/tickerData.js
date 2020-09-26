@@ -1,4 +1,6 @@
-import { roundToTwoDecimal } from "./utils";
+import { roundToTwoDecimal, roundFinancialNumber, getYear } from "./utils";
+import { func } from "prop-types";
+import { tickerDataModel } from "./dataModels";
 
 export function TickerData(data){
     this.profile = data.profile?data.profile:{
@@ -39,64 +41,70 @@ export function TickerData(data){
         roa:null,
     }
     this._id=data._id?data._id:null
+    this.valueStatements = null
+    this.getValueStatements = () => calculateValueStatements(this)
     this.getRatio = (ratio) => calculateGetRatio(this,ratio)
     this.yearDivs = () => calculateYearDivs(this)
+    this.financialKeysStatements = () => calculateFinancialKeysStatements(this)
+    this.getFinancialNum = (key,year) => calculateGetFinancialNum(this,key,year)
     this.tickerRatios = () => calculateTickerRatios(this)
+    this.update = () => calculateUpdate(this)
+    this.updateFinancialValue = (value) => calculateUpdateFinancialValue(this,value)
 }
 
 function calculateGetRatio(tickerData,ratio){
-    const { priceData, incomeStatement, balanceSheet, dividendData } = tickerData
+    
+    const { incomeStatement } = tickerData
+    
+    let stockPrice = tickerData.getFinancialNum('close')
+    let yearDivs = tickerData.yearDivs()
+    let eps =  tickerData.getFinancialNum('eps')
+    let operatingIncome = tickerData.getFinancialNum('operatingIncome')
+    let revenue = tickerData.getFinancialNum('revenue')
+    let netIncome = tickerData.getFinancialNum('netIncome')
+    let sharesOutstanding = tickerData.getFinancialNum('sharesOutstanding')
+    let currentAssets = tickerData.getFinancialNum('currentAssets')
+    let currentLiabilities = tickerData.getFinancialNum('currentLiabilities')
+    let bookValuePerShare =  tickerData.getFinancialNum('bookValuePerShare')
+    let totalEquity = tickerData.getFinancialNum('totalEquity')
+    let totalAssets = tickerData.getFinancialNum('totalAssets')
+
     let value = null
+
     switch(ratio){
         case 'pe':
-            if(priceData[0]&&incomeStatement[0]){
-                value=priceData[0].close/incomeStatement[0].eps
-            }
+                value = stockPrice/eps
             break
         case 'pb':
-            if(priceData[0]&&balanceSheet[0]){
-                value=priceData[0].close/balanceSheet[0].tangibleBookValuePerShare
-            }
+                value = stockPrice/bookValuePerShare
             break
         case 'divYield':
-            if(priceData[0]&&dividendData[0]){
-                let yearDivs = tickerData.yearDivs().reduce((a,c) => a+c.dividend,0)
-                value=yearDivs/priceData[0].close*100
-            }
+                value = (yearDivs/stockPrice)*100
             break
         case 'payoutRatio':
-            if(priceData[0]&&dividendData[0]){
-                let yearDivs = tickerData.yearDivs().reduce((a,c) => a+c.dividend,0)
-                value=yearDivs/incomeStatement[0].eps*100
-            }
+                value = (yearDivs/eps)*100
             break
         case 'marketCap':
-            if(priceData[0]&&incomeStatement[0]){
-                value=priceData[0].close*incomeStatement[0].sharesOutstanding
-            }
+                value = stockPrice*sharesOutstanding
             break
         case 'currentRatio':
-            if(balanceSheet[0]){
-                value = balanceSheet[0].currentAssets/balanceSheet[0].currentLiabilities
-            }
+                value = currentAssets/currentLiabilities
             break
         case 'operatingMargin':
-            if(incomeStatement[0]){
-                value = incomeStatement[0].operatingIncome/incomeStatement[0].revenue*100
-            }
+                value = (operatingIncome/revenue)*100
             break
         case 'profitMargin':
-            if(incomeStatement[0]){
-                value = incomeStatement[0].netIncome/incomeStatement[0].revenue*100
-            }
+                value = (netIncome/revenue)*100
             break
         case 'profitGrowth5Years':
             if(incomeStatement[0]){
                 let length = incomeStatement.length;
                 if(length<5){
-                   value = (((incomeStatement[0].netIncome/incomeStatement[length-1].netIncome)**(1/length))-1)*100
+                    let startingNetIncome = incomeStatement[length-1].netIncome
+                    value = (((netIncome/startingNetIncome)**(1/length))-1)*100
                 }else{
-                    value = (((incomeStatement[0].netIncome/incomeStatement[4].netIncome)**(1/5))-1)*100
+                    let startingNetIncome = incomeStatement[4].netIncome                   
+                    value = (((netIncome/startingNetIncome)**(1/5))-1)*100
                 } 
             }
             break
@@ -104,32 +112,28 @@ function calculateGetRatio(tickerData,ratio){
             if(incomeStatement[0]){
                 let length = incomeStatement.length;
                 if(length<5){
-                value = (((incomeStatement[0].revenue/incomeStatement[length-1].revenue)**(1/length))-1)*100
+                    let startingRevenue = incomeStatement[length-1].revenue
+                    value = (((revenue/startingRevenue)**(1/length))-1)*100
                 }else{
-                    value = (((incomeStatement[0].revenue/incomeStatement[4].revenue)**(1/5))-1)*100
+                    let startingRevenue = incomeStatement[4].revenue                  
+                    value = (((revenue/startingRevenue)**(1/5))-1)*100
                 } 
             }
             break
         case 'peg':
-            if(priceData[0]&&incomeStatement[0]){
-                value = tickerData.getRatio('pe')/tickerData.getRatio('profitGrowth5Years')
-            }
+                let pe = tickerData.getRatio('pe')
+                let growthRate = tickerData.getRatio('profitGrowth5Years')
+                value = pe / growthRate
             break
         case 'roe':
-            if(balanceSheet[0]&&incomeStatement[0]){
-                value = (incomeStatement[0].netIncome/balanceSheet[0].totalEquity)*100
-            }
+                value = (netIncome/totalEquity)*100
             break
         case 'roa':
-            if(balanceSheet[0]&&incomeStatement[0]){
-                value = (incomeStatement[0].netIncome/(balanceSheet[0].totalAssets))*100
-            }
+                value = (netIncome/totalAssets)*100
             break
         default:return null
     }
-    if(isNaN(value)||value===Infinity||value===-Infinity) value=null
-    if(value) value = roundToTwoDecimal(value)
-    return value
+    return roundFinancialNumber(value)
 }
 
 function calculateYearDivs(tickerData){
@@ -137,10 +141,61 @@ function calculateYearDivs(tickerData){
     if(dividendData[0]){
         let min = new Date(new Date().setFullYear(new Date().getFullYear() - 1))
         let max = new Date()
-        return dividendData.filter(item => new Date(item.date)>min&&new Date(item.date)<max)
+        let divs = dividendData.filter(item => new Date(item.date)>min&&new Date(item.date)<max)
+        return divs.reduce((a,c) => a+c.dividend,0)
     }else{
-        return []
+        return null
     }
+}
+
+function calculateValueStatements(tickerData){
+    let keys = {}
+    Object.keys(tickerDataModel).forEach(statement =>{
+        Object.keys(tickerDataModel[statement]).forEach(value =>{
+            keys[value] = statement
+        })
+    })
+    tickerData.valueStatements = keys
+}
+
+function calculateFinancialKeysStatements(tickerData){
+    let keys={}
+    if(tickerData.priceData){
+        Object.keys(tickerData.incomeStatement[0]).forEach(item => keys[item]='incomeStatement' )
+    }
+    if(tickerData.incomeStatement[0]){
+        Object.keys(tickerData.incomeStatement[0]).forEach(item => keys[item]='incomeStatement' )
+    }
+    if(tickerData.balanceSheet[0]){
+        Object.keys(tickerData.balanceSheet[0]).forEach(item => keys[item]='balanceSheet' )
+    }
+    if(tickerData.cashFlow[0]){
+        Object.keys(tickerData.cashFlow[0]).forEach(item => keys[item]='cashFlow')
+    }
+    return keys
+}
+
+function calculateGetFinancialNum(tickerData,key,year=null){
+    
+    if(tickerData.valueStatements===null){
+        tickerData.getValueStatements()
+    }
+    let keyStatements = tickerData.valueStatements
+    let statement = keyStatements[key]
+
+    if(statement){
+        year = null
+        let statementYear
+        if(year){
+            statementYear = tickerData[statement].find(item => item.date.split('-')[0]===year)            
+        }else{
+            statementYear = tickerData[statement].sort((a,b)=>new Date(b.date)-new Date(a.date))[0]
+        }
+        if(statementYear){
+            return statementYear[key]  
+        }
+    }
+    return null
 }
 
 function calculateTickerRatios(tickerData){
@@ -158,5 +213,29 @@ function calculateTickerRatios(tickerData){
         peg: tickerData.getRatio('peg'),
         roe: tickerData.getRatio('roe'),
         roa: tickerData.getRatio('roa'),
+    }
+}
+
+function calculateUpdate(tickerData){
+    if(tickerData.balanceSheet[0]){
+        if(!tickerData.balanceSheet[0].bookValuePerShare){
+            tickerData.updateFinancialValue('bookValue')
+        }
+    }
+    tickerData.ratios = tickerData.tickerRatios()
+}
+
+function calculateUpdateFinancialValue(tickerData,value){
+    switch(value){
+        case 'bookValue':
+            tickerData.balanceSheet.forEach(item => {
+                console.log(item)
+                let year = getYear(item.date)
+                let sharesOutstanding = tickerData.getFinancialNum('sharesOutstanding',year)
+                let bookValuePerShare = item.totalEquity / sharesOutstanding
+                item.bookValuePerShare = roundFinancialNumber(bookValuePerShare)
+            });
+            break
+        default:
     }
 }
