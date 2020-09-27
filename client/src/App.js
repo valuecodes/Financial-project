@@ -8,6 +8,7 @@ import RegisterScreen from './screens/RegisterScreen';
 import TradingScreen from './screens/TradingScreen';
 import TickerScreen from './screens/TickerScreen'
 import PortfolioScreen from './screens/PortfolioScreen'
+import ScreenerScreen from './screens/ScreenerScreen'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path='/ticker/:id' component={TickerScreen}/>
           <Route path='/portfolio/:id' component={PortfolioScreen}/>
           <Route path='/trading' component={TradingScreen}/>
+          <Route path='/screener' component={ScreenerScreen}/>
           <Route path='/' exact={true} component={HomeScreen}/>
         </main>
       </div>    

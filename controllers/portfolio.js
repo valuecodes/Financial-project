@@ -8,8 +8,8 @@ exports.addTicker = async (req,res) => {
 
     const portfolio = await Portfolio.findById(req.params.id)
     let newTicker = {
-        ticker: req.body.ticker[1],
-        name: req.body.ticker[2],
+        ticker: req.body.ticker.ticker,
+        name: req.body.ticker.name,
         quatity:0
     }
     portfolio.tickers.push(newTicker)

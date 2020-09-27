@@ -48,46 +48,23 @@ function SubHeader({userInfo,setPage}){
     const { loading, exhangeRate, error } = exhangeRateList
     const [eRate,setERate] = useState('USD')
     const history = useHistory();
-    let path = history.location.pathname
+
+    let path = history.location.pathname==='/signin'?'/': history.location.pathname
+
+    const headerLinks=[
+        {path:'/',text:'Home',auth:[]},
+        {path:'/screener',text:'Screener',auth:[]},
+        {path:'/trading',text:'Trading',auth:['login']},
+        {path:'/addData',text:'Admin',auth:['login','admin']},
+    ]
 
     return(
         <div className='subHeader'>
             <div className='container subHeaderNav'>
                 <ul>
-                    <li>
-                        <Link
-                            style={{
-                                backgroundColor: path==='/'&&'rgba(0, 0, 0, 0.2)',
-                                borderBottom: path==='/'&&'0.2rem solid lightgreen'}}
-                            onClick={()=>setPage('/')} to='/'
-                        >
-                            Home
-                        </Link>
-                    </li>
-                    {userInfo &&   
-                        <li><Link
-                                style={{
-                                backgroundColor: path==='/trading'&&'rgba(0, 0, 0, 0.2)',
-                                borderBottom: path==='/trading'&&'0.2rem solid lightgreen'}} 
-                                onClick={()=>setPage('/trading')} 
-                                to='/trading'
-                            >
-                                Trading
-                            </Link></li>
-                    }
-                    
-                    {userInfo?userInfo.isAdmin &&
-                        <li>
-                            <Link 
-                                style={{
-                                    backgroundColor: path==='/addData'&&'rgba(0, 0, 0, 0.2)',
-                                    borderBottom: path==='/addData'&&'0.2rem solid lightgreen'}} 
-                                onClick={()=>setPage('/addData')} 
-                                to='/addData'
-                            >
-                                Admin
-                            </Link>
-                        </li>:<div></div>} 
+                {headerLinks.map(link =>
+                    <HeaderLink key={link.path} link={link} location={path} userInfo={userInfo} setPage={setPage}/>
+                )}
                 </ul>
                 {exhangeRate&&
                     <div className='headerCurrencies'>
@@ -110,6 +87,39 @@ function SubHeader({userInfo,setPage}){
     )
 }
 
+function HeaderLink({link,location,userInfo,setPage}){
+    const { path, text,auth } = link
+    const checkAuth = (auth,userInfo) => {
+
+        let login = auth.find(item => item==='login')
+        let admin = auth.find(item => item==='admin')
+
+        if(!login){
+            return true
+        }else if(login&&userInfo){     
+            if(admin){
+                return userInfo.isAdmin?true:false
+            }
+            return true
+        }else{
+            return false
+        }
+    }
+
+    return !checkAuth(auth,userInfo)?null:
+        <li>
+            <Link
+                style={{
+                backgroundColor: location===path&&'rgba(0, 0, 0, 0.2)',
+                borderBottom: location===path&&'0.2rem solid lightgreen'}} 
+                onClick={()=>setPage(path)} 
+                to={path}
+            >
+            {text}
+            </Link>
+        </li>
+}
+
 function Navbar({userInfo}){
 
     const dispatch = useDispatch()
@@ -125,7 +135,7 @@ function Navbar({userInfo}){
                 }
                 
                 {!userInfo &&
-                    <li><Link to='/signin'>Signin</Link></li>
+                    <li><Link className='headerButton' to='/signin'>Signin</Link></li>
                 } 
                 {userInfo &&                    
                     <button className='button' onClick={logOutHandler}>Log out</button>

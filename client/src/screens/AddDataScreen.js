@@ -61,10 +61,6 @@ export default function AddDataScreen() {
             // setCompanyInfo({...ticker,ratios:ticker.tickerRatios()})
         }
     },[tickerFullData])
-    
-    useEffect(()=>{
-        dispatch(listTickers())
-    },[saveSuccess])
 
     function selectTicker(id) {
         dispatch(getTickerData(id))

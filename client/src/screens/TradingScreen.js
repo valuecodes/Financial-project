@@ -75,7 +75,7 @@ export default function TradingScreen() {
 
     return (
         <div className='container'>
-            {errors&&errors.map(item => <div key={item}>{item}</div>)}
+            {errors&&errors.map((item,index) => <div key={index}>{item}</div>)}
             {userInfo&&
                 <div className='tickerList card'>
                     <CreatePortfolio userInfo={userInfo}/>
@@ -115,10 +115,11 @@ function Portfolio({portfolio,items=[]}){
     const results=!search?
     []:
     items.filter(ticker=>{
-        return( ticker[1].toLowerCase().includes(search.toLocaleLowerCase())||ticker[2].toLowerCase().includes(search.toLocaleLowerCase()))
+        return( ticker.ticker.toLowerCase().includes(search.toLocaleLowerCase())||ticker.name.toLowerCase().includes(search.toLocaleLowerCase()))
     })
 
     const submitHandler = (ticker) => {
+        console.log(ticker)
         dispatch(addTicker(ticker, portfolio._id))
         setSearch('')
     }
@@ -139,7 +140,6 @@ function Portfolio({portfolio,items=[]}){
                         </>:
                         <>
                             <p>Type: Investing</p>    
-                            {/* <p>Total: <b>{calculatePortfolioPurchasePrice(portfolio)} $</b></p>   */}
                         </>
                     }
                     
@@ -159,8 +159,8 @@ function Portfolio({portfolio,items=[]}){
                     className='searchResult' 
                     onClick={e => submitHandler(ticker)}
                     >
-                        <p>{ticker[1]}</p> 
-                        <p>{ticker[2]}</p> 
+                        <p>{ticker.ticker}</p> 
+                        <p>{ticker.name}</p> 
                     </div>
             )}
             <div className='portfolioTickers'>
