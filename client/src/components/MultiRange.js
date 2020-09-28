@@ -2,6 +2,7 @@ import React,{useState,useEffect} from 'react'
 import { camelCaseToString, roundToTwoDecimal } from '../utils/utils';
 
 export default function MultiRange({ input, screener, setScreenedTickers, setInputs }) {
+
     const [multiRange,setMultiRange] = useState({
         minValue:0,
         maxValue:0,
@@ -9,37 +10,17 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
     })
 
     useEffect(()=>{
-        let offSet = input.scaleTo<14?1.4:2
-        let ticks = input.ticks
-        setMultiRange({
-            ...input,
-            minValue:input.scaleFrom,
-            maxValue:input.scaleTo,
-            range:(input.scaleTo+offSet*ticks)-(input.scaleFrom-offSet*ticks),
-            scaleFrom:input.scaleFrom-1*ticks,
-            scaleTo:input.scaleTo+1*ticks,
-        })
+        setMultiRange(input)
+        let screenedTickers = screener.screenTickers()                     
+        setScreenedTickers(screenedTickers)               
     },[])
-
-    useEffect(()=>{
-        if(multiRange.key){
-            screener.updateInput(multiRange)
-            let tickers = screener.screenTickers()
-            setScreenedTickers(tickers)
-        }
-    },[multiRange])
 
     const handleChange = (e,inputName) =>{
         let value =  Number(e.target.value)
-        if(multiRange.minValue>=multiRange.maxValue){
-            let maxBack = inputName==='maxValue'||value>=multiRange.maxValue?0:1
-            let minBack = inputName==='minValue'||value<=multiRange.minValue?0:1
-            let updatedMax = multiRange.minValue+maxBack
-            let updatedMin = multiRange.maxValue-minBack
-            setMultiRange({...multiRange,minValue:updatedMin,maxValue:updatedMax})
-        }else{
-            setMultiRange({...multiRange,[inputName]:value})        
-        }
+        let updatedInput = screener.updateInput(multiRange,inputName,value)
+        setMultiRange({...updatedInput})    
+        let screenedTickers = screener.screenTickers()             
+        setScreenedTickers(screener.screenTickers())       
     }
 
     const inputBarStyle = (range) =>{
@@ -53,56 +34,49 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
         }
     }
 
-    const resetMultiRange=()=>{
-        setMultiRange({
-            ...multiRange,
-            minValue:multiRange.scaleFrom+1,
-            maxValue:multiRange.scaleTo-1,
-        })
+    const resetMultiRange=(key)=>{
+        let updatedInput = screener.resetInput(key)
+        setMultiRange({...updatedInput})
+        let screenedTickers = screener.screenTickers()
+        setScreenedTickers(screenedTickers)               
     }
 
-    const removeInput=(input)=>{
-        screener.selectActiveInput(input)
-        setInputs({...screener.inputs})
+    const removeInput=(key)=>{
+        let updatedInputs = screener.selectActiveInput(key)
+        setInputs({...updatedInputs})
+        let screenedTickers = screener.screenTickers()
+        setScreenedTickers(screenedTickers)
     }
 
     const {
-        key,
-        min,
-        max,
-        minValue,
-        maxValue,
-        range,
-        scaleFrom,
-        scaleTo,
-        active,
-        ticks
+        key,min,max,minValue,maxValue,
+        range,scaleFrom,scaleTo,active,ticks
     } = multiRange
 
     return !input.active?null:
         <div className='multiRange'>
             <div className='multiRangeHeader'>
-                <label>{camelCaseToString(multiRange.key)}</label>
-                <button onClick={() => resetMultiRange()} className='button'>Reset</button>
-                <button onClick={() => removeInput(multiRange.key)} className='button'>Remove</button>
+                <label>{camelCaseToString(key)}</label>
+                <button onClick={() => resetMultiRange(key)} className='button'>Reset</button>
+                <button onClick={() => removeInput(key)} className='button'>Remove</button>
             </div>
             <div className='inputContainer'>
                 <input 
                     className='minInput'
                     onChange={e => handleChange(e,'minValue')}
-                    min={multiRange.scaleFrom} 
-                    max={multiRange.scaleTo} 
-                    value={multiRange.minValue}
-                    step={multiRange.ticks}
+                    min={scaleFrom} 
+                    max={scaleTo} 
+                    value={minValue}
+                    step={ticks}
                     type='range'
                 />
                 <input
                     className='maxInput'
                     onChange={e => handleChange(e,'maxValue')}
-                    min={multiRange.scaleFrom} 
-                    max={multiRange.scaleTo} 
-                    value={multiRange.maxValue}
-                    step={multiRange.ticks}                     
+                    min={scaleFrom} 
+                    max={scaleTo} 
+                    value={maxValue}
+                    step={ticks}                     
                     type='range'
                 />
                 <div 

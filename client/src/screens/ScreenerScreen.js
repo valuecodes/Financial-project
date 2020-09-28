@@ -27,7 +27,7 @@ export default function ScreenerScreen() {
         if(screenedTickers.length===0&&loading) color = 'rgba(239, 255, 22, 0.801)'
         return {backgroundColor:color}
     }
-    
+
     return (
         <div className='screenerScreen container'>
             <div className='screenerInputContainer'>                
@@ -36,7 +36,11 @@ export default function ScreenerScreen() {
                     <label>{screenedTickers.length}</label>
                 </div>
                 <div className='screenerOptions'>
-                <ScreenerOptions screener={screener} inputs={inputs} setInputs={setInputs}/>
+                <ScreenerOptions 
+                    screener={screener} 
+                    inputs={inputs} 
+                    setInputs={setInputs}
+                />
                 </div>
                 {Object.keys(inputs).map(input=>
                     <MultiRange 

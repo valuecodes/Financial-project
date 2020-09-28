@@ -2,7 +2,8 @@ export function Screener(tickers){
     this.tickers = tickers
     this.inputs = {}
     this.selectActiveInput = (inputName) => calculatSelectActiveInput(this,inputName)
-    this.updateInput = (input) => updateScreenerInput(this,input)
+    this.resetInput = (inputName) => calculateResetInput(this,inputName)
+    this.updateInput = (input,type,value) => updateScreenerInput(this,input,type,value)
     this.screenTickers = () => calculateScreenTickers(this)
     this.init = () => initScreener(this)
 }
@@ -10,12 +11,37 @@ export function Screener(tickers){
 function calculatSelectActiveInput(screener,inputName){
     let inputFound = screener.inputs[inputName].active
     screener.inputs[inputName].active = !inputFound
+    if(inputFound){
+        screener.resetInput(inputName)
+    }
     return screener.inputs
 }
 
-function updateScreenerInput(screener,input){
-    let key = input.key
-    screener.inputs[key] = input 
+function calculateResetInput(screener,inputName){
+    let ticks = screener.inputs[inputName].ticks
+    screener.inputs[inputName].minValue = screener.inputs[inputName].scaleFrom+ticks
+    screener.inputs[inputName].maxValue = screener.inputs[inputName].scaleTo-ticks
+    return screener.inputs[inputName]
+}
+
+function updateScreenerInput(screener,input,type,value){
+    let inputName = input.key
+    const {
+        minValue,
+        maxValue
+    } = screener.inputs[inputName]
+    
+    if(minValue>=maxValue){
+        let maxBack = type==='maxValue'||value>=maxValue?0:1
+        let minBack = type==='minValue'||value<=minValue?0:1
+        let updatedMax = minValue+maxBack
+        let updatedMin = maxValue-minBack
+        screener.inputs[inputName].minValue = updatedMin
+        screener.inputs[inputName].maxValue = updatedMax
+    }else{
+        screener.inputs[inputName][type] = value
+    }
+    return screener.inputs[inputName]
 }
 
 function calculateScreenTickers(screener){
@@ -62,18 +88,23 @@ function initScreener(screener){
         let keys = Object.keys(screener.tickers[0].ratios)
         let inputs = {}
         keys.forEach(key=>{
+            
+            const{
+                scaleFrom,scaleTo,ticks
+            } = ratioOptions[key]
+            
+            let offSet = scaleTo < 14 ? 1.4 : 2
+
             inputs[key]={
                 key,
+                ...ratioOptions[key],
                 min: Math.min(...tickers.map(item => Number(item.ratios[key]))),
                 max: Math.max(...tickers.map(item => Number(item.ratios[key]))),
-                inputMin:Math.min(...tickers.map(item => Number(item.ratios[key]))),
-                inputMax: Math.max(...tickers.map(item => Number(item.ratios[key]))),
-                scaleFrom:ratioOptions[key].scaleFrom,
-                scaleTo:ratioOptions[key].scaleTo,
-                ticks:ratioOptions[key].ticks,
-                decimals:ratioOptions[key].decimals,
-                textSign:ratioOptions[key].textSign,
-                active:ratioOptions[key].activeFromInit
+                minValue:scaleFrom, 
+                maxValue:scaleTo,
+                range:(scaleTo+offSet*ticks)-(scaleFrom-offSet*ticks),
+                scaleFrom:scaleFrom-1*ticks,
+                scaleTo: scaleTo+1*ticks
             }   
         })
         screener.inputs=inputs
@@ -87,7 +118,7 @@ const ratioOptions={
         ticks:1,
         decimals:1,
         textSign:null,
-        activeFromInit:true
+        active:true
     },
     pb:{
         scaleFrom:0,
@@ -95,15 +126,15 @@ const ratioOptions={
         ticks:0.1,
         decimals:2,
         textSign:null,
-        activeFromInit:false
+        active:false
     },
     divYield:{
         scaleFrom:0,
-        scaleTo:15,
+        scaleTo:'auto',
         ticks:0.1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
     payoutRatio:{
         scaleFrom:0,
@@ -111,7 +142,7 @@ const ratioOptions={
         ticks:2,
         decimals:2,
         textSign:null,
-        activeFromInit:false
+        active:false
     },
     marketCap:{
         scaleFrom:0,
@@ -119,7 +150,7 @@ const ratioOptions={
         ticks:null,
         decimals:2,
         textSign:'M',
-        activeFromInit:false
+        active:false
     },
     currentRatio:{
         scaleFrom:0,
@@ -127,23 +158,23 @@ const ratioOptions={
         ticks:0.1,
         decimals:2,
         textSign:null,
-        activeFromInit:false
+        active:false
     },
     profitMargin:{
         scaleFrom:0,
-        scaleTo:50,
+        scaleTo:'auto',
         ticks:1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
     operatingMargin:{
         scaleFrom:0,
-        scaleTo:50,
+        scaleTo:'auto',
         ticks:1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
     profitGrowth5Years:{
         scaleFrom:0,
@@ -151,7 +182,7 @@ const ratioOptions={
         ticks:1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
     revenueGrowth5Years:{
         scaleFrom:0,
@@ -159,7 +190,7 @@ const ratioOptions={
         ticks:1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
     peg:{
         scaleFrom:0,
@@ -167,22 +198,22 @@ const ratioOptions={
         ticks:0.1,
         decimals:2,
         textSign:null,
-        activeFromInit:false
+        active:false
     },
     roe:{
         scaleFrom:0,
-        scaleTo:50,
+        scaleTo:'auto',
         ticks:1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
     roa:{
         scaleFrom:0,
-        scaleTo:50,
+        scaleTo:'auto',
         ticks:1,
         decimals:2,
         textSign:'%',
-        activeFromInit:false
+        active:false
     },
 }

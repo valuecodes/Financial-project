@@ -169,11 +169,11 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
             const { selected } = tickerSort
             let ready = []
             let notReady = []
-
+            
             switch(selected){
                 case 'UpdatedAt':
                     tickers.forEach(ticker =>{
-                        if(ticker.updatedAt){
+                        if(ticker.ratios.pe){
                             ready.push(ticker)
                         }else{
                             notReady.push(ticker)
@@ -619,7 +619,7 @@ function checkReuters(array){
     if(array[14]){
         let incomeKeys=['Revenue','Total Premiums Earned','Interest Income, Bank']
         let balanceKeys=['Cash','Cash & Due from Banks','Cash & Equivalents']
-        let cashflowKeys=['Net Income/Starting Line','Cash Taxes Paid']
+        let cashflowKeys=['Net Income/Starting Line','Cash Taxes Paid','Cash Receipts']
         let key = array[14].split('\t')[0]
 
         let keyFound=null;
