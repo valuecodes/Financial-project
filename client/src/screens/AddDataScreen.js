@@ -1,35 +1,20 @@
 import React,{ useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
-import {
-    calculateCompanyInfo,
-    calculateInsiderData,
-    calculateYahooPrice,
-    calculateYahooDividend,
-    calculateInsiderMarketBeat,
-    calculateMacroTrendsAnnual,
-    calculateIncomeStatementReuters,
-    calculateBalanceSheetReuters,
-    calculateCashFlowReuters,
-    getReuterCurrency
-} from '../utils/calculations/inputCalculations'
-import { getTickerData, saveTicker, deleteTicker, listTickers } from '../actions/tickerActions';
-import { camelCaseToString, uuidv4 } from '../utils/utils'
-import { tickerDataModel } from '../utils/dataModels'
-import { getExhangeRates, updateExhangeRates } from '../actions/exhangeRateActions';
+import { getTickerData, saveTicker, deleteTicker } from '../actions/tickerActions';
+import { camelCaseToString } from '../utils/utils'
+import { updateExhangeRates } from '../actions/exhangeRateActions';
 import { TickerData } from '../utils/tickerData';
 
 export default function AddDataScreen() {
 
     const dispatch = useDispatch()
     const { 
-        userSignin, 
         tickerList, 
         tickerData, 
         tickerSave 
     } = useSelector(state => state)
     
-    const { loading, userInfo, error } = userSignin
     const { tickers } = tickerList
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
@@ -58,7 +43,6 @@ export default function AddDataScreen() {
             let ticker = new TickerData(tickerFullData)
             ticker.update()
             setCompanyInfo(ticker)
-            // setCompanyInfo({...ticker,ratios:ticker.tickerRatios()})
         }
     },[tickerFullData])
 
@@ -108,7 +92,7 @@ function ControlPanel(){
     const exhangeRateList = useSelector(state => state.exhangeRateList)
     const { loading, exhangeRate:eRate, error } = exhangeRateList
     const exhangeRateUpdate = useSelector(state => state.exhangeRateUpdate)
-    const { loading:updateLoading, success, exhangeRate:eRateUpdate, error:updateError } = exhangeRateUpdate 
+    const { loading:updateLoading, exhangeRate:eRateUpdate, error:updateError } = exhangeRateUpdate 
     
     useEffect(()=>{
         if(eRate){
@@ -119,7 +103,7 @@ function ControlPanel(){
 
     useEffect(()=>{ 
         if(eRateUpdate){
-            console.log(eRate,'update')  
+            console.log(eRateUpdate,'update')  
             setExchangeRate(eRateUpdate)
         } 
     },[eRateUpdate])
@@ -135,6 +119,8 @@ function ControlPanel(){
     
     return(
         <div className='controlPanel'>
+            {(loading||updateLoading)&&<div>Loading</div>}
+            {(error||updateError)&&<div>Error</div>}
             <div className='exhangeRates'>
                 <button onClick={updateExchangeRatesHandler}>Update Exhange rates</button>
                 {exchangeRate&&
@@ -169,7 +155,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
             const { selected } = tickerSort
             let ready = []
             let notReady = []
-            
+
             switch(selected){
                 case 'UpdatedAt':
                     tickers.forEach(ticker =>{
@@ -188,52 +174,8 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
     },[tickers,tickerSort])
 
     const handleData=(data)=>{
-        let array=data.split('\n')
-        if(array.length>1){
-            let key = getKey(array,data)
-            switch (key) {
-                case 'reutersIncome':
-                    setCompanyInfo({
-                        ...companyInfo,
-                        profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},
-                        incomeStatement:calculateIncomeStatementReuters(array)
-                    })
-                    break;
-                case 'reutersBalance':
-                    setCompanyInfo({
-                        ...companyInfo,
-                        profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},
-                        balanceSheet:calculateBalanceSheetReuters(array)})
-                    break;                   
-                case 'reutersCash':
-                    setCompanyInfo({
-                        ...companyInfo,
-                        profile:{...companyInfo.profile,financialDataCurrency:getReuterCurrency(array)},  
-                        cashFlow:calculateCashFlowReuters(array)
-                    })
-                    break;
-                case 'companyInfo':
-                    setCompanyInfo({...companyInfo, profile:calculateCompanyInfo(data,companyInfo)})
-                    break
-                case 'insider':
-                    setCompanyInfo({...companyInfo,insiderTrading:[...companyInfo.insiderTrading,calculateInsiderData(data)]})
-                    break
-                case 'yahooPrice':
-                    setCompanyInfo({...companyInfo,priceData:calculateYahooPrice(array)})
-                    break
-                case 'insiderMarketBeat':
-                     setCompanyInfo({...companyInfo,insiderTrading:calculateInsiderMarketBeat(data)})
-                    break
-                case 'macroTrendsAnnual':
-                    calculateMacroTrendsAnnual(array,companyInfo,setCompanyInfo)
-                    break
-                case 'dividends':
-                    setCompanyInfo({...companyInfo,dividendData:calculateYahooDividend(array)})
-                    break
-                default:
-                    break;
-            }          
-        }
+        let updatedCompanyInfo = companyInfo.addData(data)
+        setCompanyInfo({...updatedCompanyInfo})
         inputRef.current.value=''
     }   
     
@@ -310,150 +252,42 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
 
 function Output({selectedKey, companyInfo, setCompanyInfo}){
 
-    const [direction,setDirection]=useState('')
     const [table, setTable] = useState({
         headers:[],
         body:[],
+        direction:'col'
     })
 
     useEffect(()=>{
-
         if(selectedKey){
-            let selectedData = companyInfo[selectedKey].sort((a,b)=>new Date(b.date)-new Date(a.date))
-            let key = selectedKey
-
-            if(!selectedData[0]){
-                setTable({
-                    headers:[],
-                    body:[],
-                })
-                return
-            }    
-
-            let headers =[]
-            let body = []
-
-            function parseDate(date){
-                function isIsoDate(str) {
-                    if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)) return false;
-                    var d = new Date(str); 
-                    return d.toISOString()===str;
-                  }
-                if(isIsoDate(date)){
-                    return date
-                }else{
-                    return date.toISOString()
-                }                  
-            }
-
-            switch(key){
-                case 'incomeStatement':
-                case 'balanceSheet':
-                case 'cashFlow':
-                    headers = selectedData.map(item =>{ 
-                        let date = parseDate(item.date)
-                        return{
-                            value:date.split('-')[0],
-                            key,
-                            id:item._id?item._id:item.id
-                        }
-                    })
-                    let dataKeys = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
-                    dataKeys.forEach(item =>{
-                        let data=selectedData.map(data =>{
-                            let value = item==='date'?parseDate(data[item]).split('T')[0]:data[item]  
-                            return{
-                            dataKey:key,
-                            key:item,
-                            value:value,
-                            date:data.date,
-                            id:data._id?data._id:data.id
-                        }})
-                        body.push({
-                            key:item,
-                            data:data,
-                            id:data._id?data._id:data.id
-                        })
-                    })
-                    setTable({headers,body})
-                    setDirection('row')
-                    break
-                case 'priceData':
-                case 'dividendData':
-                case 'insiderTrading':
-                    headers = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
-                    headers = headers.map(item =>{
-                        return{
-                            value:item
-                        }
-                    })
-                    selectedData.forEach(item =>{
-                        let data = Object.keys(item).map(data => {
-                            let value = data==='date'?parseDate(item[data]).split('T')[0]:item[data]
-                            return{
-                                dataKey:key,
-                                key:data,
-                                value:value,
-                                date:item.date,
-                                id:item._id?item._id:item.id
-                            }
-                        })
-                        data = data.filter(item => item.key!=='_id'&&item.key!=='id')
-                        body.push({
-                            key:key,
-                            data:data,
-                            id:item._id?item._id:item.id
-                        })
-                    })
-                    setTable({headers,body})
-                    setDirection('col')
-                    break
-            }
+            let selectedData = companyInfo.selectDataToTable(selectedKey)
+            setTable({...selectedData})
         }
     },[selectedKey,companyInfo])
 
-    const modifyDataHandler=(e,item)=>{
-        const { dataKey, key, id } = item
-        let newValue=''
-        if(e.target.value!==''){
-            switch(key){
-                case 'date':
-                    newValue=new Date(e.target.value).toISOString()
-                    break
-                case 'name':
-                case 'position':
-                case 'type':
-                case 'instrument':
-                    newValue=e.target.value
-                    break
-                default:
-                    newValue = Number(e.target.value)
-            } 
-        }
-        let index = companyInfo[dataKey].findIndex(item => item._id === id||item.id===id)
-        const updatedCompanyInfo = {...companyInfo}
-        if(index>=0){
-            updatedCompanyInfo[dataKey][index][key] = newValue
-            setCompanyInfo(updatedCompanyInfo)             
-        }
+    const modifyDataHandler=(newValue,item)=>{
+        companyInfo.modifyData(newValue,item)
+        setCompanyInfo({...companyInfo})             
+    }
+
+    const addRowHandler=(key)=>{
+        companyInfo.addRow(key)
+        setCompanyInfo({...companyInfo})
+    }
+
+    const deleteDataHandler = (row) => {
+        companyInfo.deleteRow(row)
+        setCompanyInfo({...companyInfo})
     }
 
     const calculateInputWidth=(data,key)=>{
         if(data.length>8){
             return '6.5rem'
-        }else if(key==='date'&&direction==='col'){
+        }else if(key==='date'&&table.direction==='col'){
             return '14rem'
         }else{
             return '8rem'
         }
-    }
-
-    const addRowHandler=(key)=>{
-        let template = Object.assign({}, tickerDataModel[key]);
-        template.id = uuidv4()
-        const updatedCompanyInfo = {...companyInfo}
-        updatedCompanyInfo[key].push(template)
-        setCompanyInfo(updatedCompanyInfo)
     }
 
     const calculateType=(key)=>{
@@ -467,14 +301,6 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                 return 'text'
             default: return 'number'
         }
-    }
-
-    const deleteDataHandler = (row) => {
-        const { key, id } = row
-        const updatedCompanyInfo = {...companyInfo}
-        let index = updatedCompanyInfo[key].findIndex(item => item._id === id||item.id===id)
-        updatedCompanyInfo[key].splice(index,1)
-        setCompanyInfo(updatedCompanyInfo)
     }
 
     return(
@@ -494,7 +320,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                     {table.headers.map((item,index) =>
                         <th className='tableHeader' key={index}>
                            <span>{camelCaseToString(item.value)}</span>
-                            {direction==='row'&&
+                            {table.direction==='row'&&
                                 <button onClick={e => deleteDataHandler(item)}>X</button>
                             }
                         </th>
@@ -508,7 +334,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                     {row.data.map((item,index) =>
                         <td key={index}>
                             <input
-                                onChange={(e)=>modifyDataHandler(e,item)}
+                                onChange={(e)=>modifyDataHandler(e.target.value,item)}
                                 style={{
                                     width:calculateInputWidth(row.data,item.key),
                                     backgroundColor:item.value===null?'rgba(247, 103, 87,0.4)':'rgba(87, 247, 154,0.4)'
@@ -519,7 +345,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                             />
                         </td>  
                     )}   
-                    {direction==='col'&&
+                    {table.direction==='col'&&
                         <td>
                             <button onClick={() => deleteDataHandler(row)}>Delete</button>
                         </td>                   
@@ -547,11 +373,9 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
         }
     }    
     
-    const modifyData=(e,key)=>{
-        const newValue = e.target.value
-        const updatedCompanyInfo = {...companyInfo}
-        updatedCompanyInfo.profile[key] = newValue
-        setCompanyInfo(updatedCompanyInfo)
+    const modifyData=(newValue,key)=>{
+        companyInfo.modifyData(newValue,key)
+        setCompanyInfo({...companyInfo})
     }
 
     return(
@@ -560,15 +384,15 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
                 {keys.map((item,index) =>
                     <li key={index} className='inputInfoItem'>
                         <label className='itemLabel'>{camelCaseToString(item)}</label>
-                        <input value={companyInfo.profile[item]} onChange={e => modifyData(e,item)}/>
+                        <input value={companyInfo.profile[item]} onChange={e => modifyData(e.target.value,item)}/>
                     </li>                
                 )}
             </ul>  
             <div className='inputInfoRatios'>
                 {ratios.map(ratio=>
-                    <div className='inputInfoItem'>
+                    <div key={ratio} className='inputInfoItem'>
                         <label className='itemLabel'>{camelCaseToString(ratio)}</label>
-                        <input value={companyInfo.ratios[ratio]|| ''}/>
+                        <input onChange={e => console.log(e)} value={companyInfo.ratios[ratio]|| ''}/>
                     </div>
                 )}
                 <button
@@ -585,80 +409,18 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
                 </div>
                 <button onClick={deleteTickerHandler}>Delete Ticker</button>
             </div>
+            <div className='updateMessages'>
+                {companyInfo.updateMessages.map(item =>
+                    <div>{item}</div>
+                )}
+            </div>
         </div>
     )
 }
 
 function updateRatios(companyInfo,setCompanyInfo){
-    console.log(companyInfo)
     companyInfo.update()
-    setCompanyInfo({...companyInfo,ratios:companyInfo.tickerRatios()})
-}
-
-function getKey(array,data){
-        if(array[1].split('\t')[0]==='Trend'){
-            array.splice(1,2)
-        }
-        let key = array[1].split('\t')[0]
-        if(array[2]==='CURRENT PRICE') key = 'companyInfo'
-        if(checkInsider(data)) key = 'insider'
-        if(array[0]==='Date,Open,High,Low,Close,Adj Close,Volume') key = 'yahooPrice'
-        if(key==='Transaction Date') key='insiderMarketBeat'
-        if(array[0]==="Date,Dividends") key='dividends'
-        if(key==='Annual Data | Millions of US $ except per share data') key = 'macroTrendsAnnual'
-        let reuterKey = checkReuters(array)
-        if(reuterKey){
-            key=reuterKey
-            console.log(reuterKey)
-        }
-        
-        return key
-}
-
-function checkReuters(array){
-    if(array[14]){
-        let incomeKeys=['Revenue','Total Premiums Earned','Interest Income, Bank']
-        let balanceKeys=['Cash','Cash & Due from Banks','Cash & Equivalents']
-        let cashflowKeys=['Net Income/Starting Line','Cash Taxes Paid','Cash Receipts']
-        let key = array[14].split('\t')[0]
-
-        let keyFound=null;
-        if(incomeKeys.find(item => item===key)){
-            keyFound='reutersIncome'
-        }else if(balanceKeys.find(item => item===key)){
-            keyFound='reutersBalance'
-        }else if(cashflowKeys.find(item => item===key)){
-            keyFound='reutersCash'
-        }
-        return keyFound
-    }else{
-        return null
-    }
-
-}
-
-function CompanyInfo({state}){
-    return(
-        <div className='inputInfo'
-            style={{backgroundColor:state.name?'#CBFFCE':'#FFD5CB'}}
-        >
-            <span>Name: {state.name}</span>
-        </div>
-    )
-}
-
-function InputInfoProfile({ dataKey, data, setSelectedKey}){
-
-    let length = Object.values(data[dataKey]).filter(item => item!=='').length
-
-    return(
-        <div className='inputInfo'
-            style={{backgroundColor:length?'#CBFFCE':'#FFD5CB'}}
-            onClick={e => setSelectedKey(dataKey)}
-        >
-            {camelCaseToString(dataKey)} {length}
-        </div>
-    )
+    setCompanyInfo({...companyInfo})
 }
 
 function InputInfo({ dataKey, data, setSelectedKey}){
@@ -670,8 +432,4 @@ function InputInfo({ dataKey, data, setSelectedKey}){
             {camelCaseToString(dataKey)} {Object.keys(data[dataKey]).length}
         </div>
     )
-}
-
-function checkInsider(data){
-    return data.split("This news release was distributed by Company News System, www.nasdaqomxnordic.com/news").length===2
 }

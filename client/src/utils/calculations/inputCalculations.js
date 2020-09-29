@@ -60,7 +60,6 @@ function calculateFinancialStatement(key,i,keyData){
 }
 
 export function calculateBalanceSheetReuters(data){
-    let newData={}
     let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
     let fData=[];
@@ -148,7 +147,6 @@ function calculatebalanceSheet(key,i,keyData){
 }
 
 export function calculateCashFlowReuters(data){
-    let newData={}
     let dates=data[11].split('\t')
     let keyData=calculateKeyData(data)
     let fData=[];
@@ -247,11 +245,11 @@ function calculateTickerCurrency(data){
 }
 
 export function calculateInsiderData(data){
-
+    console.log(data)
     let newData={
         name: data.split('Name:')[1].split('\n')[0].trim(),
         position: data.split('Position:')[1].split('\n')[0].trim(),
-        date: data.split('Transaction date:')[1].split('\n')[0].trim(),
+        date: new Date(data.split('Transaction date:')[1].split('\n')[0].trim()),
         type: calculateTransactionType(data.split('Nature of the transaction:')[1].split('\n')[0].trim()),
         instrument: data.split('Instrument type:')[1].split('\n')[0].trim(),
         price:Number(data.split('Volume weighted average price:')[1].split('\n')[0].split(' ')[1]),
@@ -284,7 +282,7 @@ export function calculateInsiderMarketBeat(data){
         let newData={
             name: array[i].split('\t')[1],
             position: array[i].split('\t')[2],
-            date: array[i].split('\t')[0],
+            date: new Date(array[i].split('\t')[0]),
             type:  array[i].split('\t')[3],
             instrument: 'SHARE',
             price: array[i].split('\t')[5].replace(/[$,]/g, ""),
@@ -319,7 +317,7 @@ export function calculateYahooPrice(data){
         let row=data[i].split(',')
         if(new Date(row[0]).getFullYear()>=2000){
             priceData.push({
-                date:row[0],
+                date:new Date(row[0]),
                 high:row[2],
                 low:row[3],
                 close:row[4],
@@ -403,7 +401,7 @@ export function calculateMacroTrendsAnnual(data,companyInfo,setCompanyInfo){
     
 }
 
-function calculateMacroTrendsCashflow(numberOfYears,data){
+export function calculateMacroTrendsCashflow(numberOfYears,data){
     let fData=[]
     for(var a=1;a<=numberOfYears;a++){
         let namedDataBlock={
@@ -432,7 +430,7 @@ function calculateMacroTrendsCashflow(numberOfYears,data){
     return fData
 }
 
-function calculateMacroTrendsBalance(numberOfYears,data){
+export function calculateMacroTrendsBalance(numberOfYears,data){
     let fData=[]
     for(var a=1;a<=numberOfYears;a++){
         let namedDataBlock={
@@ -476,7 +474,7 @@ function calculateMacroTrendsBalance(numberOfYears,data){
     return fData
 }
 
-function calculateMacroTrendsIncome(numberOfYears,data){
+export function calculateMacroTrendsIncome(numberOfYears,data){
     let fData=[]
 
     for(var a=1;a<=numberOfYears;a++){
@@ -508,12 +506,69 @@ function calculateMacroTrendsIncome(numberOfYears,data){
 }
 
 function parseMacroNumber(text){
-
     let num = Number(text.replace(/[,$ ]/g,''))
     if(text.charAt(1)==='−') num = Number(text.replace(/[,$− ]/g,''))*-1
     return Number.isNaN(num)?null:num
 }
 
-function letterCounter (x) {
+export function letterCounter (x) {
     return x.replace(/[^a-zA-Z]/g, '').length;
-  }
+}
+
+export function getKey(array,data){
+    if(array[1].split('\t')[0]==='Trend'){
+        array.splice(1,2)
+    }
+    let key = array[1].split('\t')[0]
+    if(array[2]==='CURRENT PRICE') key = 'companyInfo'
+    if(checkInsider(data)) key = 'insider'
+    if(array[0]==='Date,Open,High,Low,Close,Adj Close,Volume') key = 'yahooPrice'
+    if(key==='Transaction Date') key='insiderMarketBeat'
+    if(array[0]==="Date,Dividends") key='dividends'
+    if(key==='Annual Data | Millions of US $ except per share data') key = 'macroTrendsAnnual'
+    let reuterKey = checkReuters(array)
+    if(reuterKey){
+        key=reuterKey
+    } 
+    return key
+}
+
+export function checkReuters(array){
+    if(array[14]){
+        let incomeKeys=['Revenue','Total Premiums Earned','Interest Income, Bank']
+        let balanceKeys=['Cash','Cash & Due from Banks','Cash & Equivalents']
+        let cashflowKeys=['Net Income/Starting Line','Cash Taxes Paid','Cash Receipts']
+        let key = array[14].split('\t')[0]
+
+        let keyFound=null;
+        if(incomeKeys.find(item => item===key)){
+            keyFound='reutersIncome'
+        }else if(balanceKeys.find(item => item===key)){
+            keyFound='reutersBalance'
+        }else if(cashflowKeys.find(item => item===key)){
+            keyFound='reutersCash'
+        }
+        return keyFound
+    }else{
+        return null
+    }
+}
+
+function checkInsider(data){
+    return data.split("This news release was distributed by Company News System, www.nasdaqomxnordic.com/news").length===2
+}
+
+export function parseDate(date){
+    function isIsoDate(str) {
+        if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)){
+            return false;
+        } 
+        var d = new Date(str); 
+        return d.toISOString()===str;
+      }
+    if(isIsoDate(date)){
+        return date
+    }else{
+        return date.toISOString()
+    }                  
+}

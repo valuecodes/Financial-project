@@ -30,6 +30,7 @@ export default function ScreenerScreen() {
 
     return (
         <div className='screenerScreen container'>
+            {error&&<div>Error</div>}
             <div className='screenerInputContainer'>                
                 <div className='tickersFound' style={tickersFoundStyle()}>
                     <h2>Tickers found: </h2>

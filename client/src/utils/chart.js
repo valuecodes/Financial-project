@@ -435,7 +435,7 @@ export function calculateStatCharts(chartComponents){
 }
 
 export function calculateStatTreeMap(chartComponents){
-    const { sectors, industries, subIndustries, tickers } = chartComponents  
+    const { sectors, industries, tickers } = chartComponents  
     let array = []
     array.push(['Division','Parent','Portfolio Share','Percentage Change'])
     array.push(['Portfolio',null,0,0])

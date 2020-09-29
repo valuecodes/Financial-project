@@ -27,6 +27,8 @@ export default function SearchInput({currentTickers,selectTicker }) {
                             <p>{ticker.ticker}</p> 
                             <p>{ticker.name}</p> 
                         </div>
+                }else{
+                    return null
                 }
             })}
         </div>

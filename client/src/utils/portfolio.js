@@ -1,5 +1,5 @@
 import { formatValue, totalByKey } from "./utils";
-import { Ticker, calculateCurrentPrice } from "./ticker";
+import { Ticker } from "./ticker";
 
 export function Portfolio(portfolioData){
     this.name = portfolioData.portfolio.name

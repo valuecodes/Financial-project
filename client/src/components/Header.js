@@ -20,6 +20,7 @@ export default function Header(props) {
 
     useEffect(()=>{
         dispatch(getExhangeRates())
+        // eslint-disable-next-line react-hooks/exhaustive-deps        
     },[])
 
     useEffect(()=>{
@@ -45,7 +46,7 @@ export default function Header(props) {
 function SubHeader({userInfo,setPage}){
 
     const exhangeRateList = useSelector(state => state.exhangeRateList)
-    const { loading, exhangeRate, error } = exhangeRateList
+    const { exhangeRate } = exhangeRateList
     const [eRate,setERate] = useState('USD')
     const history = useHistory();
 
@@ -150,12 +151,13 @@ function SelectUserPortfolio(){
     const dispatch = useDispatch()
     const [userPortfolios,setUserPortfolios] = useState(null)
     const portfolioUserList = useSelector(state => state.portfolioUserList)
-    const { loading, portfolios,error } = portfolioUserList
+    const { portfolios} = portfolioUserList
     const portfolioSelected = useSelector(state => state.portfolioSelected)
     const { selectedPortfolio } = portfolioSelected
 
     useEffect(()=>{
         dispatch(listUserPortfolios())
+        // eslint-disable-next-line react-hooks/exhaustive-deps        
     },[])
 
     useEffect(()=>{
@@ -165,6 +167,7 @@ function SelectUserPortfolio(){
                 dispatch(selectPortfolio(portfolios[0]))
            } 
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps        
     },[portfolios])
 
     const selectPortfolioHandler=(portfolioId)=>{

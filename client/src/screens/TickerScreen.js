@@ -3,7 +3,6 @@ import { useDispatch,useSelector } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
 import { camelCaseToString, datasetKeyProvider } from '../utils/utils';
 import { Line, Bar } from 'react-chartjs-2';
-import { listUserPortfolios } from '../actions/portfolioActions';
 import { Ticker } from '../utils/ticker';
 import {  
     calculatePriceChart, 

@@ -1,6 +1,22 @@
-import { roundToTwoDecimal, roundFinancialNumber, getYear } from "./utils";
-import { func } from "prop-types";
+import { roundFinancialNumber, getYear, uuidv4 } from "./utils";
 import { tickerDataModel } from "./dataModels";
+import { 
+    calculateCompanyInfo, 
+    calculateInsiderMarketBeat, 
+    getKey, 
+    getReuterCurrency, 
+    calculateIncomeStatementReuters, 
+    calculateYahooDividend, 
+    calculateYahooPrice, 
+    calculateInsiderData, 
+    calculateBalanceSheetReuters, 
+    calculateCashFlowReuters, 
+    parseDate, 
+    letterCounter, 
+    calculateMacroTrendsIncome, 
+    calculateMacroTrendsBalance, 
+    calculateMacroTrendsCashflow 
+} from "./calculations/inputCalculations";
 
 export function TickerData(data){
     this.profile = data.profile?data.profile:{
@@ -42,6 +58,8 @@ export function TickerData(data){
     }
     this._id=data._id?data._id:null
     this.valueStatements = null
+    this.updateMessages = []
+    this.addUpdateMessage = (dataName,actions) => handleAddUpdateMessage(this,dataName,actions)
     this.getValueStatements = () => calculateValueStatements(this)
     this.getRatio = (ratio) => calculateGetRatio(this,ratio)
     this.yearDivs = () => calculateYearDivs(this)
@@ -50,6 +68,23 @@ export function TickerData(data){
     this.tickerRatios = () => calculateTickerRatios(this)
     this.update = () => calculateUpdate(this)
     this.updateFinancialValue = (value) => calculateUpdateFinancialValue(this,value)
+
+    this.addData = (data) => setAddData(this,data)
+    this.updateData = (dataName,newData) => setUpdateData(this,dataName,newData)
+    this.addProfile = (data) => setAddProfile(this,data)
+    this.addMacroTrendsAnnual = (array) => handleAddMacroTrendsAnnual(this,array)
+    
+    this.selectDataToTable = (key) => setSelectDataToTable(this,key) 
+    this.modifyData = (newValue,item) => handleModifyData(this,newValue,item)
+    this.addRow = (key) => setAddRow(this,key)
+    this.deleteRow = (row) => handleDeleteRow(this,row)
+}
+
+function handleAddUpdateMessage(tickerData,dataName,actions){
+    let ticker = tickerData.profile.ticker
+    console.log(tickerData.profile)
+    let message = `${ticker} new: ${actions.new} found: ${actions.found}`
+    tickerData.updateMessages.push(message)
 }
 
 function calculateGetRatio(tickerData,ratio){
@@ -229,7 +264,6 @@ function calculateUpdateFinancialValue(tickerData,value){
     switch(value){
         case 'bookValue':
             tickerData.balanceSheet.forEach(item => {
-                console.log(item)
                 let year = getYear(item.date)
                 let sharesOutstanding = tickerData.getFinancialNum('sharesOutstanding',year)
                 let bookValuePerShare = item.totalEquity / sharesOutstanding
@@ -239,3 +273,278 @@ function calculateUpdateFinancialValue(tickerData,value){
         default:
     }
 }
+
+function setAddData(tickerData,data){
+
+    let array=data.split('\n') 
+    if(array.length<2) return tickerData
+    let key = getKey(array,data)
+    let newData=[]
+    switch (key){
+        case 'reutersIncome':
+            tickerData.profile.financialDataCurrency = getReuterCurrency(array)
+            newData = calculateIncomeStatementReuters(array)
+            tickerData.updateData('incomeStatement',newData)
+            break
+        case 'reutersBalance':
+            tickerData.profile.financialDataCurrency = getReuterCurrency(array)
+            newData = calculateBalanceSheetReuters(array)
+            tickerData.updateData('balanceSheet',newData)
+            break
+        case 'reutersCash':
+            tickerData.profile.financialDataCurrency = getReuterCurrency(array)
+            newData = calculateCashFlowReuters(array)
+            tickerData.updateData('cashFlow',newData)
+            break
+        case 'companyInfo':
+            tickerData.addProfile(data)
+            break
+        case 'insider':
+            newData = calculateInsiderData(data)
+            tickerData.updateData('insiderTrading',[newData])
+            break
+        case 'insiderMarketBeat':
+            newData = calculateInsiderMarketBeat(data)
+            tickerData.updateData('insiderTrading',newData)
+            break
+        case 'yahooPrice':
+            newData = calculateYahooPrice(array)
+            tickerData.updateData('priceData',newData)
+            break
+        case 'dividends':
+            newData = calculateYahooDividend(array)
+            tickerData.updateData('dividendData',newData)
+            break
+        case 'macroTrendsAnnual':      
+            tickerData.addMacroTrendsAnnual(array)
+            break
+        default: 
+    }
+    tickerData.update()
+    return tickerData
+}
+
+function setUpdateData(tickerData,dataName,newData){
+
+    let currentData = tickerData[dataName]
+    
+    let actions = {
+        new:0,
+        found:0
+    }
+
+    const compare = (newItem,item,dataName) => {
+        switch(dataName){
+            case 'incomeStatement':
+            case 'balanceSheet':
+            case 'cashFlow':
+                return new Date(item.date).getFullYear() === new Date(newItem.date).getFullYear()
+            case 'insiderTrading':
+            case 'priceData':
+            case 'dividendData':
+                return new Date(item.date).getTime() === new Date(newItem.date).getTime()&&
+                    item.name ===newItem.name
+            default: return true
+        }
+    }
+
+    newData.forEach(newItem =>{
+
+        let found = currentData.find(item => compare(newItem,item,dataName))
+
+        if(!found){
+            currentData.push(newItem)
+            actions.new++
+        }else{
+            actions.found++
+        }
+    })
+    
+    tickerData[dataName] = currentData
+    tickerData.addUpdateMessage(dataName,actions)
+    return tickerData
+}
+
+function setAddProfile(tickerData,data){
+    tickerData.profile = calculateCompanyInfo(data,tickerData)
+    return tickerData
+}
+
+function handleAddMacroTrendsAnnual(tickerData,array){
+    array.shift()
+    let numberOfYears=0
+    let key=''
+    
+    for(var i=1;i<array.length;i++){
+        if(letterCounter(array[i])>5){
+            numberOfYears=i
+            key=array[i]
+            break
+        }
+    }
+    let newData=[]
+    tickerData.profile.financialDataCurrency='USD'  
+    switch(key){
+        case 'Revenue': 
+            newData = calculateMacroTrendsIncome(numberOfYears,array)       
+            tickerData.updateData('incomeStatement',newData)            
+            break
+        case 'Cash On Hand':
+            newData = calculateMacroTrendsBalance(numberOfYears,array)       
+            tickerData.updateData('balanceSheet',newData)  
+            break
+        case 'Net Income/Loss':      
+            newData = calculateMacroTrendsCashflow(numberOfYears,array)       
+            tickerData.updateData('cashFlow',newData)  
+            break
+        default:
+    }
+
+    return tickerData
+}
+
+function handleModifyData(tickerData, newValue, item){
+
+    if(typeof item ==='string'){
+        tickerData.profile[item] = newValue
+        return tickerData
+    }
+    
+    const { dataKey, key, id } = item
+
+    if(newValue!==''){
+        switch(key){
+            case 'date':
+                newValue = new Date(newValue).toISOString()
+                break
+            case 'name':
+            case 'position':
+            case 'type':
+            case 'instrument':
+                break
+            default:
+                newValue = Number(newValue)
+        } 
+    }
+
+    let index = tickerData[dataKey].findIndex(item => item._id === id||item.id===id)
+
+    if(index>=0){
+        tickerData[dataKey][index][key] = newValue         
+    }
+    return tickerData
+}
+
+function setAddRow(tickerData,key){
+    let template = Object.assign({}, tickerDataModel[key]);
+    template.id = uuidv4()
+    tickerData[key].push(template)
+    return tickerData
+}
+
+function handleDeleteRow(tickerData,row){
+    const { key, id } = row
+    let index = tickerData[key].findIndex(item => item._id === id||item.id===id)
+    tickerData[key].splice(index,1)
+    return tickerData
+}
+
+function setSelectDataToTable(tickerData,key){
+
+    let selectedData = tickerData[key].sort((a,b)=>new Date(b.date)-new Date(a.date))
+
+    let headers =[]
+    let body = []
+    let direction = ''
+
+    if(!selectedData[0]){
+        return { headers, body, direction }
+    }  
+
+    switch(key){
+        case 'incomeStatement':
+        case 'balanceSheet':
+        case 'cashFlow':
+            headers = calculateTickerDataRowHeaders(selectedData,key)
+            body = calculateTickerDataRowBody(selectedData,key)
+            direction = 'row'
+            break
+        case 'priceData':
+        case 'dividendData':
+        case 'insiderTrading':
+            headers = calculateTickerDataColHeaders(selectedData,key)
+            body = calculateTickerDataColBody(selectedData,key)
+            direction = 'col'
+            break
+        default:break
+    }
+    return { headers, body, direction }
+}
+
+function calculateTickerDataRowHeaders(selectedData,key){
+    return selectedData.map(item =>{ 
+        let date = parseDate(item.date)
+        return{
+            value:date.split('-')[0],
+            key,
+            id:item._id?item._id:item.id
+        }
+    })
+}
+
+function calculateTickerDataRowBody(selectedData,key){
+    let dataKeys = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
+    let body = []
+    dataKeys.forEach(item =>{
+        let data=selectedData.map(data =>{
+            let value = item==='date'?parseDate(data[item]).split('T')[0]:data[item]  
+            return{
+            dataKey:key,
+            key:item,
+            value:value,
+            date:data.date,
+            id:data._id?data._id:data.id
+        }})
+        body.push({
+            key:item,
+            data:data,
+            id:data._id?data._id:data.id
+        })
+    })
+    return body
+}
+
+function calculateTickerDataColHeaders(selectedData,key){
+    let headers = Object.keys(selectedData[0]).filter(item => item!=='_id'&&item!=='id')
+    headers = headers.map(item =>{
+        return{
+            value:item
+        }
+    })
+    return headers
+}
+
+function calculateTickerDataColBody(selectedData,key){
+    let body = []
+    selectedData.forEach(item =>{
+        let data = Object.keys(item).map(data => {
+            let value = data==='date'?parseDate(item[data]).split('T')[0]:item[data]
+            return{
+                dataKey:key,
+                key:data,
+                value:value,
+                date:item.date,
+                id:item._id?item._id:item.id
+            }
+        })
+        data = data.filter(item => item.key!=='_id'&&item.key!=='id')
+        body.push({
+            key:key,
+            data:data,
+            id:item._id?item._id:item.id
+        })
+    })
+
+    return body
+}
+

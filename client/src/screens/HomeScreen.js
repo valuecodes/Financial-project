@@ -1,9 +1,6 @@
-import React,{useEffect,useState } from 'react'
-import { useSelector,useDispatch } from 'react-redux'
-import { listTickers, getPortfolioTickersData } from '../actions/tickerActions';
-import { listUserPortfolios } from '../actions/portfolioActions';
-import { Link} from 'react-router-dom'
-import { Portfolio } from '../utils/portfolio';
+import React from 'react'
+import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { roundToTwoDecimal } from '../utils/utils';
 import { TickerSlim } from '../utils/tickerSlim';
 
@@ -45,22 +42,17 @@ function TickerTableTicker({ticker}){
     )
 }
 
-function calculateTickerPercentage(ticker){
-    return roundToTwoDecimal(((ticker[3]-ticker[4])/ticker[3])*100)
-}
-
 function MainSide({tickers}){
 
-    const [portfolio,setPortfolio] = useState(null)
     const userSignin = useSelector(state => state.userSignin)
     const { loading, userInfo, error } = userSignin
     const portfolioSelected = useSelector(state => state.portfolioSelected)
     const { selectedPortfolio } = portfolioSelected
-    const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
-    const { loading1, portfolioData, error1 } = tickerPortfolioData
 
     return(
         <section className='card portfolioSection'>
+            {loading&&<div>Loading...</div>}
+            {error&&<div>Error</div>}
             {!userInfo?<div><h2>Hello visitor</h2></div>:
                 <>
                 <h1 className='mainHeader'>Hello {userInfo.name}</h1>

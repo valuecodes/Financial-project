@@ -48,7 +48,7 @@ function calculateScreenTickers(screener){
 
     const { tickers, inputs } = screener
     let screenedTickers = [...tickers]
-    let activeInputs = Object.keys(inputs).filter(item => inputs[item]. active)
+    let activeInputs = Object.keys(inputs).filter(item => inputs[item].active)
 
     activeInputs.forEach(input=>{
         let remove = []

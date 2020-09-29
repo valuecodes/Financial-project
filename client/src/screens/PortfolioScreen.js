@@ -45,6 +45,7 @@ export default function PortfolioScreen(props) {
                 dispatch(getPortfolioTickersData(selectedPortfolio._id)) 
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[selectedPortfolio])
 
     const [navigation,setNavigation] = useState({
@@ -97,9 +98,7 @@ function PortfolioStats({portfolio,navigation}){
     },[portfolio])
     
     return(
-        <div 
-            // className='section'
-        >
+        <div>
             <div className='portfolioStats'>
                 <Chart
                     height={600}

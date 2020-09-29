@@ -1,5 +1,5 @@
 import React,{useState,useEffect} from 'react'
-import { camelCaseToString, roundToTwoDecimal } from '../utils/utils';
+import { camelCaseToString } from '../utils/utils';
 
 export default function MultiRange({ input, screener, setScreenedTickers, setInputs }) {
 
@@ -12,7 +12,8 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
     useEffect(()=>{
         setMultiRange(input)
         let screenedTickers = screener.screenTickers()                     
-        setScreenedTickers(screenedTickers)               
+        setScreenedTickers(screenedTickers)  
+        // eslint-disable-next-line react-hooks/exhaustive-deps                     
     },[])
 
     const handleChange = (e,inputName) =>{
@@ -20,7 +21,7 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
         let updatedInput = screener.updateInput(multiRange,inputName,value)
         setMultiRange({...updatedInput})    
         let screenedTickers = screener.screenTickers()             
-        setScreenedTickers(screener.screenTickers())       
+        setScreenedTickers(screenedTickers)       
     }
 
     const inputBarStyle = (range) =>{
@@ -49,8 +50,8 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
     }
 
     const {
-        key,min,max,minValue,maxValue,
-        range,scaleFrom,scaleTo,active,ticks
+        key,minValue,maxValue,
+        scaleFrom,scaleTo,ticks
     } = multiRange
 
     return !input.active?null:
