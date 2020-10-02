@@ -13,7 +13,13 @@ import {
     TICKER_SAVE_FAIL,
     TICKER_DELETE_REQUEST,
     TICKER_DELETE_SUCCESS,
-    TICKER_DELETE_FAIL
+    TICKER_DELETE_FAIL,
+    TICKER_UPDATE_RATIOS_REQUEST,
+    TICKER_UPDATE_RATIOS_SUCCESS,
+    TICKER_UPDATE_RATIOS_FAIL,
+    TICKER_API_PRICE_REQUEST,
+    TICKER_API_PRICE_SUCCESS,
+    TICKER_API_PRICE_FAIL
 } from "../constants/tickerConstants";
 
 function tickerListReducer(state={
@@ -78,10 +84,36 @@ function tickerDeleteReducer(state={},action){
     }
 }
 
+function tickerUpdateRatiosReducer(state={},action){
+    switch(action.type){
+        case TICKER_UPDATE_RATIOS_REQUEST:
+            return { loading:true }
+        case TICKER_UPDATE_RATIOS_SUCCESS:
+            return { loading:false, success:true, data:action.payload }
+        case TICKER_UPDATE_RATIOS_FAIL:
+            return { loading:false, error:action.payload }
+        default: return state
+    }
+}
+
+function tickerApiPriceReducer(state={},action){
+    switch(action.type){
+        case TICKER_API_PRICE_REQUEST:
+            return { loading:true }
+        case TICKER_API_PRICE_SUCCESS:
+            return { loading:false, success:true, data:action.payload }
+        case TICKER_API_PRICE_FAIL:
+            return { loading:false, error:action.payload }
+        default: return state
+    }
+}
+
 export {
     tickerListReducer,
     tickerDataReducer,
     tickerPortfolioDataReducer,
     tickerSaveReducer,
-    tickerDeleteReducer
+    tickerDeleteReducer,
+    tickerUpdateRatiosReducer,
+    tickerApiPriceReducer
 }

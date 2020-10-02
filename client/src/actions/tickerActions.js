@@ -14,7 +14,13 @@ import {
     TICKER_SAVE_FAIL,
     TICKER_DELETE_REQUEST,
     TICKER_DELETE_SUCCESS,
-    TICKER_DELETE_FAIL
+    TICKER_DELETE_FAIL,
+    TICKER_UPDATE_RATIOS_REQUEST,
+    TICKER_UPDATE_RATIOS_SUCCESS,
+    TICKER_UPDATE_RATIOS_FAIL,
+    TICKER_API_PRICE_REQUEST,
+    TICKER_API_PRICE_SUCCESS,
+    TICKER_API_PRICE_FAIL
 } from '../constants/tickerConstants';
 
 const listTickers = () => async(dispatch) => {
@@ -82,10 +88,42 @@ const deleteTicker = (tickerId) => async (dispatch, getState) => {
     }
 }
 
+const updateTickerRatios = (ticker) => async (dispatch,getState) => {
+    try{
+        dispatch({type: TICKER_UPDATE_RATIOS_REQUEST})
+        const {userSignin:{userInfo}} = getState()
+        const { data } = await axios.get('/dataInput/ratios/'+ticker,{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        dispatch({type: TICKER_UPDATE_RATIOS_SUCCESS, payload: data})
+    } catch(err){   
+        dispatch({type: TICKER_UPDATE_RATIOS_FAIL, payload: err.message})
+    }
+}
+
+const getPriceDataFromApi = (ticker) => async (dispatch, getState) => {
+    try{
+        dispatch({type: TICKER_API_PRICE_REQUEST})
+        const {userSignin:{userInfo}} = getState()
+        const { data } = await axios.get('/dataInput/price/'+ticker,{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        dispatch({type: TICKER_API_PRICE_SUCCESS, payload: data.data})
+    } catch(err){   
+        dispatch({type: TICKER_API_PRICE_FAIL, payload: err.message})
+    }
+} 
+
 export{
     listTickers,
     getTickerData,
     getPortfolioTickersData,
     saveTicker,
-    deleteTicker
+    deleteTicker,
+    updateTickerRatios,
+    getPriceDataFromApi
 }

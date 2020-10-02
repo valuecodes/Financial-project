@@ -1,3 +1,5 @@
+const axios = require('axios')
+
 const Ticker = require('../models/tickerModel')
 const TickerSlim = require('../models/tickerSlimModel')
 
@@ -6,7 +8,6 @@ const TickerSlim = require('../models/tickerSlimModel')
 // @ access   Auth Admin
 exports.updateTicker = async ( req, res, next ) => {
     const ticker = await Ticker.findById(req.body._id)
-    console.log(req.body._id)
     if(ticker){
         ticker.profile=req.body.profile,
         ticker.incomeStatement=req.body.incomeStatement,
@@ -34,6 +35,46 @@ exports.updateTicker = async ( req, res, next ) => {
         req.body._id=saved._id
         next()
         res.send({message:'Ticker created',data:saved})  
+    }
+}
+
+// @desc      Update ticker ratios from alphavantage api
+// @route     GET /ratios:id
+// @ access   Auth Admin
+exports.updateTickerRatios = async ( req, res ) => {
+    let ticker = req.params.id
+    let data = await axios.get(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
+    if(data.data.Symbol){
+        res.send({message:'Ticker updated', data:data.data})
+    }else{
+        return res.status(404).send({message: 'Ticker not found'})
+    }
+}
+
+// @desc      Get data from api
+// @route     GET /ratios
+// @ access   Auth Admin
+exports.getPriceDataFromApi = async (req,res) => {
+    const ticker = req.params.id
+    console.log(ticker)
+    if(!ticker){
+        return res.status(404).send({message: 'Ticker not found'})
+    }
+
+    let data = null
+
+    data = await axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
+    
+    if(data.data["Weekly Adjusted Time Series"]){
+        return res.send({data:data.data})
+    }
+
+    data = await axios.get(`http://api.marketstack.com/v1/eod?access_key=${process.env.MARKET_STACK_API_KEY}&symbols=${ticker}`)
+
+    if(data.data){
+        return res.send({data:data.data})        
+    }else{
+        return res.status(404).send({message: 'Ticker not found'})   
     }
 }
 
@@ -108,5 +149,4 @@ exports.deleteTicker = async ( req,res ) => {
     }else{
         return res.status(404).send({message: 'Ticker not found'})
     }
-    console.log(ticker)
 }

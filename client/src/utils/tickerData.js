@@ -1,4 +1,4 @@
-import { roundFinancialNumber, getYear, uuidv4 } from "./utils";
+import { roundFinancialNumber, getYear, uuidv4, getTime, roundToTwoDecimal, getNumberOfWeek } from "./utils";
 import { tickerDataModel } from "./dataModels";
 import { 
     calculateCompanyInfo, 
@@ -17,6 +17,7 @@ import {
     calculateMacroTrendsBalance, 
     calculateMacroTrendsCashflow 
 } from "./calculations/inputCalculations";
+import { Collection } from "mongoose";
 
 export function TickerData(data){
     this.profile = data.profile?data.profile:{
@@ -78,13 +79,46 @@ export function TickerData(data){
     this.modifyData = (newValue,item) => handleModifyData(this,newValue,item)
     this.addRow = (key) => setAddRow(this,key)
     this.deleteRow = (row) => handleDeleteRow(this,row)
+
+    this.updateRatiosFromApi = (data) => handleUpdateRatiosFromApi(this,data)
+    this.updatePriceFromApi = (data) => handleUpdatePriceFromApi(this,data)
 }
 
-function handleAddUpdateMessage(tickerData,dataName,actions){
+function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
     let ticker = tickerData.profile.ticker
-    console.log(tickerData.profile)
-    let message = `${ticker} new: ${actions.new} found: ${actions.found}`
-    tickerData.updateMessages.push(message)
+    let text = ''
+    let color='gray'
+    switch(dataName){
+        case 'incomeStatement':
+        case 'balanceSheet':
+        case 'cashFlow':
+            if(actions.new > 0 && actions.found ===0){
+                color = 'lightgreen'
+            }else if(actions.new >= 0 && actions.found >0){
+                color = 'yellow'
+            }else{
+                color = 'red'
+            }
+            text = `New: ${actions.new} found: ${actions.found}`
+            break
+        case 'priceData':
+        case 'dividendData':
+            if(actions.new > 0 && actions.found ===0){
+                color = 'lightgreen'
+            }else if(actions.new >= 0 && actions.found >0){
+                color = 'yellow'
+            }
+            text = `New: ${actions.new} found: ${actions.found}`
+            break
+        case 'profile':
+            color = 'lightgreen'
+            text = 'Profile Added'
+            break
+    }
+
+    let time = getTime()
+    let newMessage = {color,ticker,time,text,dataName}
+    tickerData.updateMessages.push(newMessage)
 }
 
 function calculateGetRatio(tickerData,ratio){
@@ -258,6 +292,7 @@ function calculateUpdate(tickerData){
         }
     }
     tickerData.ratios = tickerData.tickerRatios()
+    return tickerData
 }
 
 function calculateUpdateFinancialValue(tickerData,value){
@@ -334,14 +369,17 @@ function setUpdateData(tickerData,dataName,newData){
     }
 
     const compare = (newItem,item,dataName) => {
+        let startingDate = tickerData.priceData[0]?new Date(tickerData.priceData[0].date):new Date(2000,0)     
         switch(dataName){
             case 'incomeStatement':
             case 'balanceSheet':
             case 'cashFlow':
                 return new Date(item.date).getFullYear() === new Date(newItem.date).getFullYear()
-            case 'insiderTrading':
             case 'priceData':
+                return startingDate.getTime()>(new Date(newItem.date).getTime()-304800000)
             case 'dividendData':
+                return startingDate.getTime()>(new Date(newItem.date).getTime()-1000000000)
+            case 'insiderTrading':
                 return new Date(item.date).getTime() === new Date(newItem.date).getTime()&&
                     item.name ===newItem.name
             default: return true
@@ -359,7 +397,8 @@ function setUpdateData(tickerData,dataName,newData){
             actions.found++
         }
     })
-    
+
+    currentData = currentData.sort((a,b)=> new Date(b.date)-new Date(a.date))
     tickerData[dataName] = currentData
     tickerData.addUpdateMessage(dataName,actions)
     return tickerData
@@ -367,6 +406,7 @@ function setUpdateData(tickerData,dataName,newData){
 
 function setAddProfile(tickerData,data){
     tickerData.profile = calculateCompanyInfo(data,tickerData)
+    tickerData.addUpdateMessage('profile')
     return tickerData
 }
 
@@ -548,3 +588,84 @@ function calculateTickerDataColBody(selectedData,key){
     return body
 }
 
+function handleUpdateRatiosFromApi(tickerData,data){
+    const { 
+        PERatio, 
+        PriceToBookRatio, 
+        DividendYield,
+        PayoutRatio,
+        MarketCapitalization,
+        ProfitMargin,
+        OperatingMarginTTM,
+        PEGRatio,
+        ReturnOnEquityTTM,
+        ReturnOnAssetsTTM
+    } = data
+
+    tickerData.ratios={
+        ...tickerData.ratios,
+        pe: roundToTwoDecimal(PERatio),
+        pb:roundToTwoDecimal(PriceToBookRatio),
+        divYield: roundToTwoDecimal(DividendYield*100),
+        payoutRatio: roundToTwoDecimal(PayoutRatio*100),
+        marketCap: roundToTwoDecimal(MarketCapitalization/1000000),
+        profitMargin: roundToTwoDecimal(ProfitMargin*100),
+        operatingMargin: roundToTwoDecimal(OperatingMarginTTM*100),
+        peg: roundToTwoDecimal(PEGRatio),
+        roe: roundToTwoDecimal(ReturnOnEquityTTM*100),
+        roa: roundToTwoDecimal(ReturnOnAssetsTTM*100)
+    }
+    return tickerData
+}
+
+function handleUpdatePriceFromApi(tickerData,data){
+    if(data['Weekly Adjusted Time Series']){
+
+        let apiData = data['Weekly Adjusted Time Series']
+        let newData = []            
+        let dividends = []
+        let startingDate = tickerData.priceData[0]?new Date(tickerData.priceData[0].date):new Date(2000,0)
+
+        Object.keys(apiData).forEach(key =>{
+            let date = new Date(key)
+            if(startingDate.getTime()<date.getTime()){
+                newData.push({
+                    date:date.toISOString(),
+                    high:apiData[key]['2. high'],
+                    low:apiData[key]['3. low'],
+                    close:apiData[key]['4. close'],
+                    volume:apiData[key]['6. volume'],
+                })       
+                if(Number(apiData[key]["7. dividend amount"])){
+                    dividends.push({
+                        date:date.toISOString(),
+                        dividend:Number(apiData[key]["7. dividend amount"])
+                    })
+                }                            
+            }                
+
+        })
+        tickerData.updateData('dividendData',dividends)
+        tickerData.updateData('priceData',newData)
+    }else if(data.data){
+        let apiData = data.data
+        let newData = []
+        let weeks = []
+        apiData.forEach(item =>{
+            let week = getNumberOfWeek(item.date)
+            if(!weeks.find(num => num===week)){
+                newData.push({
+                    date:new Date(item.date).toISOString(),
+                    high:item.high,
+                    low:item.low,
+                    close:item.close,
+                    volume:item.volume,
+                })  
+                weeks.push(week)
+            }     
+        })
+        tickerData.updateData('priceData',newData)
+    }
+    
+    return tickerData
+}

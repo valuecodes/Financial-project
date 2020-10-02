@@ -1,20 +1,16 @@
 import React,{ useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
-import { getTickerData, saveTicker, deleteTicker } from '../actions/tickerActions';
+import { getTickerData, saveTicker, deleteTicker, getPriceDataFromApi } from '../actions/tickerActions';
 import { camelCaseToString } from '../utils/utils'
 import { updateExhangeRates } from '../actions/exhangeRateActions';
 import { TickerData } from '../utils/tickerData';
+import { updateTickerRatios } from '../actions/tickerActions';
 
 export default function AddDataScreen() {
 
     const dispatch = useDispatch()
-    const { 
-        tickerList, 
-        tickerData, 
-        tickerSave 
-    } = useSelector(state => state)
-    
+    const { tickerList, tickerData, tickerSave } = useSelector(state => state)
     const { tickers } = tickerList
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
@@ -41,7 +37,7 @@ export default function AddDataScreen() {
     useEffect(()=>{
         if(tickerFullData){
             let ticker = new TickerData(tickerFullData)
-            ticker.update()
+            ticker.ratios = tickers.find(item => item.ticker ===ticker.profile.ticker).ratios
             setCompanyInfo(ticker)
         }
     },[tickerFullData])
@@ -252,6 +248,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
 
 function Output({selectedKey, companyInfo, setCompanyInfo}){
 
+    const dispatch = useDispatch()
     const [table, setTable] = useState({
         headers:[],
         body:[],
@@ -279,6 +276,8 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         companyInfo.deleteRow(row)
         setCompanyInfo({...companyInfo})
     }
+
+
 
     const calculateInputWidth=(data,key)=>{
         if(data.length>8){
@@ -312,9 +311,20 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                 <tr>
                     <th>
                     {selectedKey&&
-                        <button 
-                            onClick={e => addRowHandler(selectedKey)}
-                            className='addRowButton'>Add row</button>
+                        <>
+                            <button 
+                                onClick={e => addRowHandler(selectedKey)}
+                                className='tableButton'
+                            >
+                                Add row
+                            </button>
+                            {/* <button
+                                onClick={e => updateFromApi(selectedKey)}
+                                className='tableButton'
+                            >
+                            UpdateFrom API
+                            </button> */}
+                        </>
                     }
                     </th>
                     {table.headers.map((item,index) =>
@@ -359,6 +369,28 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 
 function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
 
+    const tickerUpdateRatios = useSelector(state => state.tickerUpdateRatios)
+    const { loading, success:updateRatiosSuccess, data:updatedRatioData, error } = tickerUpdateRatios
+
+    const tickerApiPrice = useSelector(state => state.tickerApiPrice)
+    const { loading:loadingApiPrice, data:apiPriceData, error:apiPriceError } = tickerApiPrice
+    
+    useEffect(()=>{
+        if(apiPriceData){
+            let updatedData = companyInfo.updatePriceFromApi(apiPriceData)
+            setCompanyInfo({...updatedData})
+            tickerApiPrice.apiPriceData = null
+        }
+    },[apiPriceData])
+
+    useEffect(()=>{
+        if(updateRatiosSuccess,updatedRatioData){
+            let updatedData = companyInfo.updateRatiosFromApi(updatedRatioData.data)
+            setCompanyInfo({...updatedData})
+            tickerUpdateRatios.success = false
+        }
+    },[updateRatiosSuccess,updatedRatioData])
+
     let keys = Object.keys(companyInfo.profile).filter(item => item!=='_id')
     let ratios = Object.keys(companyInfo.ratios)
     const dispatch = useDispatch()
@@ -378,49 +410,85 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
         setCompanyInfo({...companyInfo})
     }
 
+    function updateRatios(companyInfo,setCompanyInfo){
+        let ticker = companyInfo.profile.ticker
+        dispatch(updateTickerRatios(ticker))
+    }
+
+    function manualUpdateRatios(){
+        let updatedData = companyInfo.update()
+        setCompanyInfo({...updatedData})
+    }
+
+    const updateFromApi = (dataName) =>{
+        console.log(companyInfo)
+        let ticker = companyInfo.profile.ticker
+        if(companyInfo.profile.country==='Finland') ticker+='.XHEL'
+        dispatch(getPriceDataFromApi(ticker))
+    }
+
     return(
         <div className='inputInfoHeader'>
-            <ul>
-                {keys.map((item,index) =>
-                    <li key={index} className='inputInfoItem'>
-                        <label className='itemLabel'>{camelCaseToString(item)}</label>
-                        <input value={companyInfo.profile[item]} onChange={e => modifyData(e.target.value,item)}/>
-                    </li>                
-                )}
-            </ul>  
-            <div className='inputInfoRatios'>
-                {ratios.map(ratio=>
-                    <div key={ratio} className='inputInfoItem'>
-                        <label className='itemLabel'>{camelCaseToString(ratio)}</label>
-                        <input onChange={e => console.log(e)} value={companyInfo.ratios[ratio]|| ''}/>
+            {companyInfo.profile.ticker &&
+                <>
+                <div className='inputInfoProfile'>
+                    <div className='inputProfileActions'>
+                        <button onClick={updateFromApi} className='tableButton'>
+                            Update PriceData
+                        </button>      
+                        <button className='tableButton' onClick={() => updateRatios(companyInfo,setCompanyInfo)}>
+                            Update Ratios
+                        </button>
                     </div>
-                )}
-                <button
-                    onClick={() => updateRatios(companyInfo,setCompanyInfo)}
-                >Update Ratios</button>
-            </div>
-            <div className='inputInfoActions'>
-                <button onClick={processData} className='button'>Save Company Data</button> 
-                <div className='messages'>
-                    {messages.tickerLoading && <div className='loadingMessage'>Loading Ticker Data...</div>}
-                    {messages.saveLoading && <div className='loadingMessage'>Saving Ticker...</div>}
-                    {messages.saveSuccess && <div className='successMessage'>{messages.saveSuccess}</div>}
-                    {messages.saveError && <div className='errorMessage'>{messages.saveError}</div>}
+                    {keys.map((item,index) =>
+                        <div key={index} className='inputInfoItem'>
+                            <label className='itemLabel'>{camelCaseToString(item)}</label>
+                            <input value={companyInfo.profile[item]} onChange={e => modifyData(e.target.value,item)}/>
+                        </div>                
+                    )}
+                </div>  
+                <div className='inputInfoRatios'>                
+                    <div className='inputRatioActions'>
+                        <h3>Ratios</h3>
+                        <button
+                            onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
+                        >Manual update</button>                    
+                    </div>
+                    {ratios.map(ratio=>
+                        <div key={ratio} className='inputInfoItem'>
+                            <label className='itemLabel'>{camelCaseToString(ratio)}</label>
+                            <input onChange={e => console.log(e)} value={companyInfo.ratios[ratio]|| ''}/>
+                        </div>
+                    )}
+
                 </div>
-                <button onClick={deleteTickerHandler}>Delete Ticker</button>
-            </div>
-            <div className='updateMessages'>
-                {companyInfo.updateMessages.map(item =>
-                    <div>{item}</div>
-                )}
-            </div>
+                <div className='inputInfoActions'>
+                    <button onClick={processData} className='button'>Save Company Data</button> 
+                    <div className='messages'>
+                        {messages.tickerLoading && <div className='loadingMessage'>Loading Ticker Data...</div>}
+                        {messages.saveLoading && <div className='loadingMessage'>Saving Ticker...</div>}
+                        {messages.saveSuccess && <div className='successMessage'>{messages.saveSuccess}</div>}
+                        {messages.saveError && <div className='errorMessage'>{messages.saveError}</div>}
+                    </div>
+                    <button onClick={deleteTickerHandler}>Delete Ticker</button>
+                </div>
+                <div className='updateMessages'>
+                    {companyInfo.updateMessages.map((item,index) =>
+                        <div 
+                        key={index}
+                        style={{backgroundColor: item.color}}
+                        className='updateMessage'>
+                            <label>{item.ticker}</label>
+                            <label>{item.time}</label>
+                            <p>{camelCaseToString(item.dataName)}</p>
+                            <p>{item.text}</p>
+                        </div>
+                    )}                    
+                </div>            
+                </>
+            }
         </div>
     )
-}
-
-function updateRatios(companyInfo,setCompanyInfo){
-    companyInfo.update()
-    setCompanyInfo({...companyInfo})
 }
 
 function InputInfo({ dataKey, data, setSelectedKey}){
