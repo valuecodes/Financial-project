@@ -1,4 +1,4 @@
-import { uuidv4 } from "../../utils/utils";
+import { uuidv4, roundToTwoDecimal } from "../../utils/utils";
 
 export function getReuterCurrency(data){
     return data[0].split('.')[0].split(', ')[1]
@@ -571,4 +571,141 @@ export function parseDate(date){
     }else{
         return date.toISOString()
     }                  
+}
+
+export function alphaIncomeStatement(data){
+    console.log(data)
+    let apiDataIncome = data.incomeStatement.annualReports
+    let apiDataBalance = data.balanceSheet.annualReports
+    let incomeStatements=[]
+
+    for(var i=0;i<apiDataIncome.length;i++){
+
+        let statement = apiDataIncome[i]
+        let balanceStatement = apiDataBalance[i]
+        
+        let newStatement={
+            'date':new Date(statement.fiscalDateEnding),
+            'revenue': convertAlphaNum(statement.totalRevenue),
+            'costOfRevenue': convertAlphaNum(statement.costOfRevenue),
+            'grossProfit': convertAlphaNum(statement.grossProfit),
+            'sgaExpenses': convertAlphaNum(statement.sellingGeneralAdministrative),
+            'depreciationAmortization': null,
+            'otherOperatingExp': convertAlphaNum(statement.otherOperatingExpense),
+            'totalOperationgExp': convertAlphaNum(statement.totalOperatingExpense),
+            'operatingIncome': convertAlphaNum(statement.operatingIncome),
+            'interestIncome': convertAlphaNum(statement.interestIncome),
+            'otherNetIncome': null,
+            'ebit': convertAlphaNum(statement.ebit),
+            'incomeTaxProvision': convertAlphaNum(statement.incomeTaxExpense),
+            'netIncome': convertAlphaNum(statement.netIncome),
+            'sharesOutstanding': convertAlphaNum(balanceStatement.commonStockSharesOutstanding),
+            'dividendsPerShare': null,
+            'eps': roundToTwoDecimal(Number(statement.netIncome)/Number(balanceStatement.commonStockSharesOutstanding)),
+            id: uuidv4() 
+        }
+        incomeStatements.push(newStatement)            
+    }
+
+    return incomeStatements
+}
+
+export function alphaBalanceStatement(data){
+
+    let apiData = data.annualReports
+    let newData = []
+
+    apiData.forEach(statement =>{
+        let newStatement={
+            'date': new Date(statement.fiscalDateEnding),
+            'cash': convertAlphaNum(statement.cash),
+            'netReceivables':convertAlphaNum(statement.netReceivables),
+            'totalReceivables':null,
+            'inventory':convertAlphaNum(statement.inventory),
+            'prepaidExpenses':null,
+            'otherCurrentAssets':convertAlphaNum(statement.otherCurrentAssets),
+            'currentAssets':convertAlphaNum(statement.totalCurrentAssets),
+            'propertyPlantEquiment':convertAlphaNum(statement.propertyPlantEquipment),
+            'accumalatedDepreciation':convertAlphaNum(statement.accumulatedDepreciation),
+            'goodwill':convertAlphaNum(statement.goodwill),
+            'intangibles':convertAlphaNum(statement.intangibleAssets),
+            'noteReceivables':null,
+            'otherLongTermAssets':null,
+            'totalAssets':convertAlphaNum(statement.totalAssets),
+            'accountsPayable':convertAlphaNum(statement.accountsPayable),
+            'accruedExpenses':null,
+            'shortTermDebt':convertAlphaNum(statement.shortTermDebt),
+            'capitalLeases':convertAlphaNum(statement.capitalLeaseObligations),
+            'otherCurrentLiabilities':convertAlphaNum(statement.otherCurrentLiabilities),
+            'currentLiabilities':convertAlphaNum(statement.totalCurrentLiabilities),
+            'longTermDebt':convertAlphaNum(statement.longTermDebt),
+            'capitalLeaseObligations':convertAlphaNum(statement.capitalLeaseObligations),
+            'totalLongTermDebt':convertAlphaNum(statement.totalLongTermDebt),
+            'totalDebt':null,
+            'otherLiabilities':convertAlphaNum(statement.otherLiabilities),
+            'totalLiabilities':convertAlphaNum(statement.totalLiabilities),
+            'apic':convertAlphaNum(statement.additionalPaidInCapital),
+            'retainedEarnigs':convertAlphaNum(statement.retainedEarnings),
+            'totalEquity':convertAlphaNum(statement.liabilitiesAndShareholderEquity),
+            'bookValuePerShare': roundToTwoDecimal(Number(statement.totalShareholderEquity) /Number(statement.commonStockSharesOutstanding)),
+            'treasuryStock':convertAlphaNum(statement.treasuryStock),
+            id: uuidv4() 
+        }        
+        newData.push(newStatement)          
+    })
+    return newData
+}
+
+export function alphaCashflowStatement(data){
+    let apiData = data.annualReports
+    let newData = []
+
+    apiData.forEach(statement =>{
+        let newStatement={
+            'date': new Date(statement.fiscalDateEnding),
+            'netIncome': convertAlphaNum(statement.netIncome),
+            'depreciationDepletion': convertAlphaNum(statement.depreciation),
+            'nonCashItems': null,
+            'cashTaxesPaid': null,
+            'cashInterestPaid': null,
+            'changesInWorkingCapital': null,
+            'operatingCashFlow': convertAlphaNum(statement.operatingCashflow),
+            'capEx': convertAlphaNum(statement.capitalExpenditures),
+            'otherInvesting': null,
+            'investingCashFlow': convertAlphaNum(statement.cashflowFromInvestment),
+            'dividendsPaid': convertAlphaNum(statement.dividendPayout),
+            'issuanceRetirementOfDebt': null,
+            'financingCashFlow': convertAlphaNum(statement.cashflowFromFinancing),
+            'foreignExchangeEffects': null,
+            'netChangeinCash': convertAlphaNum(statement.changeInCash),
+            'issuanceRetirementOfStock': null,
+            id: uuidv4() 
+        }        
+        newData.push(newStatement)          
+    })
+    return newData
+}
+
+export function alphaProfile(data){
+    let profile = data.profile
+    let newData={
+        ticker:profile.Symbol,
+        name:profile.Name,
+        description:profile.Description,
+        sector:profile.Sector,
+        industry:profile.Industry,
+        subIndustry:null,
+        founded:null,
+        address:profile.Address,
+        website:null,
+        employees:profile.FullTimeEmployees,
+        country:'United States',
+        tickerCurrency:'USD',
+        financialDataCurrency:'USD',   
+    }
+    return newData
+}
+
+function convertAlphaNum(num){
+    return Number((Number(num)/1000000).toFixed(1))
 }

@@ -1,6 +1,6 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
 import thunk from 'redux-thunk'
-import { tickerListReducer, tickerDataReducer, tickerPortfolioDataReducer, tickerSaveReducer, tickerDeleteReducer, tickerUpdateRatiosReducer, tickerApiPriceReducer } from './reducers/tickerReducers';
+import { tickerListReducer, tickerDataReducer, tickerPortfolioDataReducer, tickerSaveReducer, tickerDeleteReducer, tickerUpdateRatiosReducer, tickerApiPriceReducer, tickerApiFinancialsReducer } from './reducers/tickerReducers';
 import { userSigninReducer, userRegisterReducer } from './reducers/userReducers';
 import Cookie from 'js-cookie'
 import { 
@@ -43,6 +43,7 @@ const reducer = combineReducers({
     tickerDelete: tickerDeleteReducer,
     tickerUpdateRatios: tickerUpdateRatiosReducer,
     tickerApiPrice: tickerApiPriceReducer,
+    tickerApiFinancials: tickerApiFinancialsReducer,
 
     exhangeRateList:exhangeRateListReducer,
     exhangeRateUpdate:exhangeRateUpdateReducer

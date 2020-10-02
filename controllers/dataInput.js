@@ -51,7 +51,7 @@ exports.updateTickerRatios = async ( req, res ) => {
     }
 }
 
-// @desc      Get data from api
+// @desc      Get price data from api
 // @route     GET /ratios
 // @ access   Auth Admin
 exports.getPriceDataFromApi = async (req,res) => {
@@ -76,6 +76,38 @@ exports.getPriceDataFromApi = async (req,res) => {
     }else{
         return res.status(404).send({message: 'Ticker not found'})   
     }
+}
+
+// @desc      Get Financial data from api
+// @route     GET /financials/:id
+// @ access   Auth Admin
+exports.getFinancialsDataFromApi = async (req,res) => {
+
+    const ticker = req.params.id
+    if(!ticker){
+        return res.status(404).send({message: 'Ticker not found'})
+    }
+
+    let incomeData = await axios.get(`https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
+
+    if(incomeData.data.annualReports){
+
+        let balanceSheet = await axios.get(`https://www.alphavantage.co/query?function=BALANCE_SHEET&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
+
+        let cashFlow = await axios.get(`https://www.alphavantage.co/query?function=CASH_FLOW&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
+
+        let profile = await axios.get(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
+        
+        return res.send({
+            incomeStatement:incomeData.data,
+            balanceSheet:balanceSheet.data,
+            cashFlow:cashFlow.data,
+            profile:profile.data
+        })
+    }
+
+    return res.status(404).send({message: 'Ticker not found'})   
+
 }
 
 exports.updateTickerList = async ( req,res ) => {

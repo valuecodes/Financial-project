@@ -20,7 +20,10 @@ import {
     TICKER_UPDATE_RATIOS_FAIL,
     TICKER_API_PRICE_REQUEST,
     TICKER_API_PRICE_SUCCESS,
-    TICKER_API_PRICE_FAIL
+    TICKER_API_PRICE_FAIL,
+    TICKER_API_FINANCIALS_REQUEST,
+    TICKER_API_FINANCIALS_SUCCESS,
+    TICKER_API_FINANCIALS_FAIL
 } from '../constants/tickerConstants';
 
 const listTickers = () => async(dispatch) => {
@@ -118,6 +121,21 @@ const getPriceDataFromApi = (ticker) => async (dispatch, getState) => {
     }
 } 
 
+const getFinancialsDataFromApi = (ticker) => async (dispatch, getState) => {
+    try{
+        dispatch({type: TICKER_API_FINANCIALS_REQUEST})
+        const {userSignin:{userInfo}} = getState()
+        const { data } = await axios.get('/dataInput/financials/'+ticker,{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        dispatch({type: TICKER_API_FINANCIALS_SUCCESS, payload: data})
+    } catch(err){   
+        dispatch({type: TICKER_API_FINANCIALS_FAIL, payload: err.message})
+    }
+}
+
 export{
     listTickers,
     getTickerData,
@@ -125,5 +143,6 @@ export{
     saveTicker,
     deleteTicker,
     updateTickerRatios,
-    getPriceDataFromApi
+    getPriceDataFromApi,
+    getFinancialsDataFromApi
 }

@@ -1,7 +1,7 @@
 import React,{ useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
-import { getTickerData, saveTicker, deleteTicker, getPriceDataFromApi } from '../actions/tickerActions';
+import { getTickerData, saveTicker, deleteTicker, getPriceDataFromApi, getFinancialsDataFromApi } from '../actions/tickerActions';
 import { camelCaseToString } from '../utils/utils'
 import { updateExhangeRates } from '../actions/exhangeRateActions';
 import { TickerData } from '../utils/tickerData';
@@ -84,6 +84,8 @@ export default function AddDataScreen() {
 function ControlPanel(){
 
     const dispatch = useDispatch()
+    const tickerInput = useRef()
+
     const [exchangeRate, setExchangeRate]=useState(null)
     const exhangeRateList = useSelector(state => state.exhangeRateList)
     const { loading, exhangeRate:eRate, error } = exhangeRateList
@@ -113,6 +115,11 @@ function ControlPanel(){
         return date.split('.')[0].replace('T',' ')
     }
     
+    const addTickerHandler = () => {
+        let ticker = tickerInput.current.value
+        dispatch(getFinancialsDataFromApi(ticker))
+    }
+
     return(
         <div className='controlPanel'>
             {(loading||updateLoading)&&<div>Loading</div>}
@@ -127,6 +134,11 @@ function ControlPanel(){
                         <p>{parseTimeStamp(exchangeRate.timestamp)}</p>
                     </div>                
                 }
+            </div>
+            <div className='addTicker'>
+                <label>Add ticker</label>
+                <input ref={tickerInput} placeholder={'Type ticker Name...'}/>
+                <button onClick={addTickerHandler}>Add ticker</button>
             </div>
         </div>
     )
@@ -374,7 +386,18 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
 
     const tickerApiPrice = useSelector(state => state.tickerApiPrice)
     const { loading:loadingApiPrice, data:apiPriceData, error:apiPriceError } = tickerApiPrice
-    
+
+    const tickerApiFinancials = useSelector(state => state.tickerApiFinancials)
+    const { loading:loadingApiFinancials, data:apiFinancialsData, error:apiFinancialsError } = tickerApiFinancials
+
+    useEffect(()=>{
+        if(apiFinancialsData){
+            let updatedData = companyInfo.updateFinancialsFromApi(apiFinancialsData)
+            setCompanyInfo({...updatedData})
+            tickerApiFinancials.apiFinancialsData=false
+        }
+    },[apiFinancialsData])
+
     useEffect(()=>{
         if(apiPriceData){
             let updatedData = companyInfo.updatePriceFromApi(apiPriceData)
@@ -415,16 +438,20 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
         dispatch(updateTickerRatios(ticker))
     }
 
-    function manualUpdateRatios(){
+    const manualUpdateRatios = () => {
         let updatedData = companyInfo.update()
         setCompanyInfo({...updatedData})
     }
 
-    const updateFromApi = (dataName) =>{
-        console.log(companyInfo)
+    const updateFromApi = (dataName) => {
         let ticker = companyInfo.profile.ticker
         if(companyInfo.profile.country==='Finland') ticker+='.XHEL'
         dispatch(getPriceDataFromApi(ticker))
+    }
+
+    const updateFinancials = () => {
+        let ticker = companyInfo.profile.ticker
+        dispatch(getFinancialsDataFromApi(ticker))
     }
 
     return(
@@ -438,6 +465,9 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
                         </button>      
                         <button className='tableButton' onClick={() => updateRatios(companyInfo,setCompanyInfo)}>
                             Update Ratios
+                        </button>
+                        <button className='tableButton' onClick={updateFinancials}>
+                            Update Financials
                         </button>
                     </div>
                     {keys.map((item,index) =>

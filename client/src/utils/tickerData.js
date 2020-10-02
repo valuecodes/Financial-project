@@ -15,7 +15,11 @@ import {
     letterCounter, 
     calculateMacroTrendsIncome, 
     calculateMacroTrendsBalance, 
-    calculateMacroTrendsCashflow 
+    calculateMacroTrendsCashflow, 
+    alphaIncomeStatement,
+    alphaBalanceStatement,
+    alphaCashflowStatement,
+    alphaProfile
 } from "./calculations/inputCalculations";
 import { Collection } from "mongoose";
 
@@ -82,6 +86,7 @@ export function TickerData(data){
 
     this.updateRatiosFromApi = (data) => handleUpdateRatiosFromApi(this,data)
     this.updatePriceFromApi = (data) => handleUpdatePriceFromApi(this,data)
+    this.updateFinancialsFromApi = (data) => handleUpdateFinancialsFromApi(this,data)
 }
 
 function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
@@ -113,6 +118,10 @@ function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
         case 'profile':
             color = 'lightgreen'
             text = 'Profile Added'
+            break
+        case 'ratios':
+            color = 'lightgreen'
+            text = 'Ratios updated'
             break
     }
 
@@ -361,7 +370,7 @@ function setAddData(tickerData,data){
 
 function setUpdateData(tickerData,dataName,newData){
 
-    let currentData = tickerData[dataName]
+    let currentData = [...tickerData[dataName]]
     
     let actions = {
         new:0,
@@ -369,7 +378,7 @@ function setUpdateData(tickerData,dataName,newData){
     }
 
     const compare = (newItem,item,dataName) => {
-        let startingDate = tickerData.priceData[0]?new Date(tickerData.priceData[0].date):new Date(2000,0)     
+        let startingDate = tickerData.priceData.length>0?new Date(tickerData.priceData[0].date):new Date(2000,0) 
         switch(dataName){
             case 'incomeStatement':
             case 'balanceSheet':
@@ -387,9 +396,7 @@ function setUpdateData(tickerData,dataName,newData){
     }
 
     newData.forEach(newItem =>{
-
         let found = currentData.find(item => compare(newItem,item,dataName))
-
         if(!found){
             currentData.push(newItem)
             actions.new++
@@ -615,17 +622,18 @@ function handleUpdateRatiosFromApi(tickerData,data){
         roe: roundToTwoDecimal(ReturnOnEquityTTM*100),
         roa: roundToTwoDecimal(ReturnOnAssetsTTM*100)
     }
+    tickerData.addUpdateMessage('ratios')
     return tickerData
 }
 
 function handleUpdatePriceFromApi(tickerData,data){
+
     if(data['Weekly Adjusted Time Series']){
 
         let apiData = data['Weekly Adjusted Time Series']
         let newData = []            
         let dividends = []
         let startingDate = tickerData.priceData[0]?new Date(tickerData.priceData[0].date):new Date(2000,0)
-
         Object.keys(apiData).forEach(key =>{
             let date = new Date(key)
             if(startingDate.getTime()<date.getTime()){
@@ -667,5 +675,19 @@ function handleUpdatePriceFromApi(tickerData,data){
         tickerData.updateData('priceData',newData)
     }
     
+    return tickerData
+}
+
+function handleUpdateFinancialsFromApi(tickerData,data){
+    let newIncomeStatements =  alphaIncomeStatement(data)
+    let newBalanceSheets =  alphaBalanceStatement(data.balanceSheet)
+    let newCashflows =  alphaCashflowStatement(data.cashFlow)
+    if(tickerData.profile.ticker===''){
+        tickerData.profile = alphaProfile(data)
+    }
+    tickerData.updateData('incomeStatement',newIncomeStatements)
+    tickerData.updateData('balanceSheet',newBalanceSheets)
+    tickerData.updateData('cashFlow',newCashflows)
+    tickerData.updateRatiosFromApi(data.profile)
     return tickerData
 }

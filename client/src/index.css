@@ -539,6 +539,12 @@ button, select{
   height: 8rem;
   margin-bottom: 1rem;
   background-color: rgb(224, 224, 224);
+  display: grid;
+  grid-template-columns: 20rem 40rem;
+}
+
+.addTicker label{
+  display: block;
 }
 
 .exhangeRate{

@@ -9,7 +9,8 @@ const {
     getTickerList,
     deleteTicker,
     updateTickerRatios,
-    getPriceDataFromApi
+    getPriceDataFromApi,
+    getFinancialsDataFromApi
 } = require('../controllers/dataInput')
 
 router
@@ -29,5 +30,9 @@ router
 router  
     .route('/price/:id')
     .get(isAuth,isAdmin,getPriceDataFromApi)
+
+router  
+    .route('/financials/:id')
+    .get(isAuth,isAdmin,getFinancialsDataFromApi)
 
 module.exports = router
