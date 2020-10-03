@@ -32,7 +32,7 @@ async function handleUpdateTickerPrice(tickerSlim,userInfo){
     const { ticker } = tickerSlim
     let fullTickerData = await axios.get('/api/tickers/'+ticker)
     let tickerData = new TickerData(fullTickerData.data.data)
-    
+    tickerData.addTickerSlimData(tickerSlim)
 
     let apiSymbol = getApiSymbol(tickerData.profile.country,ticker)
 
@@ -41,11 +41,24 @@ async function handleUpdateTickerPrice(tickerSlim,userInfo){
             Authorization: 'Bearer'+userInfo.token
         }
     })
-
+    
     let apiPriceData = apiData.data.data
     let updatedTickerData = tickerData.updatePriceFromApi(apiPriceData)
-
     tickerSlim.latestPrice = calculateLatestPrice(tickerData)   
+
+    const currency = updatedTickerData.profile.financialDataCurrency
+    if(currency === 'USD'){
+        const ratioData = await axios.get('/dataInput/ratios/'+ticker,{
+            headers:{
+                Authorization: 'Bearer'+userInfo.token
+            }
+        })
+        updatedTickerData.updateRatiosFromApi(ratioData.data.data)
+    }else{
+        updatedTickerData.ratios = updatedTickerData.tickerRatios()
+    }
+    
+    tickerSlim.ratios = updatedTickerData.ratios
     tickerSlim.updatedThisSession = true
     tickerData.addTickerSlimData(tickerSlim)
     

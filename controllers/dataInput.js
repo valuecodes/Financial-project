@@ -56,7 +56,6 @@ exports.updateTickerRatios = async ( req, res ) => {
 // @ access   Auth Admin
 exports.getPriceDataFromApi = async (req,res) => {
     const ticker = req.params.id
-    console.log(ticker)
     if(!ticker){
         return res.status(404).send({message: 'Ticker not found'})
     }
@@ -64,7 +63,7 @@ exports.getPriceDataFromApi = async (req,res) => {
     let data = null
 
     data = await axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
-    
+ 
     if(data.data["Weekly Adjusted Time Series"]){
         return res.send({data:data.data})
     }

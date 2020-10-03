@@ -83,9 +83,11 @@ function calculateScreenTickers(screener){
 }
 
 function initScreener(screener){
+
     const { tickers } = screener
     if(screener.tickers[0]){
-        let keys = Object.keys(screener.tickers[0].ratios)
+        let keys = Object.keys(screener.tickers[0].ratios).filter(item => item!=='date')
+
         let inputs = {}
         keys.forEach(key=>{
             
@@ -107,6 +109,7 @@ function initScreener(screener){
                 scaleTo: scaleTo+1*ticks
             }   
         })
+        console.log(inputs)
         screener.inputs=inputs
     }
 }

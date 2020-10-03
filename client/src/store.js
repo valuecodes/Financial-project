@@ -42,7 +42,6 @@ const reducer = combineReducers({
     tickerSave: tickerSaveReducer,
     tickerDelete: tickerDeleteReducer,
     tickerUpdateRatios: tickerUpdateRatiosReducer,
-    tickerApiPrice: tickerApiPriceReducer,
     tickerApiFinancials: tickerApiFinancialsReducer,
 
     exhangeRateList:exhangeRateListReducer,

@@ -1,7 +1,7 @@
 import React,{ useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
-import { getTickerData, saveTicker, deleteTicker, getPriceDataFromApi, getFinancialsDataFromApi } from '../actions/tickerActions';
+import { getTickerData, saveTicker, deleteTicker, getFinancialsDataFromApi } from '../actions/tickerActions';
 import { camelCaseToString, convertDate } from '../utils/utils'
 import { updateExhangeRates } from '../actions/exhangeRateActions';
 import { TickerData } from '../utils/tickerData';
@@ -45,8 +45,8 @@ export default function AddDataScreen() {
     useEffect(()=>{
         if(tickerFullData){
             let ticker = new TickerData(tickerFullData)
-            ticker.addTickerListData(tickerList)
-            // ticker.ratios = tickerList.getTickerRatios(ticker.profile.ticker)
+            let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
+            ticker.addTickerSlimData(tickerSlim)
             setCompanyInfo(ticker)
         }
     },[tickerFullData])
@@ -80,6 +80,7 @@ export default function AddDataScreen() {
                         companyInfo={companyInfo} 
                         setCompanyInfo={setCompanyInfo} 
                         messages={messages}
+                        tickerList={tickerList}
                     />
                     <div className='inputInfoButtons'>   
                         <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
@@ -403,16 +404,16 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
     )
 }
 
-function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
+function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
 
     const tickerUpdateRatios = useSelector(state => state.tickerUpdateRatios)
     const { loading, success:updateRatiosSuccess, data:updatedRatioData, error } = tickerUpdateRatios
 
-    const tickerApiPrice = useSelector(state => state.tickerApiPrice)
-    const { loading:loadingApiPrice, data:apiPriceData, error:apiPriceError } = tickerApiPrice
-
     const tickerApiFinancials = useSelector(state => state.tickerApiFinancials)
     const { loading:loadingApiFinancials, data:apiFinancialsData, error:apiFinancialsError } = tickerApiFinancials
+
+    const userSignin = useSelector(state => state.userSignin)
+    const { userInfo } = userSignin
 
     useEffect(()=>{
         if(apiFinancialsData){
@@ -421,14 +422,6 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
             tickerApiFinancials.apiFinancialsData=false
         }
     },[apiFinancialsData])
-
-    useEffect(()=>{
-        if(apiPriceData){
-            let updatedData = companyInfo.updatePriceFromApi(apiPriceData)
-            setCompanyInfo({...updatedData})
-            tickerApiPrice.apiPriceData = null
-        }
-    },[apiPriceData])
 
     useEffect(()=>{
         if(updateRatiosSuccess,updatedRatioData){
@@ -467,10 +460,11 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
         setCompanyInfo({...updatedData})
     }
 
-    const updateFromApi = (dataName) => {
+    const updatePriceFromApi = async (dataName) => {
         let ticker = companyInfo.profile.ticker
-        if(companyInfo.profile.country==='Finland') ticker+='.XHEL'
-        dispatch(getPriceDataFromApi(ticker))
+        let tickerSlim = tickerList.getTickerSlim(ticker)
+        const { updatedTickerData } = await tickerSlim.updateTickerPrice(userInfo)
+        setCompanyInfo({...updatedTickerData})
     }
 
     const updateFinancials = () => {
@@ -482,7 +476,7 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
         <div className='inputInfoHeader'>
             <div className='inputInfoProfile'>
                 <div className='inputProfileActions'>
-                    <button onClick={updateFromApi} className='tableButton'>
+                    <button onClick={updatePriceFromApi} className='tableButton'>
                         Update PriceData
                     </button>      
                     <button className='tableButton' onClick={() => updateRatios(companyInfo,setCompanyInfo)}>
@@ -576,13 +570,13 @@ function Overview({tickerList,setTickerList}){
         }
     },[tickerList,sortOrder])
 
-    const tableHeads = ['ticker','sector','latestPrice']
+    const tableHeads = ['ticker','sector','latestPrice','ratios']
 
     const handleUpdatePrices = () => {
-        tickerList.updatePrices()
-        let updateList = tickerList.tickers.filter(item => item.selected)
 
+        let updateList = tickerList.tickers.filter(item => item.selected)
         let count = 0
+        
         async function updatePrice(count){
             handleUpdateStatus(tickerList,'Running...',null)
             if(count<updateList.length){
@@ -594,7 +588,10 @@ function Overview({tickerList,setTickerList}){
 
                 let updateMessages = updatedTickerData.updateMessages
                 tickerList.updateMessages = tickerList.updateMessages.concat(updateMessages)
-            
+
+                let sortedTickers = tickerList.sortBy(sortOrder)
+                tickerList.tickers = sortedTickers
+                
                 setTickerList({...tickerList})
                 dispatch(saveTicker(updatedTickerData))
 
@@ -622,6 +619,8 @@ function Overview({tickerList,setTickerList}){
         let index = tickerList.tickers.findIndex(item => item.ticker === ticker)
         let updated = {...tickerList}
         updated.tickers[index].selected = !updated.tickers[index].selected
+        let sortedTickers = tickerList.sortBy(sortOrder)
+        updated.tickers = sortedTickers
         setTickerList(updated)
         handleUpdateStatus(updated)
     }
@@ -642,7 +641,6 @@ function Overview({tickerList,setTickerList}){
         <div className='overview'>
             <div className='overviewActions'>
                 <button onClick={handleUpdatePrices} className='button'>Update Prices</button>
-                <button className='button'>Update Ratios</button>
                 <button className='button'>Update Financials</button>
                 <div className='actionsInfo'>
                     <h2>Selected: {updateStatus.selected}</h2>
@@ -654,10 +652,13 @@ function Overview({tickerList,setTickerList}){
                 <table className='overviewTable'>
                     <thead>
                         <tr>
-                        <th onClick={selectAllHandler}>Select All</th>
+                        <th className='inputTd' onClick={selectAllHandler}>Select All</th>
                         {tableHeads.map(item =>
                             <th 
-                                style={{backgroundColor:sortOrder===item&&'lightgreen'}}   
+                                style={{
+                                    backgroundColor:sortOrder===item&&'rgba(181, 181, 181)',
+                                    color:sortOrder===item&&'var(--primary-color)'
+                                }}   
                                 onClick={() => setSortOrder(item)}
                             >
                             {camelCaseToString(item)}</th>
@@ -667,7 +668,7 @@ function Overview({tickerList,setTickerList}){
                     <tbody>
                         {tickerTable.map(ticker =>
                             <tr >
-                                <td>
+                                <td className='inputTd'>
                                     <input onChange={() => selectTicker(ticker.ticker)} type='checkbox' checked={ticker.selected}/>                                    
                                 </td>
                                 <td >{ticker.ticker}</td>
@@ -676,17 +677,31 @@ function Overview({tickerList,setTickerList}){
                                     <div 
                                         style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'lightgreen'}} className='overviewTableCell'
                                     >
-                                        <label>Price: </label>
-                                        <p>{ticker.latestPrice.close}</p> 
                                         <label>Date: </label>
                                         <p>{convertDate(ticker.latestPrice.date)}</p>
+                                        <p>{ticker.latestPrice.close}{' '}$</p> 
+
                                     </div>
                                 }</td>
+                                <td>
+                                    {ticker.ratios.date&&
+                                    <div 
+                                        className='overviewTableCell'
+                                        style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'lightgreen'}}     
+                                    >
+                                        <label>Updated: </label>
+                                        <p>{convertDate(ticker.ratios.date)}</p>
+                                        <p>PE: {ticker.ratios.pe}</p>    
+                                    </div>                                
+                                    }
+
+                                </td>
                             </tr>
                         )}                           
                     </tbody>
                 </table>
                 <div className='updateMessages'>
+                    <h3>Update messages</h3>
                     {tickerList.updateMessages.map((item,index) =>
                         <div 
                         key={index}

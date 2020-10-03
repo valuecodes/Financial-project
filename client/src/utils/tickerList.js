@@ -1,5 +1,3 @@
-import { TickerData } from "./tickerData";
-import { getApiSymbol, calculateLatestPrice } from "./calculations/inputCalculations";
 import { TickerSlim } from "./tickerSlim";
 
 export function TickerList(tickers){
@@ -8,8 +6,7 @@ export function TickerList(tickers){
     this.getTickerRatios = (ticker) => handleGetTickerRatios(this,ticker)
     this.getLatestPrice = (ticker) => handleGetLatestPrice(this,ticker)
     this.sortBy = (sortOrder) => handleSortBy(this,sortOrder)
-    this.updatePrices = () => handleUpdatePrices(this)
-
+    this.getTickerSlim = (ticker) => handleGetTickerSlim(this,ticker) 
 }
 
 function handleGetTickerRatios(tickerList,ticker){
@@ -49,7 +46,7 @@ function handleSortBy(tickerList,sortOrder){
             case 'sector':
                 return tickerList.tickers.sort((a,b) => a[sortOrder].localeCompare(b[sortOrder]))
             case 'latestPrice':            
-            case 'priceUpdated':      
+            case 'ratios':      
                 return tickerList.tickers.sort((a,b) =>compareLatestPrice(a,b))
             default:return tickerList.tickers
         }
@@ -58,6 +55,6 @@ function handleSortBy(tickerList,sortOrder){
     }
 }
 
-function handleUpdatePrices(tickerList){
-    console.log(tickerList)
+function handleGetTickerSlim(tickerList,ticker){
+    return tickerList.tickers.find(item => item.ticker===ticker)
 }

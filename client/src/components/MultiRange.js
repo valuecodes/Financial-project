@@ -2,7 +2,7 @@ import React,{useState,useEffect} from 'react'
 import { camelCaseToString } from '../utils/utils';
 
 export default function MultiRange({ input, screener, setScreenedTickers, setInputs }) {
-
+ 
     const [multiRange,setMultiRange] = useState({
         minValue:0,
         maxValue:0,
@@ -13,7 +13,7 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
         setMultiRange(input)
         let screenedTickers = screener.screenTickers()                     
         setScreenedTickers(screenedTickers)  
-        // eslint-disable-next-line react-hooks/exhaustive-deps                     
+        // eslint-disable-next-line react-hooks/exhaustive-deps            
     },[])
 
     const handleChange = (e,inputName) =>{

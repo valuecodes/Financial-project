@@ -7,6 +7,7 @@ const priceSchema = {
 }
 
 const ratioSchema = {
+    date:{type:Date},
     pe:{type:Number},
     pb:{type:Number},
     divYield:{type:Number},
@@ -20,7 +21,6 @@ const ratioSchema = {
     peg:{type:Number},
     roe:{type:Number},
     roa:{type:Number},
-    updatedAt:{type:Number},
     _id : false 
 }
 
@@ -29,7 +29,6 @@ const latestPriceSchema = {
     close:{type:Number},
     change:{type:Number},
     percentageChange:{type:Number},
-    updatedAt:{type:Number},
     _id : false  
 }
 

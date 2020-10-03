@@ -17,9 +17,6 @@ import {
     TICKER_UPDATE_RATIOS_REQUEST,
     TICKER_UPDATE_RATIOS_SUCCESS,
     TICKER_UPDATE_RATIOS_FAIL,
-    TICKER_API_PRICE_REQUEST,
-    TICKER_API_PRICE_SUCCESS,
-    TICKER_API_PRICE_FAIL,
     TICKER_API_FINANCIALS_REQUEST,
     TICKER_API_FINANCIALS_SUCCESS,
     TICKER_API_FINANCIALS_FAIL
@@ -99,18 +96,6 @@ function tickerUpdateRatiosReducer(state={},action){
     }
 }
 
-function tickerApiPriceReducer(state={},action){
-    switch(action.type){
-        case TICKER_API_PRICE_REQUEST:
-            return { loading:true }
-        case TICKER_API_PRICE_SUCCESS:
-            return { loading:false, success:true, data:action.payload }
-        case TICKER_API_PRICE_FAIL:
-            return { loading:false, error:action.payload }
-        default: return state
-    }
-}
-
 function tickerApiFinancialsReducer(state={},action){
     switch(action.type){
         case TICKER_API_FINANCIALS_REQUEST:
@@ -130,6 +115,5 @@ export {
     tickerSaveReducer,
     tickerDeleteReducer,
     tickerUpdateRatiosReducer,
-    tickerApiPriceReducer,
     tickerApiFinancialsReducer
 }

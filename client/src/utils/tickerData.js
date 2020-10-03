@@ -20,9 +20,7 @@ import {
     alphaBalanceStatement,
     alphaCashflowStatement,
     alphaProfile,
-    calculateLatestPrice
 } from "./calculations/inputCalculations";
-import { Collection } from "mongoose";
 
 export function TickerData(data){
     this.profile = data.profile?data.profile:{
@@ -125,8 +123,11 @@ function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
             break
         case 'ratios':
             color = 'lightgreen'
-            text = 'Ratios updated'
+            text = `Ratios updated PE: ${actions.found} => ${actions.new}`
             break
+        default: 
+            color = 'red'
+            text = 'Not found'
     }
 
     let time = getTime()
@@ -238,9 +239,11 @@ function calculateYearDivs(tickerData){
 function calculateValueStatements(tickerData){
     let keys = {}
     Object.keys(tickerDataModel).forEach(statement =>{
-        Object.keys(tickerDataModel[statement]).forEach(value =>{
-            keys[value] = statement
-        })
+        if(statement!=='latestPrice'){
+            Object.keys(tickerDataModel[statement]).forEach(value =>{
+                keys[value] = statement
+            })            
+        }
     })
     tickerData.valueStatements = keys
 }
@@ -269,7 +272,6 @@ function calculateGetFinancialNum(tickerData,key,year=null){
     }
     let keyStatements = tickerData.valueStatements
     let statement = keyStatements[key]
-
     if(statement){
         year = null
         let statementYear
@@ -286,7 +288,9 @@ function calculateGetFinancialNum(tickerData,key,year=null){
 }
 
 function calculateTickerRatios(tickerData){
+    tickerData.addUpdateMessage('ratios',{new:tickerData.getRatio('pe'),found:tickerData.ratios.pe})    
     return{
+        date: new Date().toISOString(),
         pe: tickerData.getRatio('pe'),
         pb: tickerData.getRatio('pb'),
         divYield: tickerData.getRatio('divYield'),
@@ -605,6 +609,7 @@ function calculateTickerDataColBody(selectedData,key){
 }
 
 function handleUpdateRatiosFromApi(tickerData,data){
+
     const { 
         PERatio, 
         PriceToBookRatio, 
@@ -618,8 +623,11 @@ function handleUpdateRatiosFromApi(tickerData,data){
         ReturnOnAssetsTTM
     } = data
 
+    tickerData.addUpdateMessage('ratios',{new:roundToTwoDecimal(PERatio),found:tickerData.ratios.pe}) 
+    
     tickerData.ratios={
         ...tickerData.ratios,
+        date: new Date().toISOString(),
         pe: roundToTwoDecimal(PERatio),
         pb:roundToTwoDecimal(PriceToBookRatio),
         divYield: roundToTwoDecimal(DividendYield*100),
@@ -631,7 +639,7 @@ function handleUpdateRatiosFromApi(tickerData,data){
         roe: roundToTwoDecimal(ReturnOnEquityTTM*100),
         roa: roundToTwoDecimal(ReturnOnAssetsTTM*100)
     }
-    tickerData.addUpdateMessage('ratios')
+
     return tickerData
 }
 

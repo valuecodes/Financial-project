@@ -16,6 +16,7 @@ export default function ScreenerScreen() {
         if(tickers){
             let screener = new Screener(tickers)
             screener.init()
+            console.log(screener)
             setScreener(screener)
             setInputs({...screener.inputs})
         }
@@ -44,6 +45,7 @@ export default function ScreenerScreen() {
                 />
                 </div>
                 {Object.keys(inputs).map(input=>
+                    input!=='date'?                
                     <MultiRange 
                         key={input} 
                         input={inputs[input]} 
@@ -51,7 +53,7 @@ export default function ScreenerScreen() {
                         screenedTickers={screenedTickers} 
                         setScreenedTickers={setScreenedTickers} 
                         setInputs={setInputs}
-                    />
+                    />:null
                 )}
             </div>
             <ScreenerList screenedTickers={screenedTickers}/>            
