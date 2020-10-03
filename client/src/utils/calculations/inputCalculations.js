@@ -1,4 +1,5 @@
 import { uuidv4, roundToTwoDecimal } from "../../utils/utils";
+import { tickerDataModel } from "../dataModels";
 
 export function getReuterCurrency(data){
     return data[0].split('.')[0].split(', ')[1]
@@ -706,6 +707,29 @@ export function alphaProfile(data){
     return newData
 }
 
+export function calculateLatestPrice(tickerData){
+    if(tickerData.priceData[1]){
+        let price1 = tickerData.priceData[0].close
+        let price2 = tickerData.priceData[1].close
+        return{
+            date:new Date(tickerData.priceData[0].date).toISOString(),
+            close:roundToTwoDecimal(price1),
+            change:roundToTwoDecimal(price1-price2),
+            percentageChange:roundToTwoDecimal(((price1-price2)/price2)*100),
+        }
+    }else{
+        return tickerDataModel.latestPrice
+    }
+}
+
 function convertAlphaNum(num){
     return Number((Number(num)/1000000).toFixed(1))
+}
+
+export function getApiSymbol(country,symbol){
+    switch(country){
+        case 'Finland':
+            return symbol+='.XHEL'
+        default: return symbol
+    }
 }

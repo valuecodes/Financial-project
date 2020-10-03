@@ -90,5 +90,11 @@ export const tickerDataModel={
         instrument:"",
         price:null,
         volume:null,   
+    },
+    latestPrice:{
+        date:new Date().toISOString(),
+        close:null,
+        change:null,
+        percentageChange:null,
     }
 }

@@ -20,7 +20,17 @@ const ratioSchema = {
     peg:{type:Number},
     roe:{type:Number},
     roa:{type:Number},
+    updatedAt:{type:Number},
     _id : false 
+}
+
+const latestPriceSchema = {
+    date:{type:Date, required:true},
+    close:{type:Number},
+    change:{type:Number},
+    percentageChange:{type:Number},
+    updatedAt:{type:Number},
+    _id : false  
 }
 
 const tickerSlimSchema = new mongoose.Schema({
@@ -28,6 +38,7 @@ const tickerSlimSchema = new mongoose.Schema({
     ticker:{type:String,required:true, unique:true},
     name:{type:String,required:true},
     price:[priceSchema],
+    latestPrice:latestPriceSchema,
     sector:{type:String},
     industry:{type:String},
     subIndustry:{type:String},

@@ -2,16 +2,27 @@ import React,{ useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SearchInput from '../components/addDataComponents/SearchInput'
 import { getTickerData, saveTicker, deleteTicker, getPriceDataFromApi, getFinancialsDataFromApi } from '../actions/tickerActions';
-import { camelCaseToString } from '../utils/utils'
+import { camelCaseToString, convertDate } from '../utils/utils'
 import { updateExhangeRates } from '../actions/exhangeRateActions';
 import { TickerData } from '../utils/tickerData';
 import { updateTickerRatios } from '../actions/tickerActions';
+import SectionNav from '../components/SectionNav'
+import { TickerList } from '../utils/tickerList';
+import { TickerSlim } from '../utils/tickerSlim';
 
 export default function AddDataScreen() {
 
     const dispatch = useDispatch()
-    const { tickerList, tickerData, tickerSave } = useSelector(state => state)
-    const { tickers } = tickerList
+    const [companyInfo, setCompanyInfo] = useState(new TickerData({}))
+    const [tickerList, setTickerList] = useState(new TickerList())
+    const [selectedKey, setSelectedKey] = useState(null)
+    const [navigation,setNavigation] = useState({
+        selected:{name:'overview',index:0},
+        options:['overview','ticker']
+    })
+
+    const { tickerList:tickerListData, tickerData, tickerSave } = useSelector(state => state)
+    const { tickers } = tickerListData
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
 
@@ -24,20 +35,18 @@ export default function AddDataScreen() {
         saveSuccess
     }
 
-    const [companyInfo, setCompanyInfo] = useState(new TickerData({}))
-    const [currentTickers, setCurrentTickers] = useState([])
-    const [selectedKey, setSelectedKey] = useState(null)
-
     useEffect(()=>{
         if(tickers){
-            setCurrentTickers(tickers)
+            let newTickerList = new TickerList(tickers) 
+            setTickerList(newTickerList)
         }
     },[tickers])
 
     useEffect(()=>{
         if(tickerFullData){
             let ticker = new TickerData(tickerFullData)
-            ticker.ratios = tickers.find(item => item.ticker ===ticker.profile.ticker).ratios
+            ticker.addTickerListData(tickerList)
+            // ticker.ratios = tickerList.getTickerRatios(ticker.profile.ticker)
             setCompanyInfo(ticker)
         }
     },[tickerFullData])
@@ -50,38 +59,48 @@ export default function AddDataScreen() {
         <div className='inputPage'>
             <div className='inputContainer'>     
                 <SearchInput 
-                    currentTickers={currentTickers}
+                    tickerList={tickerList}
                     selectTicker={selectTicker}    
                 />
                 <InputActions 
                     companyInfo={companyInfo} 
                     setCompanyInfo={setCompanyInfo}
-                    tickers={tickers}
+                    tickerList={tickerList}
                     selectTicker={selectTicker}    
                 />
             </div>
             <div className='output'>
-                <ControlPanel/>
-                <InputInfoHeader 
-                    companyInfo={companyInfo} 
-                    setCompanyInfo={setCompanyInfo} 
-                    messages={messages}
+                <ControlPanel 
+                    navigation={navigation} 
+                    setNavigation={setNavigation}
                 />
-                <div className='inputInfoButtons'>    
-                    <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                    <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                    <InputInfo dataKey={'cashFlow'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                    <InputInfo dataKey={'priceData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                    <InputInfo dataKey={'dividendData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                    <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                </div>
-                <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>
+                {navigation.selected.name==='ticker'&&
+                    <>
+                    <InputInfoHeader 
+                        companyInfo={companyInfo} 
+                        setCompanyInfo={setCompanyInfo} 
+                        messages={messages}
+                    />
+                    <div className='inputInfoButtons'>   
+                        <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'cashFlow'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'priceData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'dividendData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                    </div>
+                    <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>   
+                    </>          
+                }
+                {navigation.selected.name==='overview'&&
+                    <Overview tickerList={tickerList} setTickerList={setTickerList}/>
+                }
             </div>
         </div>
     )
 }
 
-function ControlPanel(){
+function ControlPanel({navigation,setNavigation}){
 
     const dispatch = useDispatch()
     const tickerInput = useRef()
@@ -122,31 +141,36 @@ function ControlPanel(){
 
     return(
         <div className='controlPanel'>
-            {(loading||updateLoading)&&<div>Loading</div>}
-            {(error||updateError)&&<div>Error</div>}
+            <SectionNav navigation={navigation} setNavigation={setNavigation}/>
+            <div>
+                {(loading||updateLoading)&&<div>Loading</div>}
+                {(error||updateError)&&<div>Error</div>}                
+            </div>            
+            <div className='addTicker'>
+                <label>Add ticker</label>
+                <input className={'input'} ref={tickerInput} placeholder={'Type ticker Name...'}/>
+                <button className='button light' onClick={addTickerHandler}>Add ticker</button>
+            </div>  
             <div className='exhangeRates'>
-                <button onClick={updateExchangeRatesHandler}>Update Exhange rates</button>
+
                 {exchangeRate&&
                     <div className='exhangeRate'>
+                        <h3>Exhange Rates</h3>
                         <label>Date:</label>
                         <p>{exchangeRate.date}</p>
                         <label>Updated:</label>
                         <p>{parseTimeStamp(exchangeRate.timestamp)}</p>
                     </div>                
-                }
-            </div>
-            <div className='addTicker'>
-                <label>Add ticker</label>
-                <input ref={tickerInput} placeholder={'Type ticker Name...'}/>
-                <button onClick={addTickerHandler}>Add ticker</button>
+                }                
+                <button className='button light' onClick={updateExchangeRatesHandler}>Update Exhange rates</button>
             </div>
         </div>
     )
 }
 
-function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
+function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker }){
 
-    const [tickerList,setTickerList]=useState({
+    const [tickerListSort,setTickerListSort]=useState({
         ready:[],
         notReady:[]        
     })
@@ -158,7 +182,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
     const inputRef=useRef()
 
     useEffect(()=>{
-        if(tickers){
+        if(tickerList){
 
             const { selected } = tickerSort
             let ready = []
@@ -166,7 +190,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
 
             switch(selected){
                 case 'UpdatedAt':
-                    tickers.forEach(ticker =>{
+                    tickerList.tickers.forEach(ticker =>{
                         if(ticker.ratios.pe){
                             ready.push(ticker)
                         }else{
@@ -174,12 +198,12 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
                         }
                     })                    
                     break
-                default: ready = tickers
+                default: ready = tickerList
             }
 
-            setTickerList({ready,notReady})
+            setTickerListSort({ready,notReady})
         }
-    },[tickers,tickerSort])
+    },[tickerList,tickerSort])
 
     const handleData=(data)=>{
         let updatedCompanyInfo = companyInfo.addData(data)
@@ -229,7 +253,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
                 )}                
                 <div className='tickerUpdateList ready'>
                     <h3>Ready</h3>
-                    {tickerList.ready.map(ticker =>
+                    {tickerListSort.ready.map(ticker =>
                         <div 
                             key={ticker.tickerId}
                             onClick={() => selectTicker(ticker.ticker)}
@@ -242,7 +266,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickers, selectTicker }){
                 </div>
                 <div className='tickerUpdateList notReady'>
                     <h3>Not Ready</h3>
-                    {tickerList.notReady.map(ticker =>
+                    {tickerListSort.notReady.map(ticker =>
                         <div 
                             key={ticker.tickerId}
                             onClick={() => selectTicker(ticker.ticker)}
@@ -456,67 +480,63 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages}){
 
     return(
         <div className='inputInfoHeader'>
-            {companyInfo.profile.ticker &&
-                <>
-                <div className='inputInfoProfile'>
-                    <div className='inputProfileActions'>
-                        <button onClick={updateFromApi} className='tableButton'>
-                            Update PriceData
-                        </button>      
-                        <button className='tableButton' onClick={() => updateRatios(companyInfo,setCompanyInfo)}>
-                            Update Ratios
-                        </button>
-                        <button className='tableButton' onClick={updateFinancials}>
-                            Update Financials
-                        </button>
+            <div className='inputInfoProfile'>
+                <div className='inputProfileActions'>
+                    <button onClick={updateFromApi} className='tableButton'>
+                        Update PriceData
+                    </button>      
+                    <button className='tableButton' onClick={() => updateRatios(companyInfo,setCompanyInfo)}>
+                        Update Ratios
+                    </button>
+                    <button className='tableButton' onClick={updateFinancials}>
+                        Update Financials
+                    </button>
+                </div>
+                {keys.map((item,index) =>
+                    <div key={index} className='inputInfoItem'>
+                        <label className='itemLabel'>{camelCaseToString(item)}</label>
+                        <input value={companyInfo.profile[item]} onChange={e => modifyData(e.target.value,item)}/>
+                    </div>                
+                )}
+            </div>  
+            <div className='inputInfoRatios'>                
+                <div className='inputRatioActions'>
+                    <h3>Ratios</h3>
+                    <button
+                        onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
+                    >Manual update</button>                    
+                </div>
+                {ratios.map(ratio=>
+                    <div key={ratio} className='inputInfoItem'>
+                        <label className='itemLabel'>{camelCaseToString(ratio)}</label>
+                        <input onChange={e => console.log(e)} value={companyInfo.ratios[ratio]|| ''}/>
                     </div>
-                    {keys.map((item,index) =>
-                        <div key={index} className='inputInfoItem'>
-                            <label className='itemLabel'>{camelCaseToString(item)}</label>
-                            <input value={companyInfo.profile[item]} onChange={e => modifyData(e.target.value,item)}/>
-                        </div>                
-                    )}
-                </div>  
-                <div className='inputInfoRatios'>                
-                    <div className='inputRatioActions'>
-                        <h3>Ratios</h3>
-                        <button
-                            onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
-                        >Manual update</button>                    
-                    </div>
-                    {ratios.map(ratio=>
-                        <div key={ratio} className='inputInfoItem'>
-                            <label className='itemLabel'>{camelCaseToString(ratio)}</label>
-                            <input onChange={e => console.log(e)} value={companyInfo.ratios[ratio]|| ''}/>
-                        </div>
-                    )}
+                )}
 
+            </div>
+            <div className='inputInfoActions'>
+                <button onClick={processData} className='button'>Save Company Data</button> 
+                <div className='messages'>
+                    {messages.tickerLoading && <div className='loadingMessage'>Loading Ticker Data...</div>}
+                    {messages.saveLoading && <div className='loadingMessage'>Saving Ticker...</div>}
+                    {messages.saveSuccess && <div className='successMessage'>{messages.saveSuccess}</div>}
+                    {messages.saveError && <div className='errorMessage'>{messages.saveError}</div>}
                 </div>
-                <div className='inputInfoActions'>
-                    <button onClick={processData} className='button'>Save Company Data</button> 
-                    <div className='messages'>
-                        {messages.tickerLoading && <div className='loadingMessage'>Loading Ticker Data...</div>}
-                        {messages.saveLoading && <div className='loadingMessage'>Saving Ticker...</div>}
-                        {messages.saveSuccess && <div className='successMessage'>{messages.saveSuccess}</div>}
-                        {messages.saveError && <div className='errorMessage'>{messages.saveError}</div>}
+                <button onClick={deleteTickerHandler}>Delete Ticker</button>
+            </div>
+            <div className='updateMessages'>
+                {companyInfo.updateMessages.map((item,index) =>
+                    <div 
+                    key={index}
+                    style={{backgroundColor: item.color}}
+                    className='updateMessage'>
+                        <label>{item.ticker}</label>
+                        <label>{item.time}</label>
+                        <p>{camelCaseToString(item.dataName)}</p>
+                        <p>{item.text}</p>
                     </div>
-                    <button onClick={deleteTickerHandler}>Delete Ticker</button>
-                </div>
-                <div className='updateMessages'>
-                    {companyInfo.updateMessages.map((item,index) =>
-                        <div 
-                        key={index}
-                        style={{backgroundColor: item.color}}
-                        className='updateMessage'>
-                            <label>{item.ticker}</label>
-                            <label>{item.time}</label>
-                            <p>{camelCaseToString(item.dataName)}</p>
-                            <p>{item.text}</p>
-                        </div>
-                    )}                    
-                </div>            
-                </>
-            }
+                )}                    
+            </div>            
         </div>
     )
 }
@@ -528,6 +548,159 @@ function InputInfo({ dataKey, data, setSelectedKey}){
             onClick={e => setSelectedKey(dataKey)}
         >
             {camelCaseToString(dataKey)} {Object.keys(data[dataKey]).length}
+        </div>
+    )
+}
+
+function Overview({tickerList,setTickerList}){
+
+    const dispatch = useDispatch()
+    const [updateStatus, setUpdateStatus] = useState({
+        updateRunning:true,
+        updateReady:false,
+        updatePhase:'Not running',
+        currentTicker:null,
+        selected:0,
+        updated:0,
+    })
+    const [currentlyUpdating, setCurrentlyUpdating] = useState(null)
+    const [tickerTable,setTickerTable] = useState([])
+    const [sortOrder,setSortOrder]= useState('ticker')
+    const userSignin = useSelector(state => state.userSignin)
+    const { userInfo } = userSignin
+
+    useEffect(()=>{
+        if(tickerList){
+            let sortedTickers = tickerList.sortBy(sortOrder)
+            setTickerTable([...sortedTickers])
+        }
+    },[tickerList,sortOrder])
+
+    const tableHeads = ['ticker','sector','latestPrice']
+
+    const handleUpdatePrices = () => {
+        tickerList.updatePrices()
+        let updateList = tickerList.tickers.filter(item => item.selected)
+
+        let count = 0
+        async function updatePrice(count){
+            handleUpdateStatus(tickerList,'Running...',null)
+            if(count<updateList.length){
+
+                let tickerSlim = updateList[count]
+                handleUpdateStatus(tickerList,'Running...',tickerSlim.ticker)
+
+                const { updatedTickerData } = await tickerSlim.updateTickerPrice(userInfo)
+
+                let updateMessages = updatedTickerData.updateMessages
+                tickerList.updateMessages = tickerList.updateMessages.concat(updateMessages)
+            
+                setTickerList({...tickerList})
+                dispatch(saveTicker(updatedTickerData))
+
+                count++
+                setTimeout(()=>{
+                    updatePrice(count)
+                },10000)
+            }else{
+                handleUpdateStatus(tickerList,'Ready!',null)
+            }
+        }
+
+        updatePrice(count)
+    }
+
+    const selectAllHandler = () => {
+        let updated = {...tickerList}
+        let newState = !updated.tickers[0].selected
+        updated.tickers.forEach(ticker => ticker.selected=newState)
+        setTickerList(updated)    
+        handleUpdateStatus(updated)    
+    }
+
+    const selectTicker = (ticker) => {
+        let index = tickerList.tickers.findIndex(item => item.ticker === ticker)
+        let updated = {...tickerList}
+        updated.tickers[index].selected = !updated.tickers[index].selected
+        setTickerList(updated)
+        handleUpdateStatus(updated)
+    }
+
+    const handleUpdateStatus=(tickerList,updatePhase='Not running',currentTicker=null)=>{
+        const selectedTickers = tickerList.tickers.filter(item => item.selected).length
+        const updatedTickers = tickerList.tickers.filter(item => item.selected&&item.updatedThisSession).length
+        setUpdateStatus({
+            ...updateStatus,
+            updatePhase,
+            currentTicker,
+            selected:selectedTickers,
+            updated:updatedTickers
+        })
+    }
+
+    return(
+        <div className='overview'>
+            <div className='overviewActions'>
+                <button onClick={handleUpdatePrices} className='button'>Update Prices</button>
+                <button className='button'>Update Ratios</button>
+                <button className='button'>Update Financials</button>
+                <div className='actionsInfo'>
+                    <h2>Selected: {updateStatus.selected}</h2>
+                    <h2>Updated: {updateStatus.updated}/{updateStatus.selected}</h2>
+                    <h2>Status: {updateStatus.updatePhase}</h2>
+                </div>
+            </div>
+            <div className='overviewContent'>
+                <table className='overviewTable'>
+                    <thead>
+                        <tr>
+                        <th onClick={selectAllHandler}>Select All</th>
+                        {tableHeads.map(item =>
+                            <th 
+                                style={{backgroundColor:sortOrder===item&&'lightgreen'}}   
+                                onClick={() => setSortOrder(item)}
+                            >
+                            {camelCaseToString(item)}</th>
+                        )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tickerTable.map(ticker =>
+                            <tr >
+                                <td>
+                                    <input onChange={() => selectTicker(ticker.ticker)} type='checkbox' checked={ticker.selected}/>                                    
+                                </td>
+                                <td >{ticker.ticker}</td>
+                                <td>{ticker.sector}</td>
+                                <td>{ticker.latestPrice&&
+                                    <div 
+                                        style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'lightgreen'}} className='overviewTableCell'
+                                    >
+                                        <label>Price: </label>
+                                        <p>{ticker.latestPrice.close}</p> 
+                                        <label>Date: </label>
+                                        <p>{convertDate(ticker.latestPrice.date)}</p>
+                                    </div>
+                                }</td>
+                            </tr>
+                        )}                           
+                    </tbody>
+                </table>
+                <div className='updateMessages'>
+                    {tickerList.updateMessages.map((item,index) =>
+                        <div 
+                        key={index}
+                        style={{backgroundColor: item.color}}
+                        className='updateMessage'>
+                            <label>{item.ticker}</label>
+                            <label>{item.time}</label>
+                            <p>{camelCaseToString(item.dataName)}</p>
+                            <p>{item.text}</p>
+                        </div>
+                    )}                    
+                </div>                  
+            </div>
+  
         </div>
     )
 }

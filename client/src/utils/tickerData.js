@@ -19,7 +19,8 @@ import {
     alphaIncomeStatement,
     alphaBalanceStatement,
     alphaCashflowStatement,
-    alphaProfile
+    alphaProfile,
+    calculateLatestPrice
 } from "./calculations/inputCalculations";
 import { Collection } from "mongoose";
 
@@ -62,9 +63,12 @@ export function TickerData(data){
         roa:null,
     }
     this._id=data._id?data._id:null
+    this.ratios = {}
+    this.latestPrice = {}
     this.valueStatements = null
     this.updateMessages = []
     this.addUpdateMessage = (dataName,actions) => handleAddUpdateMessage(this,dataName,actions)
+    this.addTickerSlimData = (tickerSlim) => handleAddTickerSlimData(this,tickerSlim)
     this.getValueStatements = () => calculateValueStatements(this)
     this.getRatio = (ratio) => calculateGetRatio(this,ratio)
     this.yearDivs = () => calculateYearDivs(this)
@@ -128,6 +132,11 @@ function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
     let time = getTime()
     let newMessage = {color,ticker,time,text,dataName}
     tickerData.updateMessages.push(newMessage)
+}
+
+function handleAddTickerSlimData(tickerData,tickerSlim){
+    tickerData.ratios = tickerSlim.ratios
+    tickerData.latestPrice = tickerSlim.latestPrice
 }
 
 function calculateGetRatio(tickerData,ratio){
@@ -639,10 +648,10 @@ function handleUpdatePriceFromApi(tickerData,data){
             if(startingDate.getTime()<date.getTime()){
                 newData.push({
                     date:date.toISOString(),
-                    high:apiData[key]['2. high'],
-                    low:apiData[key]['3. low'],
-                    close:apiData[key]['4. close'],
-                    volume:apiData[key]['6. volume'],
+                    high:Number(apiData[key]['2. high']),
+                    low:Number(apiData[key]['3. low']),
+                    close:Number(apiData[key]['4. close']),
+                    volume:Number(apiData[key]['6. volume']),
                 })       
                 if(Number(apiData[key]["7. dividend amount"])){
                     dividends.push({
@@ -664,10 +673,10 @@ function handleUpdatePriceFromApi(tickerData,data){
             if(!weeks.find(num => num===week)){
                 newData.push({
                     date:new Date(item.date).toISOString(),
-                    high:item.high,
-                    low:item.low,
-                    close:item.close,
-                    volume:item.volume,
+                    high:Number(item.high),
+                    low:Number(item.low),
+                    close:Number(item.close),
+                    volume:Number(item.volume),
                 })  
                 weeks.push(week)
             }     

@@ -137,3 +137,8 @@ export function uuidv4() {
 export function getTime(){
     return new Date().getHours()+':'+new Date().getMinutes()
 }
+
+export function convertDate(dateString) {
+    var date = new Date(dateString);
+    return date.getDate()+"/"+(date.getMonth() + 1)+"/"+date.getFullYear();
+}

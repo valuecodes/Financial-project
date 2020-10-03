@@ -19,11 +19,6 @@ export default function TradingScreen() {
     const userSignin = useSelector(state => state.userSignin)
     const { userInfo } = userSignin
 
-    useEffect(()=>{
-        dispatch(listTickers())
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[])
-
     const portfolioAddTicker = useSelector(state => state.portfolioAddTicker)
     const { success:tickerAddSuccess, error:tickerAddError} = portfolioAddTicker
 

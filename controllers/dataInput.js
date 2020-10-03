@@ -116,6 +116,7 @@ exports.updateTickerList = async ( req,res ) => {
     const tickerSlim = await TickerSlim.findOne({tickerId:id})
     if(tickerSlim){
         tickerSlim.price = calculatePrice(req.body)
+        tickerSlim.latestPrice = req.body.latestPrice
         tickerSlim.ratios = req.body.ratios
         await tickerSlim.save()
     }else{
@@ -128,6 +129,7 @@ exports.updateTickerList = async ( req,res ) => {
             industry:req.body.profile.industry,
             subIndustry:req.body.profile.subIndustry,
             country:req.body.profile.country,
+            latestPrice: req.body.latestPrice,
             ratios:req.body.ratios
         })
         await newTicker.save()
