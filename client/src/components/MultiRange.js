@@ -89,7 +89,7 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
                         </label>
                         <label
                             className='maxInput'>
-                            {maxValue>=scaleTo?'< '+(scaleTo-1*ticks).toFixed(1):maxValue.toFixed(1)}
+                            {maxValue>=scaleTo?'< '+(scaleTo-1*ticks).toFixed(1):maxValue}
                         </label>  
                     </div>
             </div>

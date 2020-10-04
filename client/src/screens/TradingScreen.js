@@ -86,8 +86,8 @@ function UserPortfolios(){
     const portfolioUserList = useSelector(state => state.portfolioUserList)
     const { loading, portfolios,error } = portfolioUserList
 
-    const tickerList = useSelector(state => state.tickerList)
-    const { tickers } = tickerList
+    const tickerListData = useSelector(state => state.tickerListData)
+    const { tickers } = tickerListData
 
     return(
         <div className='userPortfolios'>

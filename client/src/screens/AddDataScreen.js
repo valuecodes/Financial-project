@@ -21,10 +21,12 @@ export default function AddDataScreen() {
         options:['overview','ticker']
     })
 
-    const { tickerList:tickerListData, tickerData, tickerSave } = useSelector(state => state)
+    const { tickerListData, tickerData, tickerSave } = useSelector(state => state)
     const { tickers } = tickerListData
     const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
+    const exhangeRateList = useSelector(state => state.exhangeRateList)
+    const { loading, exhangeRate, error } = exhangeRateList
 
     let messages = {
         tickerLoading,
@@ -43,13 +45,13 @@ export default function AddDataScreen() {
     },[tickers])
 
     useEffect(()=>{
-        if(tickerFullData){
-            let ticker = new TickerData(tickerFullData)
+        if(tickerFullData&&exhangeRate){
+            let ticker = new TickerData(tickerFullData,exhangeRate)
             let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
             ticker.addTickerSlimData(tickerSlim)
             setCompanyInfo(ticker)
         }
-    },[tickerFullData])
+    },[tickerFullData,exhangeRate])
 
     function selectTicker(id) {
         dispatch(getTickerData(id))
@@ -57,7 +59,7 @@ export default function AddDataScreen() {
 
     return (
         <div className='inputPage'>
-            <div className='inputContainer'>     
+            <div>     
                 <SearchInput 
                     tickerList={tickerList}
                     selectTicker={selectTicker}    
@@ -73,6 +75,7 @@ export default function AddDataScreen() {
                 <ControlPanel 
                     navigation={navigation} 
                     setNavigation={setNavigation}
+                    eRate = {exhangeRate}
                 />
                 {navigation.selected.name==='ticker'&&
                     <>
@@ -101,14 +104,13 @@ export default function AddDataScreen() {
     )
 }
 
-function ControlPanel({navigation,setNavigation}){
+function ControlPanel({navigation,setNavigation,eRate}){
 
     const dispatch = useDispatch()
     const tickerInput = useRef()
 
     const [exchangeRate, setExchangeRate]=useState(null)
-    const exhangeRateList = useSelector(state => state.exhangeRateList)
-    const { loading, exhangeRate:eRate, error } = exhangeRateList
+
     const exhangeRateUpdate = useSelector(state => state.exhangeRateUpdate)
     const { loading:updateLoading, exhangeRate:eRateUpdate, error:updateError } = exhangeRateUpdate 
     
@@ -131,7 +133,7 @@ function ControlPanel({navigation,setNavigation}){
     }
 
     const parseTimeStamp = (timestamp) => {
-        let date = new Date(exchangeRate.timestamp*1000).toISOString()
+        let date = new Date(timestamp*1000).toISOString()
         return date.split('.')[0].replace('T',' ')
     }
     
@@ -144,8 +146,8 @@ function ControlPanel({navigation,setNavigation}){
         <div className='controlPanel'>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
             <div>
-                {(loading||updateLoading)&&<div>Loading</div>}
-                {(error||updateError)&&<div>Error</div>}                
+                {(updateLoading)&&<div>Loading</div>}
+                {(updateError)&&<div>Error</div>}                
             </div>            
             <div className='addTicker'>
                 <label>Add ticker</label>
@@ -651,10 +653,11 @@ function Overview({tickerList,setTickerList}){
             <div className='overviewContent'>
                 <table className='overviewTable'>
                     <thead>
-                        <tr>
+                        <tr >
                         <th className='inputTd' onClick={selectAllHandler}>Select All</th>
-                        {tableHeads.map(item =>
+                        {tableHeads.map((item,index) =>
                             <th 
+                                key={index}
                                 style={{
                                     backgroundColor:sortOrder===item&&'rgba(181, 181, 181)',
                                     color:sortOrder===item&&'var(--primary-color)'
@@ -667,7 +670,10 @@ function Overview({tickerList,setTickerList}){
                     </thead>
                     <tbody>
                         {tickerTable.map(ticker =>
-                            <tr >
+                            <tr
+                                key={ticker.ticker}
+                                className={
+                                ticker.selected?'rowhighlight':undefined} >
                                 <td className='inputTd'>
                                     <input onChange={() => selectTicker(ticker.ticker)} type='checkbox' checked={ticker.selected}/>                                    
                                 </td>
@@ -675,7 +681,7 @@ function Overview({tickerList,setTickerList}){
                                 <td>{ticker.sector}</td>
                                 <td>{ticker.latestPrice&&
                                     <div 
-                                        style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'lightgreen'}} className='overviewTableCell'
+                                        style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'dimgray'}} className='overviewTableCell'
                                     >
                                         <label>Date: </label>
                                         <p>{convertDate(ticker.latestPrice.date)}</p>
@@ -687,7 +693,7 @@ function Overview({tickerList,setTickerList}){
                                     {ticker.ratios.date&&
                                     <div 
                                         className='overviewTableCell'
-                                        style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'lightgreen'}}     
+                                        style={{backgroundColor:ticker.ticker===updateStatus.currentTicker && 'dimgray'}}     
                                     >
                                         <label>Updated: </label>
                                         <p>{convertDate(ticker.ratios.date)}</p>

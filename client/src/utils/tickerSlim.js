@@ -14,16 +14,13 @@ export function TickerSlim(ticker){
     this.tickerId = ticker.tickerId
     this.selected = false
     this.updatedThisSession = false
-    // this.latestPrice = ticker.price[0].close
-    // this.secondPrice = ticker.price[1].close
-    this.percentageChange = () => {
-        return roundToTwoDecimal(((this.latestPrice-this.secondPrice)/this.latestPrice)*100)
-    }
-    this.percentageChangeColor = () => {
-        let percentageChange = this.percentageChange()
-        return percentageChange>=0?'rgba(61, 212, 101,1)':'rgba(212, 61, 61,1)'
-    }
+    this.percentageChangeColor = () => handlePercentageChangeColor(this)
     this.updateTickerPrice = (userInfo) => handleUpdateTickerPrice(this,userInfo)
+}
+
+function handlePercentageChangeColor(tickerSlim){
+    let percentageChange = tickerSlim.latestPrice.percentageChange
+    return percentageChange>=0?'rgba(61, 212, 101,1)':'rgba(212, 61, 61,1)'
 }
 
 
@@ -47,7 +44,7 @@ async function handleUpdateTickerPrice(tickerSlim,userInfo){
     tickerSlim.latestPrice = calculateLatestPrice(tickerData)   
 
     const currency = updatedTickerData.profile.financialDataCurrency
-    if(currency === 'USD'){
+    if(currency === 'USD'&&ticker!=='BRK'){
         const ratioData = await axios.get('/dataInput/ratios/'+ticker,{
             headers:{
                 Authorization: 'Bearer'+userInfo.token

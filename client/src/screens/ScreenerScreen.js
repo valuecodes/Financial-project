@@ -9,14 +9,13 @@ export default function ScreenerScreen() {
     const [screener,setScreener]=useState(null)
     const [screenedTickers,setScreenedTickers]=useState([])
     const [inputs,setInputs]=useState([])
-    const tickerList = useSelector(state => state.tickerList)
-    const { loading, tickers, error } = tickerList
+    const tickerListData = useSelector(state => state.tickerListData)
+    const { loading, tickers, error } = tickerListData
 
     useEffect(()=>{
         if(tickers){
             let screener = new Screener(tickers)
             screener.init()
-            console.log(screener)
             setScreener(screener)
             setInputs({...screener.inputs})
         }
@@ -28,7 +27,7 @@ export default function ScreenerScreen() {
         if(screenedTickers.length===0&&loading) color = 'rgba(239, 255, 22, 0.801)'
         return {backgroundColor:color}
     }
-
+ 
     return (
         <div className='screenerScreen container'>
             {error&&<div>Error</div>}
@@ -100,7 +99,7 @@ function ScreenerList({screenedTickers}){
 
     useEffect(()=>{
         if(screenedTickers[0]){
-            const ratios = Object.keys(screenedTickers[0].ratios)
+            const ratios = Object.keys(screenedTickers[0].ratios).filter(item => item!=='date')
             ratios.unshift('Tickers')
             const tickers = screenedTickers
             setTable({thead:ratios,tbody:tickers})
@@ -122,7 +121,7 @@ function ScreenerList({screenedTickers}){
                         <tr className='screenerTableTicker' key={ticker.ticker}>
                             <td>{ticker.ticker}</td>
                             {Object.keys(ticker.ratios).map(ratio =>
-                                <td key={ratio}>{ticker.ratios[ratio]}</td>
+                                ratio!=='date'?<td key={ratio}>{ticker.ratios[ratio]}</td>:null
                             )}
                         </tr>
                     )}                                     

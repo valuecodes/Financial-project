@@ -727,9 +727,20 @@ function convertAlphaNum(num){
 }
 
 export function getApiSymbol(country,symbol){
+
+    if(symbol==='CTY1S') return 'TY2B.XFRA'
+    if(symbol==='BRK') return 'BRK.B'
+
     switch(country){
         case 'Finland':
             return symbol+='.XHEL'
+        case 'Sweden':
+            return symbol+='.XSTO'
+        case 'Russia':
+            return symbol+='.XETRA'
+        case 'Canada':
+            symbol = symbol.split('-')[0]
+            return symbol+='.UN.XTSE'
         default: return symbol
     }
 }

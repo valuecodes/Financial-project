@@ -22,7 +22,7 @@ import {
     alphaProfile,
 } from "./calculations/inputCalculations";
 
-export function TickerData(data){
+export function TickerData(data,exhangeRate=null){
     this.profile = data.profile?data.profile:{
         ticker:'',
         name:'',
@@ -65,6 +65,7 @@ export function TickerData(data){
     this.latestPrice = {}
     this.valueStatements = null
     this.updateMessages = []
+    this.exhangeRate = exhangeRate
     this.addUpdateMessage = (dataName,actions) => handleAddUpdateMessage(this,dataName,actions)
     this.addTickerSlimData = (tickerSlim) => handleAddTickerSlimData(this,tickerSlim)
     this.getValueStatements = () => calculateValueStatements(this)
@@ -281,10 +282,31 @@ function calculateGetFinancialNum(tickerData,key,year=null){
             statementYear = tickerData[statement].sort((a,b)=>new Date(b.date)-new Date(a.date))[0]
         }
         if(statementYear){
-            return statementYear[key]  
+            let value = calculateExhangeRateModification(statementYear[key],key,tickerData)
+            return value
         }
     }
     return null
+
+    function calculateExhangeRateModification(value, key,tickerData){
+        let financialDataCurrency = tickerData.profile.financialDataCurrency
+        let exhangeRate = tickerData.exhangeRate
+        let ticker = tickerData.profile.ticker
+        
+        if(ticker==='CIBUS'&&key==='close'){
+            return value/exhangeRate.rates[tickerData.profile.tickerCurrency]
+        }
+
+        switch(financialDataCurrency){
+            case 'RUB':
+                if(key==='eps') return value/exhangeRate.rates[financialDataCurrency]
+                if(key==='bookValuePerShare') return value/exhangeRate.rates[financialDataCurrency]
+                return value
+                break
+            default: 
+                return value
+        }
+    }
 }
 
 function calculateTickerRatios(tickerData){

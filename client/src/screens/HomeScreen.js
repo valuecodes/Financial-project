@@ -1,48 +1,48 @@
-import React from 'react'
+import React,{ useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { roundToTwoDecimal } from '../utils/utils';
 import { TickerSlim } from '../utils/tickerSlim';
+import { TickerList } from '../utils/tickerList';
 
 export default function HomeScreen() {
 
-    const tickerList = useSelector(state => state.tickerList)
-    const { tickers } = tickerList
+    const [tickerList, setTickerList] = useState(new TickerList())
+    const tickerListData = useSelector(state => state.tickerListData)
+    const { tickers } = tickerListData
+
+    useEffect(() => {
+        if(tickers){
+            let newTickerList = new TickerList(tickers) 
+            setTickerList(newTickerList)
+        }
+    }, [tickers])
     
     return (
         <div className='homeScreen container'>
-            <MainSide tickers={tickers} />
-            <TickerTable tickers={tickers}/>
+            <MainSide tickerList={tickerList} />
+            <TickerTable tickerList={tickerList}/>
         </div>
     )
 }
 
-function TickerTable({tickers}){
+function TickerTable({tickerList}){
     return(
         <div className='tickerTable'>
-            {tickers&&
-                tickers.map(ticker =>
-                    <TickerTableTicker key={ticker._id} ticker={ticker}/>
-                )           
-            }
+            {tickerList.tickers.map(ticker =>
+                <Link key={ticker.ticker} to={'/ticker/'+ticker.ticker} className='tickerTableTicker'>
+                    <h3>{ticker.ticker} </h3>
+                    <p           
+                        style={{
+                        color:ticker.percentageChangeColor(),
+                    }}>{ticker.latestPrice.percentageChange}%</p>
+                </Link>                
+            )}
         </div>
     )
 }
 
-function TickerTableTicker({ticker}){
-    const tickerSlim = new TickerSlim(ticker)
-    return(
-        <Link to={'/ticker/'+tickerSlim.ticker} className='tickerTableTicker'>
-            <h3>{tickerSlim.ticker} </h3>
-            <p           
-                style={{
-                color:tickerSlim.percentageChangeColor(),
-            }}>{tickerSlim.percentageChange()}%</p>
-        </Link>
-    )
-}
-
-function MainSide({tickers}){
+function MainSide({tickerList}){
 
     const userSignin = useSelector(state => state.userSignin)
     const { loading, userInfo, error } = userSignin
@@ -64,7 +64,7 @@ function MainSide({tickers}){
                             <div key={ticker._id} className='portfolioListTicker'>
                                 <Link to={'/ticker/'+ticker.ticker}>{ticker.ticker}</Link>   
                                 <p>{ticker.name}</p>
-                                <TickerPrice ticker={ticker} tickers={tickers}/>
+                                <p>{tickerList.getLatestPrice(ticker.ticker)}</p>
                             </div>
                         )}         
                     </>  
@@ -74,19 +74,4 @@ function MainSide({tickers}){
             }
         </section> 
     ) 
-}
-
-function TickerPrice({ticker,tickers}){
-    const price = getTickerPriceFromList(ticker,tickers)
-    return(
-        <p className='tickerPrice'>
-        {price}
-        </p>
-    )
-}
-
-function getTickerPriceFromList(ticker,tickers){
-    if(tickers){
-        return roundToTwoDecimal(tickers.find(item => item.ticker===ticker.ticker).price[0].close)
-    }
 }

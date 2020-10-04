@@ -634,21 +634,47 @@ th{
   color: var(--light-color);
 }
 
-.overviewTable thead tr{
-  height: 5rem;
+.overviewTable thead{
+  display: block;
 }
+.overviewTable thead tr{
+  display: grid;
+  grid-template-columns: 7rem 10rem 18rem 1fr 1fr;
+  padding-right: 17px;
+}
+
+.overviewTable thead th{
+  display: flex;
+  align-items: center;
+  height: 7rem;
+  padding: 1rem 0.4rem;
+  margin: 0;
+}
+
+.overviewTable tbody{
+  display: block;
+  height: 50rem;
+  overflow-y: scroll;
+}
+.overviewTable tbody tr{
+ display: grid;
+ grid-template-columns: 7rem 10rem 18rem 1fr 1fr;
+}
+
+.rowhighlight > td { background: rgb(150, 177, 150);}
 
 .inputTd{
-  width: 7rem;
   text-align: center;
 }
-
+input[type=checkbox] {
+  transform: scale(1.5);
+}
 .overviewTableCell{
   display: grid;
   grid-template-columns: auto 8rem 1fr;
   background-color: rgb(134, 134, 134);
   color: white;
-  padding: 0 1rem;
+  /* padding: 0 1rem; */
   grid-gap: 0.5rem;
   border-radius: 0.3rem;
   border: 1px solid rgb(100, 100, 100);
@@ -936,6 +962,8 @@ th{
   position: relative;
   padding-top: 5rem;
   padding-bottom: 2rem;
+  width: 25rem;
+  margin: auto;
 }
 
 .multiRange input{

@@ -24,7 +24,7 @@ function handleGetLatestPrice(tickerList,ticker){
         return null
     }
     if(tickerFound.latestPrice){
-        return tickerFound.latestPrice
+        return tickerFound.latestPrice.close
     }else{
         return null
     }

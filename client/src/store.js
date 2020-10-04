@@ -1,6 +1,6 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
 import thunk from 'redux-thunk'
-import { tickerListReducer, tickerDataReducer, tickerPortfolioDataReducer, tickerSaveReducer, tickerDeleteReducer, tickerUpdateRatiosReducer, tickerApiPriceReducer, tickerApiFinancialsReducer } from './reducers/tickerReducers';
+import { tickerListDataReducer, tickerDataReducer, tickerPortfolioDataReducer, tickerSaveReducer, tickerDeleteReducer, tickerUpdateRatiosReducer, tickerApiPriceReducer, tickerApiFinancialsReducer } from './reducers/tickerReducers';
 import { userSigninReducer, userRegisterReducer } from './reducers/userReducers';
 import Cookie from 'js-cookie'
 import { 
@@ -36,7 +36,7 @@ const reducer = combineReducers({
     portfolioUserList: portfolioUserListReducer,
     portfolioSelected:portfolioSelectedReducer,
     
-    tickerList: tickerListReducer,
+    tickerListData: tickerListDataReducer,
     tickerData:tickerDataReducer,
     tickerPortfolioData: tickerPortfolioDataReducer,
     tickerSave: tickerSaveReducer,

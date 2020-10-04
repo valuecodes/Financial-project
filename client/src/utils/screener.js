@@ -109,7 +109,6 @@ function initScreener(screener){
                 scaleTo: scaleTo+1*ticks
             }   
         })
-        console.log(inputs)
         screener.inputs=inputs
     }
 }
@@ -133,7 +132,7 @@ const ratioOptions={
     },
     divYield:{
         scaleFrom:0,
-        scaleTo:'auto',
+        scaleTo:15,
         ticks:0.1,
         decimals:2,
         textSign:'%',
@@ -165,7 +164,7 @@ const ratioOptions={
     },
     profitMargin:{
         scaleFrom:0,
-        scaleTo:'auto',
+        scaleTo:50,
         ticks:1,
         decimals:2,
         textSign:'%',
@@ -173,7 +172,7 @@ const ratioOptions={
     },
     operatingMargin:{
         scaleFrom:0,
-        scaleTo:'auto',
+        scaleTo:50,
         ticks:1,
         decimals:2,
         textSign:'%',
@@ -205,7 +204,7 @@ const ratioOptions={
     },
     roe:{
         scaleFrom:0,
-        scaleTo:'auto',
+        scaleTo:50,
         ticks:1,
         decimals:2,
         textSign:'%',
@@ -213,7 +212,7 @@ const ratioOptions={
     },
     roa:{
         scaleFrom:0,
-        scaleTo:'auto',
+        scaleTo:50,
         ticks:1,
         decimals:2,
         textSign:'%',

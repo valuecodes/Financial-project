@@ -22,7 +22,7 @@ import {
     TICKER_API_FINANCIALS_FAIL
 } from "../constants/tickerConstants";
 
-function tickerListReducer(state={
+function tickerListDataReducer(state={
     tickers:[]
 },action){
     switch(action.type){
@@ -109,7 +109,7 @@ function tickerApiFinancialsReducer(state={},action){
 }
 
 export {
-    tickerListReducer,
+    tickerListDataReducer,
     tickerDataReducer,
     tickerPortfolioDataReducer,
     tickerSaveReducer,

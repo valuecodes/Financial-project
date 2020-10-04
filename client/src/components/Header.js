@@ -13,8 +13,8 @@ export default function Header(props) {
     const [page, setPage]=useState('')
     const history = useHistory();
     const dispatch = useDispatch()
-    const tickerList = useSelector(state => state.tickerList)
-    const { tickers } = tickerList
+    const tickerListData = useSelector(state => state.tickerListData)
+    const { tickers } = tickerListData
     const userSignin = useSelector(state => state.userSignin)
     const { userInfo } = userSignin
 
