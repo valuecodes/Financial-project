@@ -20,6 +20,7 @@ import {
     alphaBalanceStatement,
     alphaCashflowStatement,
     alphaProfile,
+    calculateLatestPrice,
 } from "./calculations/inputCalculations";
 
 export function TickerData(data,exhangeRate=null){
@@ -302,7 +303,6 @@ function calculateGetFinancialNum(tickerData,key,year=null){
                 if(key==='eps') return value/exhangeRate.rates[financialDataCurrency]
                 if(key==='bookValuePerShare') return value/exhangeRate.rates[financialDataCurrency]
                 return value
-                break
             default: 
                 return value
         }
@@ -389,6 +389,7 @@ function setAddData(tickerData,data){
         case 'yahooPrice':
             newData = calculateYahooPrice(array)
             tickerData.updateData('priceData',newData)
+            tickerData.latestPrice = calculateLatestPrice(tickerData)
             break
         case 'dividends':
             newData = calculateYahooDividend(array)
@@ -413,16 +414,18 @@ function setUpdateData(tickerData,dataName,newData){
     }
 
     const compare = (newItem,item,dataName) => {
-        let startingDate = tickerData.priceData.length>0?new Date(tickerData.priceData[0].date):new Date(2000,0) 
+        let startingPriceDate = tickerData.priceData.length>0?new Date(tickerData.priceData[0].date):new Date(2000,0) 
+        let startingDivDate = tickerData.dividendData.length>0?new Date(tickerData.dividendData[0].date):new Date(2000,0) 
+
         switch(dataName){
             case 'incomeStatement':
             case 'balanceSheet':
             case 'cashFlow':
                 return new Date(item.date).getFullYear() === new Date(newItem.date).getFullYear()
             case 'priceData':
-                return startingDate.getTime()>(new Date(newItem.date).getTime()-304800000)
+                return startingPriceDate.getTime()>(new Date(newItem.date).getTime()-304800000)
             case 'dividendData':
-                return startingDate.getTime()>(new Date(newItem.date).getTime()-1000000000)
+                return startingDivDate.getTime()>(new Date(newItem.date).getTime()-1004800000)
             case 'insiderTrading':
                 return new Date(item.date).getTime() === new Date(newItem.date).getTime()&&
                     item.name ===newItem.name

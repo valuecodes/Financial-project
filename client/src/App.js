@@ -9,6 +9,7 @@ import TradingScreen from './screens/TradingScreen';
 import TickerScreen from './screens/TickerScreen'
 import PortfolioScreen from './screens/PortfolioScreen'
 import ScreenerScreen from './screens/ScreenerScreen'
+import ScatterScreen from './screens/ScatterScreen';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path='/portfolio/:id' component={PortfolioScreen}/>
           <Route path='/trading' component={TradingScreen}/>
           <Route path='/screener' component={ScreenerScreen}/>
+          <Route path='/scatter' component={ScatterScreen}/>
           <Route path='/' exact={true} component={HomeScreen}/>
         </main>
       </div>    

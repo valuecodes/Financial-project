@@ -114,7 +114,9 @@ exports.updateTickerList = async ( req,res ) => {
     let id = req.body._id
     const tickerSlim = await TickerSlim.findOne({tickerId:id})
     if(tickerSlim){
-        tickerSlim.price = calculatePrice(req.body)
+        tickerSlim.sector=req.body.profile.sector,
+        tickerSlim.industry=req.body.profile.industry,
+        tickerSlim.country = req.body.profile.country,
         tickerSlim.latestPrice = req.body.latestPrice
         tickerSlim.ratios = req.body.ratios
         await tickerSlim.save()
@@ -135,12 +137,6 @@ exports.updateTickerList = async ( req,res ) => {
     }
 }
 
-function calculatePrice(data){
-    return [
-        {date:data.priceData[0].date,close:data.priceData[0].close},
-        {date:data.priceData[1].date,close:data.priceData[1].close},
-    ]
-}
 
 // @desc      Get ticker by id
 // @route     GET /:id

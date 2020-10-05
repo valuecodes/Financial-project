@@ -16,31 +16,26 @@ import {
 export default function TradingScreen() {
 
     const dispatch = useDispatch()
-    const userSignin = useSelector(state => state.userSignin)
+    const {
+        userSignin,
+        portfolioAddTicker,
+        portfolioDeleteTicker,
+        portfolioCreate,
+        portfolioUpdate,
+        portfolioDelete,
+        portfolioAddTransaction,
+        portfolioUpdateTransaction,
+        portfolioDeleteTransaction,
+    } = useSelector(state => state)
+
     const { userInfo } = userSignin
-
-    const portfolioAddTicker = useSelector(state => state.portfolioAddTicker)
     const { success:tickerAddSuccess, error:tickerAddError} = portfolioAddTicker
-
-    const portfolioDeleteTicker = useSelector(state => state.portfolioDeleteTicker)
     const {success: tickerDeleteSuccess, error: tickerDeleteError} = portfolioDeleteTicker
-
-    const portfolioCreate = useSelector(state => state.portfolioCreate)
     const { success:portfolioSuccess, error:portfolioError } = portfolioCreate 
-
-    const portfolioUpdate = useSelector(state => state.portfolioUpdate)
     const { success:portfolioUpdateSuccess, error:portfolioUpdateError } = portfolioUpdate
-
-    const portfolioDelete = useSelector(state => state.portfolioDelete)
     const { success:portfolioDeleteSucccess, error: portfolioDeleteError } = portfolioDelete
-
-    const portfolioAddTransaction = useSelector(state => state.portfolioAddTransaction)
     const { success: transactionAddSuccess, error: transactionAddError} = portfolioAddTransaction
-
-    const portfolioUpdateTransaction = useSelector(state => state.portfolioUpdateTransaction)
     const { success: transactionUpdateSuccess, error: transactionUpdateError } = portfolioUpdateTransaction
-
-    const portfolioDeleteTransaction = useSelector(state => state.portfolioDeleteTransaction)
     const {success: transactionDeleteSuccess, error: transactionDeleteError} = portfolioDeleteTransaction
 
     const errors=[

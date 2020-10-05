@@ -8,7 +8,6 @@ import { TickerData } from '../utils/tickerData';
 import { updateTickerRatios } from '../actions/tickerActions';
 import SectionNav from '../components/SectionNav'
 import { TickerList } from '../utils/tickerList';
-import { TickerSlim } from '../utils/tickerSlim';
 
 export default function AddDataScreen() {
 
@@ -17,7 +16,7 @@ export default function AddDataScreen() {
     const [tickerList, setTickerList] = useState(new TickerList())
     const [selectedKey, setSelectedKey] = useState(null)
     const [navigation,setNavigation] = useState({
-        selected:{name:'overview',index:0},
+        selected:{name:'ticker',index:0},
         options:['overview','ticker']
     })
 
@@ -45,13 +44,13 @@ export default function AddDataScreen() {
     },[tickers])
 
     useEffect(()=>{
-        if(tickerFullData&&exhangeRate){
+        if(tickerFullData&&exhangeRate&&tickerList.tickers.length!==0){
             let ticker = new TickerData(tickerFullData,exhangeRate)
             let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
             ticker.addTickerSlimData(tickerSlim)
             setCompanyInfo(ticker)
         }
-    },[tickerFullData,exhangeRate])
+    },[tickerFullData,exhangeRate,tickerList])
 
     function selectTicker(id) {
         dispatch(getTickerData(id))
@@ -193,8 +192,9 @@ function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker })
 
             switch(selected){
                 case 'UpdatedAt':
+                    console.log(tickerList.tickers)
                     tickerList.tickers.forEach(ticker =>{
-                        if(ticker.ratios.pe){
+                        if(ticker.country){
                             ready.push(ticker)
                         }else{
                             notReady.push(ticker)
@@ -495,20 +495,49 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
                     </div>                
                 )}
             </div>  
-            <div className='inputInfoRatios'>                
-                <div className='inputRatioActions'>
-                    <h3>Ratios</h3>
-                    <button
-                        onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
-                    >Manual update</button>                    
-                </div>
-                {ratios.map(ratio=>
-                    <div key={ratio} className='inputInfoItem'>
-                        <label className='itemLabel'>{camelCaseToString(ratio)}</label>
-                        <input onChange={e => console.log(e)} value={companyInfo.ratios[ratio]|| ''}/>
+            <div className='tickerSlimInfo'>                
+                <div className='tickerSlimRatios'>
+                    <div>
+                        <h3>Ratios{companyInfo.ratios.date&&<span>{convertDate(companyInfo.ratios.date)}</span>}
+                        </h3>
+                        <button
+                            className='button'
+                            onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
+                        >Update</button>                                               
                     </div>
-                )}
+                    <div className='selectedRatios'>
+                        {['pe','pb','divYield','payoutRatio','currentRatio','profitMargin','roe','marketCap'].map(ratio=>
+                            <div key={ratio} className='inputInfoRatio'>
+                                <p className='itemLabel'>{camelCaseToString(ratio)}</p>
+                                <p>{companyInfo.ratios[ratio]|| ''}</p>
+                            </div>
+                        )}                        
+                    </div>
+                </div>
+                <div className='tickerLatestPrice'>
+                    <div>
+                        <h3>Latest Price{companyInfo.latestPrice.date&&<span>{convertDate(companyInfo.ratios.date)}</span>}</h3>
 
+                    </div>
+                    <div className='latestPrice'>                        
+                        <button
+                            className='button'
+                            // onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
+                        >Update</button>  
+                        <div className='inputInfoRatio'>
+                            <p className='itemLabel'>Price</p>
+                            <p>{companyInfo.latestPrice.close|| ''}</p>
+                        </div>
+                        <div className='inputInfoRatio'>
+                            <p className='itemLabel'>Volume</p>
+                            <p>{companyInfo.priceData[0]?companyInfo.priceData[0].volume:''}</p>
+                        </div>
+                        <div className='inputInfoRatio'>
+                            <p className='itemLabel'>Ticker Price</p>
+                            <p>{companyInfo.priceData[0]?companyInfo.priceData[0].close:''}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div className='inputInfoActions'>
                 <button onClick={processData} className='button'>Save Company Data</button> 
@@ -559,7 +588,6 @@ function Overview({tickerList,setTickerList}){
         selected:0,
         updated:0,
     })
-    const [currentlyUpdating, setCurrentlyUpdating] = useState(null)
     const [tickerTable,setTickerTable] = useState([])
     const [sortOrder,setSortOrder]= useState('ticker')
     const userSignin = useSelector(state => state.userSignin)

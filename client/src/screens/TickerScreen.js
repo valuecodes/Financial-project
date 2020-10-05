@@ -281,7 +281,6 @@ function PriceChart({ticker,navigation}){
             let chartData = calculatePriceChart(chartComponents,options)
             setChart(chartData)
             setChartOptions(priceChartOptions(chartComponents.data,options))    
-            
         }
     },[ticker, options])
 

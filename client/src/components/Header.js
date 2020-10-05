@@ -55,6 +55,7 @@ function SubHeader({userInfo,setPage}){
     const headerLinks=[
         {path:'/',text:'Home',auth:[]},
         {path:'/screener',text:'Screener',auth:[]},
+        {path:'/scatter',text:'Scatter',auth:[]},
         {path:'/trading',text:'Trading',auth:['login']},
         {path:'/addData',text:'Admin',auth:['login','admin']},
     ]

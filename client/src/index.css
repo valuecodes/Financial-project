@@ -1,7 +1,3 @@
-*{
-  /* margin: 0;
-  padding: 0; */
-}
 
 :root{
   --main-container-color:rgb(236, 236, 236);
@@ -259,10 +255,6 @@ th{
 .mainHeader{
   border-bottom: 0.1rem solid black; 
   padding: 1rem 0;
-}
-
-.portfolioListTickers{
-  /* display: flex; */
 }
 
 .portfolioSection{
@@ -727,42 +719,54 @@ input[type=checkbox] {
   font-size: 1.4rem;
 }
 
-.inputInfoRatios{
-  grid-column: 1;
+.tickerSlimInfo{
   display: grid;
-  grid-template-columns: repeat(6,1fr) 20rem;
-  padding: 1rem;
-  border: 1px solid rgb(119, 119, 119);
-  border-radius: 0.5rem;
+  grid-template-columns: 2fr 1fr;
+  grid-gap: 2rem;
 }
 
-.inputInfoRatios .inputInfoItem input{
-  width: 10rem;
-}
-.inputInfoRatios .inputInfoItem label{
-  font-size: 1.2rem;
-}
-
-.inputInfoRatios button{
-  height: 3rem;
-  margin-top: auto;
-  background-color: rgb(201, 201, 201);
-  cursor: pointer;
+.tickerSlimInfo div div h3 span{
+  font-size: 1.6rem;
+  font-weight: 400;
+  padding-left: 2rem;
 }
 
-.inputInfoRatios button:hover{
-  background-color: lightgreen;
+.tickerSlimRatios{
+  display: grid;
+  grid-template-columns: 15rem 1fr;
 }
 
-.inputRatioActions{
-  grid-column: 1/3;
-  grid-row: 1/4;
+.selectedRatios{
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  grid-template-rows: 1fr 1fr;
+  grid-gap: 0.5rem;
+  margin: 0.5rem;
 }
 
-.inputInfoRatios button{
-  display: block;
+.inputInfoRatio{
+  background-color: rgb(230, 230, 230);
+  padding: 0 0.2rem;
 }
 
+.tickerLatestPrice{
+  display: grid;
+  grid-template-rows: 3rem 1fr;
+  padding: 0 0.5rem;
+}
+
+.latestPrice{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 6rem;
+  grid-gap: 0.5rem;
+}
+
+.latestPrice .inputInfoRatio{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
 .inputInfoActions{
   display: grid;
@@ -1055,6 +1059,47 @@ input[type='range']:focus {
 
 .screenerTableTicker{
   height: 4rem;
+}
+
+/* ScatterScreen */
+.scatterScreen{
+  margin-top: 5rem;
+}
+
+.scatterInputs{
+  height: 5rem;
+}
+
+.scatterInputs ul li{
+  margin-right: 2rem;
+}
+.scatterInputs ul li:hover{
+  background-color: rgba(144, 238, 144, 0.329);
+}
+
+.scatterChart{
+  margin-top: 5rem;
+  height: 100rem;
+  display: grid;
+  grid-template-columns: 0rem 1fr;
+  grid-template-rows: 50rem 10rem;
+}
+
+.yAxis{
+  margin: auto;
+  padding-bottom: 5rem;
+  position: relative;
+  right: 20rem;
+}
+
+.xAxis{
+  margin: auto;
+  grid-column: 1/3;
+}
+
+.scatterSelect{
+  width: 15rem;
+  font-size: 2rem;
 }
 
 /* TickerScreen */

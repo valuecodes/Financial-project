@@ -1,4 +1,5 @@
 export function camelCaseToString(s) {
+    if(s===null) return ''
 
     let string = s.split(/(?=[A-Z])/).map(function(p) {
         return p.charAt(0).toUpperCase() + p.slice(1);

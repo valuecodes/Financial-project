@@ -1,15 +1,18 @@
 import React,{ useState, useEffect } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { roundToTwoDecimal } from '../utils/utils';
-import { TickerSlim } from '../utils/tickerSlim';
 import { TickerList } from '../utils/tickerList';
+import { listTickers } from '../actions/tickerActions';
 
 export default function HomeScreen() {
-
+    const dispatch = useDispatch()
     const [tickerList, setTickerList] = useState(new TickerList())
     const tickerListData = useSelector(state => state.tickerListData)
     const { tickers } = tickerListData
+
+    useEffect(()=>{
+        dispatch(listTickers())
+    },[])
 
     useEffect(() => {
         if(tickers){

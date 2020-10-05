@@ -1,4 +1,3 @@
-import { roundToTwoDecimal } from "./utils";
 import axios from "axios";
 import { TickerData } from "./tickerData";
 import { getApiSymbol, calculateLatestPrice } from "./calculations/inputCalculations";
@@ -11,6 +10,7 @@ export function TickerSlim(ticker){
     this.latestPrice = ticker.latestPrice
     this.sector = ticker.sector
     this.industry = ticker.industry
+    this.country = ticker.country
     this.tickerId = ticker.tickerId
     this.selected = false
     this.updatedThisSession = false
