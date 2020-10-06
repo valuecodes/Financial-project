@@ -143,3 +143,7 @@ export function convertDate(dateString) {
     var date = new Date(dateString);
     return date.getDate()+"/"+(date.getMonth() + 1)+"/"+date.getFullYear();
 }
+
+export function uniqueValuesArray(data,value){
+    return [...new Set(data.map(item => item[value]))]
+}

@@ -230,7 +230,7 @@ th{
   height: 4rem;
 }
 
-.selectPortfolio select{
+select{
   background-color: var(--primary-color);
   color: white;
   font-size: 1.6rem;
@@ -1067,7 +1067,135 @@ input[type='range']:focus {
 }
 
 .scatterInputs{
-  height: 5rem;
+  display: grid;
+  grid-template-columns: 25rem 1fr auto;
+  grid-column-gap: 1rem;
+}
+
+.scatterTickers{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 1rem;
+  border-radius: 0.5rem;
+  height: 4rem;
+  margin: 1rem 0;
+}
+.scatterTickers label{
+  font-size: 2.5rem;
+}
+
+.scatterInputs .options{
+  grid-column: 1/4;
+}
+
+.scatterFilters{
+  height: 4rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 1rem;
+}
+
+.scatterFilter{
+  width: 20rem;
+  padding: 0.5rem;
+  position: absolute;
+  margin-top: 1rem;
+  height: 3rem;
+  display: grid;
+  background-color: rgb(197, 197, 197);
+  overflow: hidden;
+  border-radius: 0.4rem;
+  border: 0.2rem solid rgb(160, 160, 160);
+}
+
+.scatterFilter:last-child{
+  margin-left: 22rem;
+}
+
+.scatterFilter:hover{
+  height: auto;
+}
+
+.filterHeader{
+  display: flex;
+  justify-content: space-between;
+  height: 4rem;
+}
+.filterHeader label{
+  font-size: 2.5rem;
+  font-weight: 500;
+}
+
+.scatterFilterInput{
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 3rem 1fr 3rem;
+  border-bottom: 0.1rem solid rgb(163, 163, 163);
+}
+
+.scatterFilterInput label{
+  font-size: 1.2rem;
+  margin-left: 0.5rem;
+}
+.scatterFilterInput p{
+  font-size: 1.2rem;
+  margin: 0 0.5rem;
+  text-align: right;
+}
+.scatterFilterInput input{
+  margin-left: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: white;
+}
+
+.scatterHighlight{
+  height: 4rem;  
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  background-color: var(--light-color);
+  padding: 0.2rem;
+}
+
+.scatterHighlight h3{
+  margin-bottom: 0.5rem;
+  margin: 0 1rem;
+}
+
+.scatterHighlight select{
+  width: 20rem;
+}
+
+.scatterHighlight input{
+  margin: 0 1rem;
+}
+
+.scatterHighlightOptions{
+  display: flex;
+}
+
+input[type=color] {
+  width: 3rem;
+  height: 3rem; 
+  border-radius: 50%;
+  overflow: hidden;
+  border:none;
+}
+
+input[type=color]::-webkit-color-swatch {
+border: 0.2rem solid rgb(134, 134, 134);
+border-radius: 50%;
+padding: 0;
+}
+
+input[type=color]::-webkit-color-swatch-wrapper {
+  border: none;
+  border-radius: 50%;
+  padding: 0;
 }
 
 .scatterInputs ul li{
@@ -1078,11 +1206,13 @@ input[type='range']:focus {
 }
 
 .scatterChart{
-  margin-top: 5rem;
-  height: 100rem;
   display: grid;
   grid-template-columns: 0rem 1fr;
-  grid-template-rows: 50rem 10rem;
+}
+.scatterChart .chartContainer{
+  height: 50rem;
+  background-color: var(--light-color);
+  margin-bottom: 2rem;
 }
 
 .yAxis{

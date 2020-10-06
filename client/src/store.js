@@ -18,7 +18,7 @@ import {
 import { exhangeRateListReducer, exhangeRateUpdateReducer } from './reducers/exhangeRateReducer';
 
 const userInfo = Cookie.getJSON('userInfo') || null
-const initialState = {userSignin:{userInfo},userPortfolios:[],portfolioSelected:{name:''}}
+const initialState = {userSignin:{userInfo},userPortfolios:[],}
 
 const reducer = combineReducers({
     

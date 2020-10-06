@@ -1,13 +1,25 @@
-import { camelCaseToString } from "./utils";
+import { camelCaseToString, uniqueValuesArray } from "./utils";
+import {datalabels} from 'chartjs-plugin-datalabels'
 
-export default function ScatterPlot(tickers){
+export default function ScatterPlot(tickers,portfolio){
     this.tickers = tickers||[]
-    this.scatterOptions = scatterOptions
+    this.scatterOptions = scatterOptions    
+    this.portfolio = portfolio
+    this.ratios=[]
+    this.countries={}
+    this.sectors={}
+    this.highlight = "My Portfolio.My Portfolio"
+    this.highlightColor = '#90ee90'
     this.selectedRatios = {
         y:'pb',
         x:'roe'
     }
-    this.ratios=[]
+    this.filterTotals={
+        sectors:0,
+        sectorsSelected:0,
+        countries:0,
+        countriesSelected:0
+    }
     this.chartData = {}
     this.chartOptions = {
         responsive:true,
@@ -15,15 +27,48 @@ export default function ScatterPlot(tickers){
     }
     this.init = () => handleInit(this)
     this.setOption = (option) => handleSetOption(this,option)
+    this.filterValue = (newValue) => handleFilterValue(this,newValue)
+    this.filterSelectAll = (filterName) => handleFilterSelectAll(this,filterName)
+    this.setHighlight = (value) => handleSetHighlight(this,value)
+    this.setHighlightColor = value => handleSetHighlightColor(this,value)
     this.setScatterAxis = (value,axis) => handleSetScatterAxis(this,value,axis)
     this.updateChart = () => handleUpdateChart(this)
+    this.setChartData = (data) =>  handleSetChartData(this,data)
+    this.setChartOptions = () => handleSetChartOptions(this)
+    this.updateFilterTotals = () => handleUpdateFilterTotals(this)
+    this.filterData = (data) => handleFilterData(this,data)
 }
 
 function handleInit(scatterPlot){
     if(scatterPlot.tickers[0]){
         let ratios = Object.keys(scatterPlot.tickers[0].ratios).filter(item => item!=='date')
         ratios.unshift('selectRatio')
+        let countries={}
+        let countriesArray = uniqueValuesArray(scatterPlot.tickers,'country')
+        countriesArray.forEach(country =>{
+            countries[country] = {
+                name:country,
+                selected:true,
+                filterName:'countries',
+                count: scatterPlot.tickers.filter(item=>item.country===country).length 
+            }
+        })
+        
+        let sectors = {} 
+        let sectorsArray = uniqueValuesArray(scatterPlot.tickers,'sector')
+        sectorsArray.forEach(sector =>{
+            sectors[sector]={
+                name:sector,
+                selected:true,
+                filterName:'sectors',    
+                count: scatterPlot.tickers.filter(item=>item.sector===sector).length    
+            }
+        })
+        
         scatterPlot.ratios = ratios
+        scatterPlot.countries = countries
+        scatterPlot.sectors = sectors
+        scatterPlot.updateFilterTotals()        
         scatterPlot.updateChart()
     }
 }
@@ -38,6 +83,36 @@ function handleSetOption(scatterPlot,option){
     return scatterPlot
 }
 
+function handleFilterValue(scatterPlot,newValue){
+    const { name, selected, filterName } = newValue
+    scatterPlot[filterName][name].selected = !selected
+    scatterPlot.updateFilterTotals()
+    scatterPlot.updateChart()
+    return scatterPlot
+}
+
+function handleFilterSelectAll(scatterPlot,filterName){
+    
+    let firstFilter = Object.keys(scatterPlot[filterName])[0]
+    let selecteAll = !scatterPlot[filterName][firstFilter].selected
+    Object.keys(scatterPlot[filterName]).forEach(item =>scatterPlot[filterName][item].selected=selecteAll)
+    scatterPlot.updateFilterTotals()    
+    scatterPlot.updateChart()
+    return scatterPlot
+}
+
+function handleSetHighlight(scatterPlot,value){
+    scatterPlot.highlight=value
+    scatterPlot.updateChart()
+    return scatterPlot
+}
+
+function handleSetHighlightColor(scatterPlot,value){
+    scatterPlot.highlightColor=value
+    scatterPlot.updateChart()
+    return scatterPlot
+}
+
 function handleSetScatterAxis(scatterPlot,value,axis){
     scatterPlot.selectedRatios[axis]=value
     const { y, x } = scatterPlot.selectedRatios
@@ -45,6 +120,23 @@ function handleSetScatterAxis(scatterPlot,value,axis){
         scatterPlot.updateChart()
     }
     return scatterPlot
+}
+
+function handleUpdateFilterTotals(scatterPlot){
+
+    let countries =  Object.keys(scatterPlot.countries).length
+    let sectors = Object.keys(scatterPlot.sectors).length
+    let countriesSelected = Object.keys(scatterPlot.countries)
+        .filter(item => scatterPlot.countries[item].selected).length
+
+    let sectorsSelected = Object.keys(scatterPlot.sectors)
+        .filter(item => scatterPlot.sectors[item].selected).length
+
+    scatterPlot.filterTotals.countries = countries
+    scatterPlot.filterTotals.countriesSelected = countriesSelected
+    scatterPlot.filterTotals.sectors = sectors
+    scatterPlot.filterTotals.sectorsSelected = sectorsSelected
+    
 }
 
 function handleUpdateChart(scatterPlot){
@@ -55,17 +147,20 @@ function handleUpdateChart(scatterPlot){
             x:ticker.ratios[x],
             yName:camelCaseToString(y),
             xName:camelCaseToString(x),
-            tickerName:ticker.name
+            tickerName:ticker.name,
+            ticker:ticker.ticker,
+            country:ticker.country,
+            sector:ticker.sector
         }
     })
-    scatterPlot.chartData = getChartData(data)
-    scatterPlot.chartOptions = getChartOptions(scatterPlot)
+
+    let filteredData = scatterPlot.filterData(data)
+
+    scatterPlot.setChartData(filteredData)
+    scatterPlot.setChartOptions(scatterPlot)
 }
-   
 
-
-
-function getChartOptions(scatterPlot){
+function handleSetChartOptions(scatterPlot){
 
     const { y, x } = scatterPlot.selectedRatios
 
@@ -78,9 +173,24 @@ function getChartOptions(scatterPlot){
     let xMin = ratioOptions[x]?ratioOptions[x].min:Math.min(...xData)
     let xMax = ratioOptions[x]?ratioOptions[x].max:Math.max(...xData)
 
-    return{
+    scatterPlot.chartOptions={
         responsive:true,
         maintainAspectRatio: false,
+        plugins: {
+            datalabels: {
+                align:'end',
+                anchor:'center',
+                // backgroundColor:'red',
+                color:'black',
+                font:{
+                    size:11
+                },
+                formatter: function(value, context) {
+                    console.log(value,context)
+                    return value.ticker;
+                }
+            }
+        },
         tooltips: {
             callbacks: {
                 label: function(tooltipItem, data) {
@@ -107,7 +217,7 @@ function getChartOptions(scatterPlot){
         legend: {
             display: true,
             labels: {
-                fontSize:30
+                fontSize:25
             }
         },
         scales: {
@@ -129,32 +239,103 @@ function getChartOptions(scatterPlot){
     }
 }
 
-function getChartData(data){
+function handleSetChartData(scatterPlot,data){
 
     let label = ''    
     if(data.length>0){
         label = `${data[0].yName} & ${data[0].xName}`
     }
-    
-    return{
+
+    let highlightColor = scatterPlot.highlightColor
+    let filter = scatterPlot.highlight.split('.')[0]
+    let value = scatterPlot.highlight.split('.')[1]
+
+    let tickers=[]
+
+    switch(filter){
+        case 'My Portfolio':
+            tickers = scatterPlot.portfolio.tickers.map(ticker => ticker.ticker)
+            break
+        case 'countries':
+            tickers =  scatterPlot.tickers.filter(item =>item.country===value).map(item => item.ticker)
+            break
+        case 'sectors':
+            tickers =  scatterPlot.tickers.filter(item =>item.sector===value).map(item => item.ticker)
+            break
+    }
+
+    let pointBackgroundColor = []
+    let pointRadius = []
+
+    data.forEach(item =>{
+        if(tickers.find(elem=>elem===item.ticker)){
+            pointBackgroundColor.push(highlightColor)
+            pointRadius.push(10)
+        }else{
+            pointBackgroundColor.push('dimgray')
+            pointRadius.push(7)
+        }
+    })
+
+    scatterPlot.chartData={
         datasets: [
             {
               label,
-              backgroundColor: 'rgba(75,192,192,0.4)',
-              pointBorderColor: 'rgba(75,192,232,1)',
-              pointBackgroundColor: 'dimgray',
+              backgroundColor: highlightColor,
+            //   pointBorderColor: 'rgba(75,192,232,1)',
+              pointBorderColor: 'rgba(51, 51, 51,1)',
+              pointBackgroundColor:pointBackgroundColor,
               pointBorderWidth: 2,
-              pointHoverRadius: 5,
-              pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-              pointHoverBorderColor: 'rgba(220,220,220,1)',
+              pointHoverRadius: 12,
+            //   pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+            //   pointHoverBorderColor: 'rgba(220,220,220,1)',
               pointHoverBorderWidth: 2,
-              pointRadius: 7,
+              pointRadius:pointRadius,
               pointHitRadius: 10,
               data
-            }
+            },
+            // {
+            //     label: 'Line Dataset',
+            //     data: [{
+            //         x: 0,
+            //         y: 0
+            //     }, {
+            //         x: 45,
+            //         y: 10
+            //     }],
+            //     type: 'line',
+            //     // this dataset is drawn on top
+            //     order: 2
+            // }
         ],
         labels:data
     }
+}
+
+function handleFilterData(scatterPlot,data){
+    let filteredData = []
+
+    let sectorsToRemove = Object.keys(scatterPlot.sectors)
+        .filter(item => !scatterPlot.sectors[item].selected)
+    let countriesToRemove = Object.keys(scatterPlot.countries)
+        .filter(item => !scatterPlot.countries[item].selected)
+    
+    data.forEach((item,index) =>{
+        let remove = false
+        let country = item.country
+        let sector = item.sector
+        if(sectorsToRemove.find(item => item === sector)){
+            remove=true
+        }
+        if(countriesToRemove.find(item => item === country)){
+            remove=true
+        }
+        if(!remove){
+            filteredData.push(item)
+        }
+    })
+
+    return filteredData
 }
 
 let scatterOptions=[
