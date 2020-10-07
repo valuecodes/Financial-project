@@ -4,6 +4,7 @@ import SectionNav from '../components/SectionNav'
 import ScatterPlot from '../utils/scatterPlot'
 import {Scatter} from 'react-chartjs-2';
 import { camelCaseToString } from '../utils/utils';
+import SelectGroup from '../components/SelectGroup'
 
 export default function ScatterScreen() {
 
@@ -51,8 +52,7 @@ function ScatterInputs({scatterPlot, setScatterPlot}){
         setScatterPlot({...updated})        
     }
 
-    const setHighlight = (e) => {
-        let value = e.target.value
+    const setHighlight = (value) => {
         let updated = scatterPlot.setHighlight(value)
         setScatterPlot({...updated})   
     }
@@ -155,30 +155,24 @@ function ScatterInputs({scatterPlot, setScatterPlot}){
             </div>        
             <div className='scatterHighlight'>
                 <h3>Highlight</h3>
-                <select
-                    onChange={(e)=>setHighlight(e)}
-                >
-
-                    <option
-                    value={"My Portfolio.My Portfolio"}
-                    >My Portfolio</option>
-                    {Object.keys(sectors).map(sector =>
-                        <option value={sectors[sector].filterName+'.'+sector}>{sector}</option>
-                    )}
-                    {Object.keys(countries).map(country =>
-                        <option value={countries[country].filterName+'.'+country}>{country}</option>
-                    )}                    
-                    <option
-                        value={"None"}
-                    >None</option>
-                </select>
+                <SelectGroup
+                    data={[
+                        {optgroup:'myPortfolio',options:["myPortfolio"]},
+                        {optgroup:'sectors',options:Object.keys(sectors)},
+                        {optgroup:'countries',options:Object.keys(countries)},
+                        {optgroup:'none',options:['none']}
+                    ]}
+                    selected={scatterPlot.highlight}
+                    selectValue={setHighlight}
+                    className={'selectMedium'}
+                    addOptgroup={true}
+                />
                 <input 
                     type='color' 
                     onChange={(e)=>setHighlighColor(e)} 
                     value={scatterPlot.highlightColor}
                 />
             </div>
-
         </div>
     )
 }
@@ -186,8 +180,7 @@ function ScatterInputs({scatterPlot, setScatterPlot}){
 
 function ScatterChart({scatterPlot,setScatterPlot}){
     
-    const selectRatio = (e,axis) => {
-        let value = e.target.value
+    const selectRatio = (value,axis) => {
         let updated = scatterPlot.setScatterAxis(value,axis)
         setScatterPlot({...updated})
     }
@@ -195,18 +188,13 @@ function ScatterChart({scatterPlot,setScatterPlot}){
     return(
         <div className='scatterChart'>
             <div className='yAxis'>
-                <select className='scatterSelect' 
-                    value={scatterPlot.selectedRatios.y}
-                    onChange={(e)=>selectRatio(e,'y')}
-                >
-                    {scatterPlot.ratios.map(ratio =>
-                        <option
-                            key={ratio}
-                            value={ratio}>
-                            {camelCaseToString(ratio)}
-                        </option>
-                    )}
-                </select>
+                <SelectGroup 
+                    data={[{ optgroup:'Select value', options:scatterPlot.ratios}]}
+                    selected={scatterPlot.selectedRatios.y}
+                    selectValue={selectRatio}
+                    className={'selectBig'}
+                    selectKey={'y'}
+                />
             </div>
             <div className='chartContainer'>
                 <Scatter
@@ -215,19 +203,13 @@ function ScatterChart({scatterPlot,setScatterPlot}){
                 />
             </div>
             <div className='xAxis'>
-                <select className='scatterSelect' 
-                    value={scatterPlot.selectedRatios.x}
-                    onChange={(e)=>selectRatio(e,'x')}
-                >
-                    {scatterPlot.ratios.map(ratio =>
-                        <option 
-                            value={ratio}
-                            key={ratio}
-                        >
-                            {camelCaseToString(ratio)}
-                        </option>
-                    )}
-                </select>
+                <SelectGroup
+                    data={[{optgroup:'Select value',options:scatterPlot.ratios}]}
+                    selected={scatterPlot.selectedRatios.x}
+                    selectValue={selectRatio}
+                    className={'selectBig'}
+                    selectKey={'x'}
+                />
             </div>
         </div>
     )

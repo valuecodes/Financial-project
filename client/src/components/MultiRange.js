@@ -1,7 +1,7 @@
 import React,{useState,useEffect} from 'react'
 import { camelCaseToString } from '../utils/utils';
 
-export default function MultiRange({ input, screener, setScreenedTickers, setInputs }) {
+export default function MultiRange({ input, screener, setScreener }) {
  
     const [multiRange,setMultiRange] = useState({
         minValue:0,
@@ -11,17 +11,19 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
 
     useEffect(()=>{
         setMultiRange(input)
-        let screenedTickers = screener.screenTickers()                     
-        setScreenedTickers(screenedTickers)  
+        let updated = screener.screenTickers() 
+        setScreener({...updated})                    
         // eslint-disable-next-line react-hooks/exhaustive-deps            
     },[])
 
     const handleChange = (e,inputName) =>{
+
         let value =  Number(e.target.value)
         let updatedInput = screener.updateInput(multiRange,inputName,value)
         setMultiRange({...updatedInput})    
-        let screenedTickers = screener.screenTickers()             
-        setScreenedTickers(screenedTickers)       
+
+        let updated = screener.screenTickers()             
+        setScreener({...updated})        
     }
 
     const inputBarStyle = (range) =>{
@@ -38,15 +40,14 @@ export default function MultiRange({ input, screener, setScreenedTickers, setInp
     const resetMultiRange=(key)=>{
         let updatedInput = screener.resetInput(key)
         setMultiRange({...updatedInput})
-        let screenedTickers = screener.screenTickers()
-        setScreenedTickers(screenedTickers)               
+        let updated = screener.screenTickers()
+        setScreener({...updated})                  
     }
 
     const removeInput=(key)=>{
-        let updatedInputs = screener.selectActiveInput(key)
-        setInputs({...updatedInputs})
-        let screenedTickers = screener.screenTickers()
-        setScreenedTickers(screenedTickers)
+        screener.selectActiveInput(key)
+        let updated = screener.screenTickers()
+        setScreener({...updated})                  
     }
 
     const {

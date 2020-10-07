@@ -8,6 +8,7 @@ import { TickerData } from '../utils/tickerData';
 import { updateTickerRatios } from '../actions/tickerActions';
 import SectionNav from '../components/SectionNav'
 import { TickerList } from '../utils/tickerList';
+import Table from '../components/Table'
 
 export default function AddDataScreen() {
 

@@ -1,5 +1,5 @@
 import { camelCaseToString, uniqueValuesArray } from "./utils";
-import {datalabels} from 'chartjs-plugin-datalabels'
+import { datalabels } from 'chartjs-plugin-datalabels'
 
 export default function ScatterPlot(tickers,portfolio){
     this.tickers = tickers||[]
@@ -8,7 +8,7 @@ export default function ScatterPlot(tickers,portfolio){
     this.ratios=[]
     this.countries={}
     this.sectors={}
-    this.highlight = "My Portfolio.My Portfolio"
+    this.highlight = "myPortfolio.myPortfolio"
     this.highlightColor = '#90ee90'
     this.selectedRatios = {
         y:'pb',
@@ -42,7 +42,6 @@ export default function ScatterPlot(tickers,portfolio){
 function handleInit(scatterPlot){
     if(scatterPlot.tickers[0]){
         let ratios = Object.keys(scatterPlot.tickers[0].ratios).filter(item => item!=='date')
-        ratios.unshift('selectRatio')
         let countries={}
         let countriesArray = uniqueValuesArray(scatterPlot.tickers,'country')
         countriesArray.forEach(country =>{
@@ -186,7 +185,6 @@ function handleSetChartOptions(scatterPlot){
                     size:11
                 },
                 formatter: function(value, context) {
-                    console.log(value,context)
                     return value.ticker;
                 }
             }
@@ -196,8 +194,6 @@ function handleSetChartOptions(scatterPlot){
                 label: function(tooltipItem, data) {
                     let index = tooltipItem.index
                     var tickerName = data.labels[index].tickerName;
-                    let yName = data.labels[index].yName;
-                    let xName = data.labels[index].xName;
                     return tickerName
                 },
                 footer: function(tooltipItems, data) {
@@ -253,8 +249,10 @@ function handleSetChartData(scatterPlot,data){
     let tickers=[]
 
     switch(filter){
-        case 'My Portfolio':
-            tickers = scatterPlot.portfolio.tickers.map(ticker => ticker.ticker)
+        case 'myPortfolio':
+            if(scatterPlot.portfolio){
+                tickers = scatterPlot.portfolio.tickers.map(ticker => ticker.ticker)
+            }
             break
         case 'countries':
             tickers =  scatterPlot.tickers.filter(item =>item.country===value).map(item => item.ticker)
@@ -262,6 +260,7 @@ function handleSetChartData(scatterPlot,data){
         case 'sectors':
             tickers =  scatterPlot.tickers.filter(item =>item.sector===value).map(item => item.ticker)
             break
+        default: tickers = scatterPlot.tickers
     }
 
     let pointBackgroundColor = []

@@ -7,6 +7,7 @@ import SearchBox from './SearchBox'
 import { useHistory } from 'react-router';
 import { listUserPortfolios, selectPortfolio } from '../actions/portfolioActions';
 import { getExhangeRates } from '../actions/exhangeRateActions';
+import SelectGroup from './SelectGroup'
 
 export default function Header(props) {
     
@@ -71,16 +72,12 @@ function SubHeader({userInfo,setPage}){
                 {exhangeRate&&
                     <div className='headerCurrencies'>
                         <p className='currencyText'>EUR / </p>
-                            <select 
-                                className='selectERate currencyText' name='eRates' 
-                                id={'eRates'}
-                                value={eRate}
-                                onChange={(e) => setERate(e.target.value)}
-                            >
-                                {Object.keys(exhangeRate.rates).map(rate =>
-                                    <option key={rate} value={rate}>{rate}</option>
-                                )}
-                            </select>
+                        <SelectGroup
+                            data={[{ optgroup:'Select', options:Object.keys(exhangeRate.rates)}]}
+                            selected={eRate}
+                            selectValue={setERate}
+                            className={'selectERate currencyText'}
+                        />
                         <p className='currencyText'>{exhangeRate.rates[eRate]}</p>
                     </div>
                 }

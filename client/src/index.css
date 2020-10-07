@@ -121,6 +121,16 @@ th{
   cursor: pointer;
 }
 
+.selectBig{
+  width: 15rem;
+  font-size: 2rem;
+}
+
+.selectMedium{
+  width: 15rem;
+  font-size: 1.6rem;
+}
+
 /* Header */
 .header{
   background-color: rgb(241, 241, 241);
@@ -160,6 +170,35 @@ th{
 
 .navbar li{
   margin: 1rem;
+}
+
+/* Table */
+.table thead{
+  display: block;
+}
+.table thead tr{
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(5rem, 1fr));
+  padding-right: 17px;
+}
+.table thead th{
+  display: flex;
+  align-items: center;
+  height: 7rem;
+  padding: 1rem 0.4rem;
+  margin: 0;
+}
+
+.table tbody{
+  display: block;
+  overflow-y: scroll;
+}
+.table tbody tr{
+ display: grid;
+ grid-template-columns: repeat(auto-fit,minmax(5rem, 1fr));
+}
+.table tbody tr:hover td{
+  background-color: rgb(173, 173, 173);
 }
 
 /* SubHeader */
@@ -207,7 +246,8 @@ th{
 }
 
 .selectERate{
-  height: 4rem;
+  width: 9rem;
+  letter-spacing: -1px;
   border: none;
   background-color: rgba(0, 0, 0, 0.2);
   margin: 0 0.5rem;
@@ -233,7 +273,6 @@ th{
 select{
   background-color: var(--primary-color);
   color: white;
-  font-size: 1.6rem;
   padding: 0.2rem;
   border-radius: 0.2rem;
   height: 3rem;
@@ -616,6 +655,18 @@ select{
   margin-top: 3rem;
   max-width: 120rem;
 }
+
+.table{
+  border-collapse:collapse;
+}
+
+.table thead tr th {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+
+
 
 .overviewTable{
   border-collapse:collapse;
@@ -1045,20 +1096,15 @@ input[type='range']:focus {
 
 .screenerList{
   background-color: var(--light-color);
-  height: 40rem;
-  overflow-y: scroll;
+  overflow-y: hidden;
 }
 
-.screenerList table {
-  width: 100%;
+.screenerList .table {
+  width: 100%; 
 }
 
-.screenerList table thead tr th{
-  font-size: 1.4rem;
-}
-
-.screenerTableTicker{
-  height: 4rem;
+.screenerList .table tbody{
+  height: 35rem;
 }
 
 /* ScatterScreen */
@@ -1166,10 +1212,6 @@ input[type='range']:focus {
   margin: 0 1rem;
 }
 
-.scatterHighlight select{
-  width: 20rem;
-}
-
 .scatterHighlight input{
   margin: 0 1rem;
 }
@@ -1227,10 +1269,7 @@ input[type=color]::-webkit-color-swatch-wrapper {
   grid-column: 1/3;
 }
 
-.scatterSelect{
-  width: 15rem;
-  font-size: 2rem;
-}
+
 
 /* TickerScreen */
 .tickerScreen{
@@ -1455,7 +1494,6 @@ input[type=color]::-webkit-color-swatch-wrapper {
 }
 
 table {
-  /* width: 100%; */
   border-collapse: collapse;
 }
 

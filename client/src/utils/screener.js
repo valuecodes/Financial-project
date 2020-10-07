@@ -1,10 +1,14 @@
 export function Screener(tickers){
     this.tickers = tickers
     this.inputs = {}
+    this.screenedTickers = []
+    this.ratios = []
+    this.sortOrder = {value:'Tickers',min:true}
     this.selectActiveInput = (inputName) => calculatSelectActiveInput(this,inputName)
     this.resetInput = (inputName) => calculateResetInput(this,inputName)
     this.updateInput = (input,type,value) => updateScreenerInput(this,input,type,value)
     this.screenTickers = () => calculateScreenTickers(this)
+    this.setSortOrder = (value) => handleSetSortOrder(this,value)
     this.init = () => initScreener(this)
 }
 
@@ -14,7 +18,7 @@ function calculatSelectActiveInput(screener,inputName){
     if(inputFound){
         screener.resetInput(inputName)
     }
-    return screener.inputs
+    return screener
 }
 
 function calculateResetInput(screener,inputName){
@@ -79,7 +83,29 @@ function calculateScreenTickers(screener){
         })
         screenedTickers=screenedTickers.filter(item => !remove.includes(item.ticker))
     })
-    return screenedTickers
+    let sortedTickers = []
+    let sortOrder = screener.sortOrder.value
+    let min = screener.sortOrder.min
+    switch(sortOrder){
+        case 'Tickers':
+            sortedTickers = screenedTickers.sort((a,b)=>
+                min?a.ticker-b.ticker:b.ticker-a.ticker  
+            )
+            break
+        default: screenedTickers.sort((a,b)=>
+            min?a.ratios[sortOrder]-b.ratios[sortOrder]:
+            b.ratios[sortOrder]-a.ratios[sortOrder]
+        )
+    }
+    screener.screenedTickers = screenedTickers
+    return screener
+}
+
+function handleSetSortOrder(screener,value){
+    let min = !screener.sortOrder.min
+    screener.sortOrder={ value, min }
+    screener.screenTickers()
+    return screener
 }
 
 function initScreener(screener){
@@ -109,7 +135,12 @@ function initScreener(screener){
                 scaleTo: scaleTo+1*ticks
             }   
         })
-        screener.inputs=inputs
+        const ratios = Object.keys(tickers[0].ratios)
+            .filter(item => item!=='date')
+        ratios.unshift('Tickers')   
+        
+        screener.ratios = ratios
+        screener.inputs = inputs
     }
 }
 
