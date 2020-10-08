@@ -131,6 +131,61 @@ th{
   font-size: 1.6rem;
 }
 
+/* OptionsBar */
+.options{
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--primary-variant);
+}
+
+.options ul{
+  display: flex;
+  align-items: center;
+  height: 5rem;
+  padding-left: 1rem;
+}
+
+.options ul li{
+  padding: 1rem;
+  cursor: pointer;
+  color: white;
+  border-bottom: 0.2rem solid rgba(0, 0, 0, 0);
+}
+.options ul li:hover{
+  background-color: gray;
+}
+
+
+/* TickersFound */
+.tickersFound{
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.tickersFoundBig{
+  justify-content: space-around;
+}
+.tickersFoundBig label{
+  font-size: 6rem;
+  justify-self: start;
+}
+
+.tickersFoundSmall{
+  justify-content: space-between;
+  padding: 0.2rem 1rem;
+  border-radius: 0.5rem;
+  height: 4rem;
+  margin: 1rem 0;
+}
+
+.tickersFoundSmall label{
+  font-size: 2.5rem;
+}
+
+
 /* Header */
 .header{
   background-color: rgb(241, 241, 241);
@@ -959,14 +1014,7 @@ input[type=checkbox] {
   align-items: center;
 }
 
-.tickersFound{
-  height: 100%;
-  border-radius: 5px;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  align-items: center;
-  justify-items: center;
-}
+
 
 .screenerOptions{
   grid-column: 2/4;
@@ -975,10 +1023,7 @@ input[type=checkbox] {
   border-radius: 5px;
 }
 
-.tickersFound label{
-  font-size: 6rem;
-  justify-self: start;
-}
+
 
 .activeInputs button{
   margin: 0.2rem;
@@ -1118,19 +1163,6 @@ input[type='range']:focus {
   grid-column-gap: 1rem;
 }
 
-.scatterTickers{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.2rem 1rem;
-  border-radius: 0.5rem;
-  height: 4rem;
-  margin: 1rem 0;
-}
-.scatterTickers label{
-  font-size: 2.5rem;
-}
-
 .scatterInputs .options{
   grid-column: 1/4;
 }
@@ -1138,42 +1170,48 @@ input[type='range']:focus {
 .scatterFilters{
   height: 4rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-gap: 1rem;
+  grid-template-columns: 20rem 20rem;
+  grid-gap: 2rem;
 }
 
-.scatterFilter{
+.dropdownListFilter{
+  display: block;
   width: 20rem;
-  padding: 0.5rem;
-  position: absolute;
   margin-top: 1rem;
+}
+
+.dropdownListFilterContainer{
+  width: inherit;
+  position: absolute;
+  padding: 0.5rem;
   height: 3rem;
-  display: grid;
-  background-color: rgb(197, 197, 197);
   overflow: hidden;
-  border-radius: 0.4rem;
+  background-color: rgb(197, 197, 197);
   border: 0.2rem solid rgb(160, 160, 160);
+  border-radius: 0.4rem;
 }
 
-.scatterFilter:last-child{
-  margin-left: 22rem;
-}
-
-.scatterFilter:hover{
+.dropdownListFilterContainer:hover{
   height: auto;
 }
 
-.filterHeader{
+.dropdownListFilterContainer button{
+  width: 100%;
+}
+
+.dropdownListFilterHeader{
   display: flex;
   justify-content: space-between;
-  height: 4rem;
+  margin-bottom: 1rem;
+  height: 3rem;
+  align-items: center;
 }
-.filterHeader label{
+.dropdownListFilterHeader label{
   font-size: 2.5rem;
   font-weight: 500;
 }
 
-.scatterFilterInput{
+.dropdownListFilterInput{
   position: relative;
   z-index: 1;
   display: grid;
@@ -1182,16 +1220,16 @@ input[type='range']:focus {
   border-bottom: 0.1rem solid rgb(163, 163, 163);
 }
 
-.scatterFilterInput label{
+.dropdownListFilterInput label{
   font-size: 1.2rem;
   margin-left: 0.5rem;
 }
-.scatterFilterInput p{
+.dropdownListFilterInput p{
   font-size: 1.2rem;
   margin: 0 0.5rem;
   text-align: right;
 }
-.scatterFilterInput input{
+.dropdownListFilterInput input{
   margin-left: 0.5rem;
   margin-top: 0.5rem;
   background-color: white;
@@ -1238,13 +1276,6 @@ input[type=color]::-webkit-color-swatch-wrapper {
   border: none;
   border-radius: 50%;
   padding: 0;
-}
-
-.scatterInputs ul li{
-  margin-right: 2rem;
-}
-.scatterInputs ul li:hover{
-  background-color: rgba(144, 238, 144, 0.329);
 }
 
 .scatterChart{
@@ -1512,27 +1543,6 @@ th{
 td{
   border-bottom: 1px solid black;
   background-color: rgb(211, 211, 211);
-}
-
-/* Options */
-.options{
-  display: flex;
-  justify-content: space-between;
-  background-color: rgb(165, 165, 165);
-}
-
-.options ul{
-  display: flex;
-  align-items: center;
-  height: 5rem;
-  padding-left: 1rem;
-}
-
-.options ul li{
-  padding: 1rem;
-  cursor: pointer;
-  color: white;
-  border-bottom: 0.2rem solid rgba(0, 0, 0, 0);
 }
 
 .timePeriods{

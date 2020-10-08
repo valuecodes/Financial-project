@@ -5,6 +5,9 @@ import ScatterPlot from '../utils/scatterPlot'
 import {Scatter} from 'react-chartjs-2';
 import { camelCaseToString } from '../utils/utils';
 import SelectGroup from '../components/SelectGroup'
+import TickersFound from '../components/TickersFound'
+import OptionsBar from '../components/OptionsBar'
+import DropdownListFilter from '../components/DropdownListFilter'
 
 export default function ScatterScreen() {
 
@@ -27,7 +30,6 @@ export default function ScatterScreen() {
 
     return (
         <div className='scatterScreen container'>
-            {/* <SectionNav navigation={navigation} setNavigation={setNavigation}/> */}
             <ScatterInputs scatterPlot={scatterPlot} setScatterPlot={setScatterPlot}/>
             <ScatterChart scatterPlot={scatterPlot} setScatterPlot={setScatterPlot}/>
         </div>
@@ -63,95 +65,46 @@ function ScatterInputs({scatterPlot, setScatterPlot}){
         setScatterPlot({...updated})   
     } 
 
-    const getStyle=(option)=>{
-        let color = ''
-        let borderColor=''
-        const { y, x } = scatterPlot.selectedRatios
-        if(y===option.y&&x===option.x){
-            color='rgba(0, 0, 0, 0.2)'
-            borderColor='0.2rem solid lightgreen'
-        } 
-        return{
-            backgroundColor:color,
-            borderBottom:borderColor
-        }
-    }
+    const { 
+        scatterOptions, 
+        sectors, 
+        countries, 
+        filterTotals, 
+        chartData, 
+        tickers,
+        selectedRatios
+    } = scatterPlot
 
-    const tickersFoundStyle = (count) =>{
-        let color = 'rgba(0, 255, 128, 0.473)'
-        if(count===0) color = 'rgba(255, 0, 0, 0.473)'
-        if(count===0&&scatterPlot.tickers.length===0) color = 'rgba(239, 255, 22, 0.801)'
-        return {backgroundColor:color}
-    }
-    const { scatterOptions, sectors, countries, filterTotals } = scatterPlot
-    let tickersFound = scatterPlot.chartData.labels&&scatterPlot.chartData.labels.length
+    let tickersFound = chartData.labels&&chartData.labels.length
 
     return(
         <div className='scatterInputs'>
-
-            <div className='options'>
-                <ul>
-                {scatterOptions.map((option,index) =>
-                    <li 
-                        key={index}
-                        style={getStyle(option)}
-                        onClick={()=>setOption(option)}
-                    >
-                        {camelCaseToString(option.y)} / {camelCaseToString(option.x)}
-                    </li>
-                )}                
-                </ul>
-            </div>                
-            <div className='scatterTickers' style={tickersFoundStyle(tickersFound)}>
-                <h3>Tickers found: </h3>
-                <label>{tickersFound}</label>
-            </div>    
-            <div className='scatterFilters'
-            >            
-
-                <div className='scatterFilter'>
-                    <div className='filterHeader'>
-                        <h3>Countries </h3>  
-                        <label>{`${filterTotals.countriesSelected} / ${filterTotals.countries}`}</label>    
-                    </div>
-                    <button onClick={()=>selectAll('countries')}>Select All</button>
-                    {Object.keys(countries).map(country =>
-                        <div
-                            style={{backgroundColor:countries[country].selected&&'rgb(177, 177, 177)'}}      
-                            key={country} 
-                            className='scatterFilterInput'
-                        >
-                            <input 
-                                onChange={()=>setFilter(countries[country])}
-                                type='checkbox' checked={countries[country].selected}
-                            />
-                            <label>{country}</label>
-                            <p>{countries[country].count}</p>
-                        </div>
-                    )}                      
-                </div>
-                <div className='scatterFilter'>
-                    <div className='filterHeader'>
-                        <h3>Sectors </h3>  
-                        <label>{`${filterTotals.sectorsSelected} / ${filterTotals.sectors}`}</label>    
-                    </div>
-                    <button onClick={()=>selectAll('sectors')}>Select All</button>
-                    {Object.keys(sectors).map(sector =>
-                        <div
-                            style={{backgroundColor:sectors[sector].selected&&'rgb(177, 177, 177)'}} 
-                            key={sector} 
-                            className='scatterFilterInput'
-                        >
-                            <input 
-                                onChange={()=>setFilter(sectors[sector])}
-                                type='checkbox' checked={sectors[sector].selected}
-                            >
-                            </input>
-                            <label>{sector}</label>
-                            <p>{sectors[sector].count}</p>
-                        </div>
-                    )}                         
-                </div>
+            <OptionsBar 
+                options={scatterOptions} 
+                selected={selectedRatios} 
+                format={'y/x'} 
+                selectOption={setOption}
+            />
+            <TickersFound 
+                tickersFound={tickersFound} 
+                total={tickers.length}
+                className={'tickersFoundSmall'}
+            />
+            <div className='scatterFilters'>            
+                <DropdownListFilter
+                    header={'countries'}
+                    label={`${filterTotals.countriesSelected} / ${filterTotals.countries}`}
+                    listData={countries}
+                    setFilter={setFilter}
+                    selectAll={selectAll}
+                />
+                <DropdownListFilter
+                    header={'sectors'}
+                    label={`${filterTotals.sectorsSelected} / ${filterTotals.sectors}`}
+                    listData={sectors}
+                    setFilter={setFilter}
+                    selectAll={selectAll}
+                />
             </div>        
             <div className='scatterHighlight'>
                 <h3>Highlight</h3>
@@ -176,7 +129,6 @@ function ScatterInputs({scatterPlot, setScatterPlot}){
         </div>
     )
 }
-
 
 function ScatterChart({scatterPlot,setScatterPlot}){
     

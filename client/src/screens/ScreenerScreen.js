@@ -7,6 +7,7 @@ import Icon from '@material-ui/core/Icon';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import { height, width } from '@material-ui/system';
 import Table from '../components/Table'
+import TickersFound from '../components/TickersFound'
 
 export default function ScreenerScreen() {
 
@@ -21,36 +22,27 @@ export default function ScreenerScreen() {
             setScreener(screener)
         }
     },[tickers])
-    
-    const tickersFoundStyle = () =>{
-        let color = 'rgba(0, 255, 128, 0.473)'
-        if(screener.screenedTickers.length===0) color = 'rgba(255, 0, 0, 0.473)'
-        if(screener.screenedTickers.length===0&&loading) color = 'rgba(239, 255, 22, 0.801)'
-        return {backgroundColor:color}
-    }
  
     return (
         <div className='screenerScreen container'>
             {error&&<div>Error</div>}
             <div className='screenerInputContainer'>                
-                <div className='tickersFound' style={tickersFoundStyle()}>
-                    <h2>Tickers found: </h2>
-                    <label>{screener.screenedTickers.length}</label>
-                </div>
-                <div className='screenerOptions'>
-                    <ScreenerOptions 
-                        screener={screener} 
-                        setScreener={setScreener}
-                    />
-                </div>
-                {Object.keys(screener.inputs).map(input=>
-                    input!=='date'?                
+                <TickersFound
+                    tickersFound={screener.screenedTickers.length} 
+                    loading={loading}
+                    className={'tickersFoundBig'}
+                />
+                <ScreenerOptions 
+                    screener={screener} 
+                    setScreener={setScreener}
+                />
+                {Object.keys(screener.inputs).map(input=>     
                     <MultiRange 
                         key={input} 
                         input={screener.inputs[input]} 
                         screener={screener} 
                         setScreener={setScreener}
-                    />:null
+                    />
                 )}
             </div>
             <ScreenerList screener={screener} setScreener={setScreener}/>            
