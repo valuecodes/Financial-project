@@ -396,7 +396,7 @@ select{
 }
 
 .tickerTableTicker{
-  background-color: rgb(223, 223, 223);
+  background-color: rgb(238, 238, 238);
 }
 
 .tickerTableTicker:hover{
@@ -1014,16 +1014,12 @@ input[type=checkbox] {
   align-items: center;
 }
 
-
-
 .screenerOptions{
   grid-column: 2/4;
   background-color: rgb(241, 241, 241);
   height: 100%;
   border-radius: 5px;
 }
-
-
 
 .activeInputs button{
   margin: 0.2rem;
@@ -1555,4 +1551,229 @@ td{
 
 .timePeriods li:first-child{
   border-radius: 0.5rem 0 0 0.5rem;
+}
+
+@media only screen and (max-width: 800px) {
+
+  body{
+    font-size: 1.3rem;
+  }
+
+  .headerContainer{
+    height: auto;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 3rem auto;
+  }
+
+  .mainLogo{
+    grid-column: 1/2;
+  }
+
+  .button{
+    font-size: 1rem;
+    padding: 0.5rem;
+    margin: 0.5rem;
+    height: 2rem;
+  }
+
+  .selectPortfolio{
+    display: none;
+  }
+
+  .mainLogo a{
+    font-size: 2rem;
+    height: 1rem;
+  }  
+  .searchBox{
+    grid-row: 3/4;
+    grid-column: 1/3;
+  }
+
+  .searchBox input{
+    font-size: 1.4rem;
+    height: 1.6rem;
+    margin: 1rem;
+  }
+
+  .navbar {
+    grid-column: 2/3;
+    grid-row: 1/2;
+  }
+
+  .subHeader{
+    height: 3.5rem;
+  }
+
+  .subHeader ul{
+    height: 3.5rem;
+  }
+
+  .subHeaderNav ul li a{
+    height: 3rem;
+  }
+
+  .headerCurrencies{
+    display: none;
+  }
+
+  .homeScreen{
+    margin: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .tickerTable{
+    grid-template-columns: repeat(5,1fr);
+    grid-auto-rows: 3.5rem; 
+    grid-row: 1/2;
+    font-size: 1rem;
+  }
+
+  .portfolioSection{
+    display: none;
+  }
+
+  .screenerInputContainer{
+    background-color: var(--light-color);
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-gap: 2rem;
+    align-items: center;
+  }
+
+  .screenerOptions{
+    grid-column: 1/2;
+    background-color: rgb(241, 241, 241);
+    height: 100%;
+    border-radius: 5px;
+  }
+
+  .inputContainer{
+    transform: scale(0.8)
+  }
+
+  .inputBar label{
+    font-size: 1.6rem;
+    height: 1.6rem;
+  }
+
+  .screenerScreen{
+    margin-top: 0rem;
+  }
+
+  .table thead tr{
+    grid-template-columns: repeat(14,5rem)
+  }
+  .table tbody tr{
+    grid-template-columns: repeat(14,5rem)
+  }
+
+  .scatterInputs{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-column-gap: 1rem;
+  }
+  .scatterInputs .options{
+    grid-column: 1/2;
+  }
+
+  .scatterFilters{
+    height: 10rem;
+    display: grid;
+    grid-template-columns:1fr;
+    grid-gap: 0;
+  }
+
+  .scatterHighlight{
+    height: auto;
+    margin: 2rem 0;
+  }
+
+  .scatterHighlight input{
+    display: none;
+  }
+
+  .options{
+    height: auto;
+  }
+
+  /* OptionsBar */
+  .options ul{
+    display: grid;
+    grid-template-columns: 1fr;
+    height: auto;
+    width: 100%;
+    padding: 0;
+  }
+  .dropdownListFilterContainer:first-child{
+    position: relative;
+  }
+
+  .tickerScreen {
+    margin-top: 0;
+  }
+  .tickerScreenHeader {
+    height: auto;
+  }
+  .tickerScreenHeader ul li{
+    font-size: 0.7rem;
+    margin: 0 0.2rem; 
+  }
+
+  .section{
+    grid-template-rows: auto 1fr;
+    max-width: 100vw;
+  }
+
+  .section ul:first-child{
+    display: flex;
+  }
+
+  .section .options{
+    height: 10rem;
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+  
+  .section ul{
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  .sectionNav{
+    background-color: var(--primary-color);
+    height: auto;
+  }
+  
+  .sectionNav ul{
+    height: auto;
+    padding-left: 0rem;
+    display: flex;
+    align-items: center;
+  }
+  .timePeriods{
+    display: grid !important;
+    grid-template-columns: repeat(7,1fr) !important;
+    padding: 0!important;
+    margin:0!important;
+  }
+
+  .ratioChartContainer{
+    width: 100vw;
+  }
+
+  .chartContainer{
+    width: 100vw;
+  }
+
+  .timePeriods li:first-child{
+    border-radius:0;
+  }
+
+  .eventChart, .financialChartContainer, .tickerScreenChart .chartContainer{
+    transform: scale(0.5);
+    width: 200vw;
+    margin-left: -50vw;
+  }
+
 }

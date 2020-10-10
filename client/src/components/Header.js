@@ -8,6 +8,7 @@ import { useHistory } from 'react-router';
 import { listUserPortfolios, selectPortfolio } from '../actions/portfolioActions';
 import { getExhangeRates } from '../actions/exhangeRateActions';
 import SelectGroup from './SelectGroup'
+import Portfolio from '../utils/portfolio'
 
 export default function Header(props) {
     
@@ -162,7 +163,8 @@ function SelectUserPortfolio(){
         if(portfolios && userPortfolios===null){
            if(portfolios.length>0){
                 setUserPortfolios(portfolios)
-                dispatch(selectPortfolio(portfolios[0]))
+                let newPortfolio = new Portfolio(portfolios[0])
+                dispatch(selectPortfolio(newPortfolio))
            } 
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps        

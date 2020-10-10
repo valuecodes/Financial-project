@@ -1,10 +1,31 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
+import { TickerData } from "./tickerData";
 
-export function Ticker(portfolioTicker,tickerData){    
-    this.ticker=tickerData.profile.ticker
-    this.name=tickerData.profile.name
+export function Ticker(data,portfolioTicker){
+    this.profile = data.profile?data.profile:{
+        ticker:'',
+        name:'',
+        description:'',
+        sector:'',
+        stockExhange: '',
+        industry:'',
+        subIndustry:'',
+        founded:'',
+        address:'',
+        website:'',
+        employees:'',
+        country:'',
+        tickerCurrency:'',
+        financialDataCurrency:'',
+    }
+    this.incomeStatement = data.incomeStatement?data.incomeStatement:[]
+    this.balanceSheet = data.balanceSheet?data.balanceSheet:[]
+    this.cashFlow = data.cashFlow?data.cashFlow:[]
+    this.insiderTrading = data.insiderTrading?data.insiderTrading:[]
+    this.dividendData = data.dividendData?data.dividendData:[]
+    this.priceData = data.priceData?data.priceData:[]
     this.transactions=portfolioTicker?portfolioTicker.transactions:[]
-    this.tickerData=tickerData
+    
     this.latestPrice = (format) => calculateLatestPrice(this,format)
     this.totalCount = (format) => calculateTotalCount(this,format)
     this.averageCost = (format) => calculateAverageCost(this,format)
@@ -14,8 +35,9 @@ export function Ticker(portfolioTicker,tickerData){
     this.marketCap = () => calculateMarketCap(this)
     this.priceChangePercentage = (format) => calculatePriceChangePercentage(this,format)
     this.getMyDivs = (options) => calculateMyDivs(this,options)
+
     this.filterByDate = (key,options) => calculateFilterByDate(this,key,options)
-    this.filterFinancialRatio = (statement, ratio, options) => calculateFilterFinancialRatio(this,statement, ratio, options)
+    this.filterFinancialRatio = (statement, ratio, options) => calculateFilterFinancialRatio(this, statement, ratio, options)
     this.getTickerData = (key) => calculateGetTickerData(this,key)
     this.priceChart = (options) => calculatePriceChart(this,options)
     this.eventChart = (options) => calculateEventChart(this,options)
@@ -26,7 +48,7 @@ export function Ticker(portfolioTicker,tickerData){
 }
 
 function calculateLatestPrice(ticker,format){
-    return formatValue(ticker.tickerData.priceData[0].close,format)
+    return formatValue(ticker.priceData[0].close,format)
 }
 
 function calculateTotalCount(ticker,format){
@@ -56,7 +78,7 @@ function calculatePriceChange(ticker,format){
 }
 
 function calculateMarketCap(ticker){
-    let marketCap = ticker.tickerData.incomeStatement[0].sharesOutstanding*ticker.tickerData.priceData[0].close
+    let marketCap = ticker.incomeStatement[0].sharesOutstanding*ticker.priceData[0].close
     if(marketCap){
        return roundToTwoDecimal(marketCap) 
     }else{
@@ -72,15 +94,14 @@ function calculatePriceChangePercentage(ticker,format){
 
 function calculateMyDivs(ticker){
 
-    const { transactions, tickerData } = ticker
-    let dividendData = tickerData.dividendData
+    const { transactions, dividendData } = ticker
 
     let dividends = transactions.map(item => {
         let divs=dividendData.filter(div => new Date(div.date)>new Date(item.date))
         if(divs.length>0){
             let res= divs.map(div=>{
                 return {
-                    ticker:tickerData.profile.ticker,
+                    ticker:ticker.profile.ticker,
                     date: new Date(div.date),
                     month:new Date(div.date).getMonth(),
                     year:new Date(div.date).getFullYear(),
@@ -119,9 +140,9 @@ function calculateFilterByDate(ticker,key,options){
     const { time } = options
     if(!time.timeStart) return []
     if(key==='dividendData'){
-        return ticker.tickerData[key].filter(item => new Date(item.date).getFullYear()>time.timeStart.getFullYear())
+        return ticker[key].filter(item => new Date(item.date).getFullYear()>time.timeStart.getFullYear())
     }else{
-        let data = ticker.tickerData[key].filter(item => new Date(item.date)>time.timeStart) 
+        let data = ticker[key].filter(item => new Date(item.date)>time.timeStart) 
         if(data.length>1){
             if(new Date(data[0].date)<new Date(data[1].date)){
                 data = data.reverse()
@@ -134,13 +155,13 @@ function calculateFilterByDate(ticker,key,options){
 
 function calculateFilterFinancialRatio(ticker,statement,key,options){
     const { time } = options
-    return ticker.tickerData[statement]
+    return ticker[statement]
         .filter(item => new Date(item.date)>time.timeStart)
 }
 
 function calculateGetTickerData(ticker, key){
 
-    let data = ticker.tickerData[key]
+    let data = ticker[key]
 
     if(data.length>1){
         if(new Date(data[0].date)<new Date(data[1].date)){
@@ -406,8 +427,8 @@ function calculateChartEvents(data,labels,ticker,options,myDivs){
     const { transactions } = ticker
 
     let trades = transactions.filter(item => new Date(item.date)>time.timeStart)
-    let insider = ticker.tickerData.insiderTrading.reverse().filter(item => new Date(item.date)>time.timeStart)
-    let dividends = ticker.tickerData.dividendData.reverse().filter(item => new Date(item.date)>time.timeStart)
+    let insider = ticker.insiderTrading.reverse().filter(item => new Date(item.date)>time.timeStart)
+    let dividends = ticker.dividendData.reverse().filter(item => new Date(item.date)>time.timeStart)
     let userDivs = myDivs.filter(item => new Date(item.date)>time.timeStart)
 
     let tradePoints = data.map(item => 0)

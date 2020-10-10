@@ -21,6 +21,7 @@ import {
 } from '../utils/chartOptions'
 import SectionNav from '../components/SectionNav';
 import Options from '../components/Options'
+import {UserTicker} from '../utils/userTicker'
 
 export default function TickerScreen(props) {
 
@@ -29,6 +30,9 @@ export default function TickerScreen(props) {
         selected:{name:'price',index:0},
         options:['price','events','ratios','financials']
     })
+
+    const [userTicker,setUserTicker] = useState(new UserTicker({}))
+    
     const [ticker, setTicker] = useState(null)
     const tickerData = useSelector(state => state.tickerData)
     const { loading, tickerFullData, error } = tickerData
@@ -44,11 +48,19 @@ export default function TickerScreen(props) {
 
     useEffect(()=>{
         if(tickerFullData&&selectedPortfolio){
-            let portfolioTicker = selectedPortfolio.tickers.find(item => item.ticker===tickerFullData.profile.ticker)
-            let newTicker = new Ticker(portfolioTicker,tickerFullData)
+            let ticker=tickerFullData.profile.ticker
+            let portfolioTicker = selectedPortfolio.getTicker(ticker)
+            let newTicker = new Ticker(tickerFullData,portfolioTicker)
             setTicker(newTicker)
+            console.log(portfolioTicker)
+            // const newUserTicker = new UserTicker(tickerFullData,portfolioTicker)
+            // console.log(newUserTicker.getCurrentPrice())
+            // console.log(newUserTicker.getPurchasePrice())
         }
+        
     },[tickerFullData,selectedPortfolio])
+
+    console.log(userTicker)
 
     return (
         <div className='tickerScreen container'>
@@ -241,7 +253,7 @@ function EventChart({ticker,navigation}){
         <section className='section'>
             <Options options={options} setOptions={setOptions}/>        
             <div className='tickerScreenChart'>
-                <div className='chartContainer'>
+                <div className='chartContainer eventChart'>
                     {navigation.selected.name==='events'&&
                         <Line
                             id={'canvas'}
@@ -328,11 +340,11 @@ function TickerHeader({ticker,loading}){
             {!loading&&ticker&&
                 <ul>
                     <li>
-                    <h1>{ticker.ticker}</h1></li>
-                    <li><h2>{ticker.name}</h2></li>
+                    <h1>{ticker.profile.ticker}</h1></li>
+                    <li><h2>{ticker.profile.name}</h2></li>
                     <li><h2>{ticker.latestPrice('currency')}</h2></li>
-                    <li><h2>{ticker.tickerData.profile.sector}</h2></li>
-                    <li><h2>{ticker.tickerData.profile.industry}</h2></li>
+                    <li><h2>{ticker.profile.sector}</h2></li>
+                    <li><h2>{ticker.profile.industry}</h2></li>
                 </ul>
             }
         </header>
