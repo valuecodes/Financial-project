@@ -1,8 +1,10 @@
 import { camelCaseToString, uniqueValuesArray } from "./utils";
 import { datalabels } from 'chartjs-plugin-datalabels'
+import { TickerRatio } from "./tickerRatio";
 
-export default function ScatterPlot(tickers,portfolio){
+export default function ScatterPlot(tickers,tickerRatios=[],portfolio){
     this.tickers = tickers||[]
+    this.tickerRatios = tickerRatios.map(item => new TickerRatio(item))
     this.scatterOptions = scatterOptions    
     this.portfolio = portfolio
     this.ratios=[]
@@ -25,6 +27,7 @@ export default function ScatterPlot(tickers,portfolio){
         responsive:true,
         maintainAspectRatio: false,
     }
+    this.historical =tickerRatios.length?true:false
     this.init = () => handleInit(this)
     this.setOption = (option) => handleSetOption(this,option)
     this.filterValue = (newValue) => handleFilterValue(this,newValue)
@@ -154,12 +157,11 @@ function handleUpdateChart(scatterPlot){
     })
 
     let filteredData = scatterPlot.filterData(data)
-
     scatterPlot.setChartData(filteredData)
     scatterPlot.setChartOptions(scatterPlot)
 }
 
-function handleSetChartOptions(scatterPlot){
+export function handleSetChartOptions(scatterPlot){
 
     const { y, x } = scatterPlot.selectedRatios
 
@@ -172,6 +174,11 @@ function handleSetChartOptions(scatterPlot){
     let xMin = ratioOptions[x]?ratioOptions[x].min:Math.min(...xData)
     let xMax = ratioOptions[x]?ratioOptions[x].max:Math.max(...xData)
 
+    // yMin=''
+    // yMax=''
+    // xMin=''
+    // xMax=''
+
     scatterPlot.chartOptions={
         responsive:true,
         maintainAspectRatio: false,
@@ -179,12 +186,13 @@ function handleSetChartOptions(scatterPlot){
             datalabels: {
                 align:'end',
                 anchor:'center',
-                // backgroundColor:'red',
                 color:'black',
                 font:{
                     size:11
                 },
                 formatter: function(value, context) {
+                    console.log(value,context)
+                    if(context.datasetIndex>0) return value.yName
                     return value.ticker;
                 }
             }
@@ -192,6 +200,8 @@ function handleSetChartOptions(scatterPlot){
         tooltips: {
             callbacks: {
                 label: function(tooltipItem, data) {
+                    console.log(tooltipItem,data)
+                    if(tooltipItem.datasetIndex>0) return ''
                     let index = tooltipItem.index
                     var tickerName = data.labels[index].tickerName;
                     return tickerName
@@ -200,6 +210,7 @@ function handleSetChartOptions(scatterPlot){
                     
                     let tooltipItem = tooltipItems[0]
                     if(!tooltipItem) return ''
+                    if(tooltipItem.datasetIndex>0) return ''                    
                     let index = tooltipItem.index
                     let yName = data.labels[index].yName;
                     let xName = data.labels[index].xName;
@@ -211,7 +222,7 @@ function handleSetChartOptions(scatterPlot){
             }
         },
         legend: {
-            display: true,
+            display: false,
             labels: {
                 fontSize:25
             }
@@ -235,7 +246,12 @@ function handleSetChartOptions(scatterPlot){
     }
 }
 
-function handleSetChartData(scatterPlot,data){
+export function handleSetChartData(scatterPlot,data){
+
+    const {
+        y:yRatio,
+        x:xRatio
+    } = scatterPlot.selectedRatios
 
     let label = ''    
     if(data.length>0){
@@ -246,7 +262,8 @@ function handleSetChartData(scatterPlot,data){
     let filter = scatterPlot.highlight.split('.')[0]
     let value = scatterPlot.highlight.split('.')[1]
 
-    let tickers=[]
+    let tickers = []
+    let tickerRatios = []
 
     switch(filter){
         case 'myPortfolio':
@@ -276,6 +293,23 @@ function handleSetChartData(scatterPlot,data){
         }
     })
 
+    let tickerKeys = data.map(item => item.ticker)
+    tickerRatios = scatterPlot.tickerRatios.filter(item => tickerKeys.includes(item.ticker))
+
+    let historicData =[{}]
+
+    historicData = tickerRatios.map(ticker =>{
+        let historic = ticker.getScatterChart(yRatio,xRatio)
+        let tickerLatest = scatterPlot.tickers.find(item => item.ticker === ticker.ticker).ratios
+        historic.data.unshift({            
+            y: tickerLatest[yRatio],
+            x: tickerLatest[xRatio],
+            yName: '',
+            xName:''
+        })
+        return historic
+    })
+    console.log(historicData)
     scatterPlot.chartData={
         datasets: [
             {
@@ -293,19 +327,25 @@ function handleSetChartData(scatterPlot,data){
               pointHitRadius: 10,
               data
             },
+            ...historicData,
             // {
             //     label: 'Line Dataset',
             //     data: [{
             //         x: 0,
             //         y: 0
             //     }, {
-            //         x: 45,
-            //         y: 10
+            //         x: 5,
+            //         y: 7
+            //     }, {
+            //         x: 9,
+            //         y: 9
             //     }],
             //     type: 'line',
+            //     fill:false,
+                
             //     // this dataset is drawn on top
             //     order: 2
-            // }
+            // },
         ],
         labels:data
     }

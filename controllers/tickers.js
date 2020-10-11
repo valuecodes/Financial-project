@@ -28,6 +28,14 @@ exports.getTickersList = async (req,res) => {
     res.send({data:list})
 }
 
+// @desc      Get all tickerRatios
+// @route     GET /ratios
+// @ access   
+exports.getRatiosList = async (req,res) => {
+    let tickerRatios = await TickerRatios.find()
+    res.send({data:tickerRatios})
+}
+
 // @desc      Get Ticker data
 // @route     GET /
 // @ access   

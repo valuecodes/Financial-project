@@ -1,5 +1,5 @@
 import React,{useState,useEffect} from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import SectionNav from '../components/SectionNav'
 import ScatterPlot from '../utils/scatterPlot'
 import {Scatter} from 'react-chartjs-2';
@@ -8,30 +8,50 @@ import SelectGroup from '../components/SelectGroup'
 import TickersFound from '../components/TickersFound'
 import OptionsBar from '../components/OptionsBar'
 import DropdownListFilter from '../components/DropdownListFilter'
+import { getTickerRatiosData } from '../actions/tickerActions';
 
 export default function ScatterScreen() {
 
+    const dispatch = useDispatch()
     const [scatterPlot, setScatterPlot] = useState(new ScatterPlot())
     const [navigation,setNavigation] = useState({
         selected:{name:'scatter',index:0},
-        options:['scatter']
+        options:['scatter','historicalScatter']
     })
     const tickerListData = useSelector(state => state.tickerListData)
     const portfolioSelected = useSelector(state => state.portfolioSelected)
     const { selectedPortfolio } = portfolioSelected
+    const tickerRatios = useSelector(state => state.tickerRatios)
+    const { loading, tickerRatiosData, error } = tickerRatios
 
     useEffect(()=>{
         if(tickerListData.tickers&&selectedPortfolio){
-            let newScatter = new ScatterPlot(tickerListData.tickers,selectedPortfolio)
+            let newScatter = new ScatterPlot(tickerListData.tickers,tickerRatiosData,selectedPortfolio)
             newScatter.init()
             setScatterPlot(newScatter)
         }
-    },[tickerListData,selectedPortfolio])
+    },[tickerListData,tickerRatiosData,selectedPortfolio])
+
+    useEffect(()=>{
+        if(
+            scatterPlot.tickerRatios.length===0&&
+            navigation.selected.index ===1
+        ){
+            dispatch(getTickerRatiosData())
+        }
+        let currentPage = navigation.selected.name
+        if(currentPage ==='scatter'){
+            scatterPlot.historical=false
+        }else{
+            scatterPlot.historical=true
+        }
+    },[navigation])
 
     return (
         <div className='scatterScreen container'>
+            <SectionNav navigation={navigation} setNavigation={setNavigation}/>
             <ScatterInputs scatterPlot={scatterPlot} setScatterPlot={setScatterPlot}/>
-            <ScatterChart scatterPlot={scatterPlot} setScatterPlot={setScatterPlot}/>
+            <ScatterChart scatterPlot={scatterPlot} setScatterPlot={setScatterPlot}/> 
         </div>
     )
 }

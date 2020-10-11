@@ -135,6 +135,8 @@ export const tickerDataModel={
         roa:null,
         payoutRatio:null,
         sharesOutstanding:null,
+        price:null,
+        dividends:null
     },
     monthlyPrice:{
         date:new Date().toISOString(),

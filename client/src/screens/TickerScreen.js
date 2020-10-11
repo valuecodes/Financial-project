@@ -52,15 +52,9 @@ export default function TickerScreen(props) {
             let portfolioTicker = selectedPortfolio.getTicker(ticker)
             let newTicker = new Ticker(tickerFullData,portfolioTicker)
             setTicker(newTicker)
-            console.log(portfolioTicker)
-            // const newUserTicker = new UserTicker(tickerFullData,portfolioTicker)
-            // console.log(newUserTicker.getCurrentPrice())
-            // console.log(newUserTicker.getPurchasePrice())
         }
         
     },[tickerFullData,selectedPortfolio])
-
-    console.log(userTicker)
 
     return (
         <div className='tickerScreen container'>
