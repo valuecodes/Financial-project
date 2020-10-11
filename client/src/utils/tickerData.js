@@ -21,9 +21,10 @@ import {
     alphaCashflowStatement,
     alphaProfile,
     calculateLatestPrice,
+    calculateQuarterData,
 } from "./calculations/inputCalculations";
 
-export function TickerData(data,exhangeRate=null){
+export function TickerData(data, quarterData ,exhangeRate=null){
     this.profile = data.profile?data.profile:{
         ticker:'',
         name:'',
@@ -61,6 +62,7 @@ export function TickerData(data,exhangeRate=null){
         roe:null,
         roa:null,
     }
+    this.quarterData = quarterData?quarterData.quarterData:[]
     this._id=data._id?data._id:null
     this.ratios = {}
     this.latestPrice = {}
@@ -77,6 +79,9 @@ export function TickerData(data,exhangeRate=null){
     this.tickerRatios = () => calculateTickerRatios(this)
     this.update = () => calculateUpdate(this)
     this.updateFinancialValue = (value) => calculateUpdateFinancialValue(this,value)
+
+    this.getClosestPriceFromDate = (date) => handleGetClosestPriceFromDate(this,date)
+    this.getYearlyDivsFromDate = (date) => handleGetYearlyDivsFromDate(this,date)
 
     this.addData = (data) => setAddData(this,data)
     this.updateData = (dataName,newData) => setUpdateData(this,dataName,newData)
@@ -241,7 +246,7 @@ function calculateYearDivs(tickerData){
 function calculateValueStatements(tickerData){
     let keys = {}
     Object.keys(tickerDataModel).forEach(statement =>{
-        if(statement!=='latestPrice'){
+        if(statement!=='latestPrice'&&statement!=='quarterData'){
             Object.keys(tickerDataModel[statement]).forEach(value =>{
                 keys[value] = statement
             })            
@@ -274,6 +279,7 @@ function calculateGetFinancialNum(tickerData,key,year=null){
     }
     let keyStatements = tickerData.valueStatements
     let statement = keyStatements[key]
+
     if(statement){
         year = null
         let statementYear
@@ -353,28 +359,75 @@ function calculateUpdateFinancialValue(tickerData,value){
     }
 }
 
+function handleGetClosestPriceFromDate(tickerData,date){
+    const { priceData } = tickerData
+    let price = priceData.find(item => (new Date(item.date).getTime()-new Date(date).getTime()<804800000))
+    if(!price){
+       price = null 
+    }else{
+        price = price.close
+    }
+    return price
+}
+
+function handleGetYearlyDivsFromDate(tickerData,date){
+    const { dividendData } = tickerData
+
+    if(dividendData[0]){
+        let max = new Date(date)
+        let min = new Date(new Date(date).setFullYear(new Date(date).getFullYear() - 1))
+
+        let divs = dividendData.filter(item => new Date(item.date)>min&&new Date(item.date)<max)
+        return divs.reduce((a,c) => a+c.dividend,0)
+
+    }else{
+        return null
+    }
+
+
+}
+
 function setAddData(tickerData,data){
 
     let array=data.split('\n') 
     if(array.length<2) return tickerData
     let key = getKey(array,data)
+    let newQuarterData
     let newData=[]
+
+    console.log(key)
     switch (key){
         case 'reutersIncome':
             tickerData.profile.financialDataCurrency = getReuterCurrency(array)
             newData = calculateIncomeStatementReuters(array)
             tickerData.updateData('incomeStatement',newData)
             break
+        case 'reutersIncome.quarter':
+            newData = calculateIncomeStatementReuters(array,true)
+            newQuarterData= calculateQuarterData(newData,tickerData,'income')
+            console.log(newQuarterData)
+            tickerData.quarterData = newQuarterData
+            break
         case 'reutersBalance':
             tickerData.profile.financialDataCurrency = getReuterCurrency(array)
             newData = calculateBalanceSheetReuters(array)
             tickerData.updateData('balanceSheet',newData)
+            break
+        case 'reutersBalance.quarter':
+            newData = calculateBalanceSheetReuters(array,true)
+            newQuarterData = calculateQuarterData(newData,tickerData,'balance')
+            tickerData.quarterData = newQuarterData
             break
         case 'reutersCash':
             tickerData.profile.financialDataCurrency = getReuterCurrency(array)
             newData = calculateCashFlowReuters(array)
             tickerData.updateData('cashFlow',newData)
             break
+        case 'reutersCash.quarter':
+            newData = calculateCashFlowReuters(array,true)
+            newQuarterData = calculateQuarterData(newData,tickerData,'cash')
+            tickerData.quarterData = newQuarterData
+            break        
         case 'companyInfo':
             tickerData.addProfile(data)
             break
@@ -401,6 +454,7 @@ function setAddData(tickerData,data){
         default: 
     }
     tickerData.update()
+    console.log(tickerData)
     return tickerData
 }
 
@@ -550,6 +604,7 @@ function setSelectDataToTable(tickerData,key){
         case 'incomeStatement':
         case 'balanceSheet':
         case 'cashFlow':
+        case 'quarterData':
             headers = calculateTickerDataRowHeaders(selectedData,key)
             body = calculateTickerDataRowBody(selectedData,key)
             direction = 'row'
@@ -570,7 +625,7 @@ function calculateTickerDataRowHeaders(selectedData,key){
     return selectedData.map(item =>{ 
         let date = parseDate(item.date)
         return{
-            value:date.split('-')[0],
+            value:date.split('-')[0]+'/'+date.split('-')[1],
             key,
             id:item._id?item._id:item.id
         }

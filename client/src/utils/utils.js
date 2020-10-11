@@ -13,6 +13,7 @@ export function camelCaseToString(s) {
 }
 
 export function roundToTwoDecimal(number){
+    if(isNaN(number)) return null
     return Math.round(number*Math.pow(10,2))/Math.pow(10,2)
 }
 
@@ -147,3 +148,18 @@ export function convertDate(dateString) {
 export function uniqueValuesArray(data,value){
     return [...new Set(data.map(item => item[value]))]
 }
+
+export const monthShort=[
+    'Jan', 
+    'Feb', 
+    'Mar', 
+    'Apr', 
+    'May', 
+    'Jun', 
+    'Jul', 
+    'Aug', 
+    'Sep', 
+    'Oct', 
+    'Nov', 
+    'Dec'
+]

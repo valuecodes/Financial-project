@@ -1,12 +1,22 @@
-import { uuidv4, roundToTwoDecimal } from "../../utils/utils";
+import { uuidv4, roundToTwoDecimal, monthShort } from "../../utils/utils";
 import { tickerDataModel } from "../dataModels";
 
 export function getReuterCurrency(data){
     return data[0].split('.')[0].split(', ')[1]
 }
 
-export function calculateIncomeStatementReuters(data){
+function getQuarterDates(data){
+    let qDates = data[11].split('\t')
+    qDates.pop()
+    let array = qDates.map(item => item.split('-'))
+    return array.map(item => new Date(Number(item[2])+2000,monthShort.findIndex(m => m===item[1]),item[0]))
+}
+
+export function calculateIncomeStatementReuters(data,quarter){
     let dates=data[11].split('\t')
+    if(quarter){
+        dates = getQuarterDates(data)
+    }
     let keyData=calculateKeyData(data)
     let fData=[];
     for(var i=0;i<dates.length;i++){
@@ -97,7 +107,7 @@ export function calculateBalanceSheetReuters(data){
                 'apic':calculatebalanceSheet('apic',i,keyData),
                 'retainedEarnigs':calculatebalanceSheet('retainedEarnigs',i,keyData),
                 'totalEquity':calculatebalanceSheet('totalEquity',i,keyData),
-                'bookValuePerShare':calculatebalanceSheet('tangibleBookValuePerShare',i,keyData),
+                'bookValuePerShare':calculatebalanceSheet('bookValuePerShare',i,keyData),
                 'treasuryStock':calculatebalanceSheet('treasuryStock',i,keyData),
                 id: uuidv4() 
             }
@@ -141,7 +151,7 @@ function calculatebalanceSheet(key,i,keyData){
         apic:['Additional Paid-In Capital'],
         retainedEarnigs:['Retained Earnings (Accumulated Deficit)'],
         totalEquity:['Total Equity'],
-        bookValuePerShare:['Tangible Book Value per Share, Common Eq'],
+        bookValuePerShare:['Tangible Book Value per Share, Common Eq','Tangible Book Value per Share, Common Eq'],
         treasuryStock:['Treasury Stock - Common']
     }
     return calculateFinancialNumber(keys[key],i,keyData)
@@ -246,7 +256,6 @@ function calculateTickerCurrency(data){
 }
 
 export function calculateInsiderData(data){
-    console.log(data)
     let newData={
         name: data.split('Name:')[1].split('\n')[0].trim(),
         position: data.split('Position:')[1].split('\n')[0].trim(),
@@ -517,6 +526,7 @@ export function letterCounter (x) {
 }
 
 export function getKey(array,data){
+
     if(array[1].split('\t')[0]==='Trend'){
         array.splice(1,2)
     }
@@ -539,7 +549,10 @@ export function checkReuters(array){
         let incomeKeys=['Revenue','Total Premiums Earned','Interest Income, Bank']
         let balanceKeys=['Cash','Cash & Due from Banks','Cash & Equivalents']
         let cashflowKeys=['Net Income/Starting Line','Cash Taxes Paid','Cash Receipts']
+
         let key = array[14].split('\t')[0]
+        let dates = array[11].split('\t').map(item => item.split('-')[1])
+        let quarterDate = dates.find(item => item==='Jun'||item==='Mar'||item==='Sep')
 
         let keyFound=null;
         if(incomeKeys.find(item => item===key)){
@@ -549,6 +562,11 @@ export function checkReuters(array){
         }else if(cashflowKeys.find(item => item===key)){
             keyFound='reutersCash'
         }
+
+        if(quarterDate){
+            keyFound+='.quarter'
+        }
+
         return keyFound
     }else{
         return null
@@ -743,4 +761,77 @@ export function getApiSymbol(country,symbol){
             return symbol+='.UN.XTSE'
         default: return symbol
     }
+}
+
+export function calculateQuarterData(newQuarterData ,tickerData ,statement){
+
+    let quarterData = tickerData.quarterData
+
+    newQuarterData.forEach(item =>{
+        let index = quarterData.findIndex(data => new Date(data.date).getTime()===new Date(item.date).getTime())
+        if(index===-1){
+            quarterData.push({...tickerDataModel.quarterData,date:item.date})
+        }
+    })
+    
+    switch(statement){
+        case'income':
+            newQuarterData.forEach(item =>{
+                let index = quarterData.findIndex(data => new Date(data.date).getTime()===new Date(item.date).getTime())
+                quarterData[index]={
+                    ...quarterData[index],
+                    revenue: item.revenue,
+                    netIncome: item.netIncome,
+                    eps: item.eps,
+                    sharesOutstanding: item.sharesOutstanding,
+                    operatingMargin: roundToTwoDecimal((item.operatingIncome/item.revenue)*100),
+                    profitMargin: roundToTwoDecimal((item.netIncome/item.revenue)*100),
+                    roe: roundToTwoDecimal((item.netIncome/quarterData[index].totalEquity)*100),
+                    roa: roundToTwoDecimal((item.netIncome/quarterData[index].totalAssets)*100)
+                }
+            })
+            break
+        case'balance':
+            newQuarterData.forEach(item =>{
+                let index = quarterData.findIndex(data => new Date(data.date).getTime()===new Date(item.date).getTime())
+                quarterData[index]={
+                    ...quarterData[index],
+                    currentAssets: item.currentAssets,
+                    currentLiabilities: item.currentLiabilities,
+                    bookValuePerShare: item.bookValuePerShare,
+                    roe: roundToTwoDecimal((quarterData[index].netIncome/item.totalEquity)*100),
+                    roa: roundToTwoDecimal((quarterData[index].netIncome/item.totalAssets)*100)
+                }
+            })
+        break
+        case'cash':
+            newQuarterData.forEach(item =>{
+                let index = quarterData.findIndex(data => new Date(data.date).getTime()===new Date(item.date).getTime())
+                quarterData[index]={
+                    ...quarterData[index],
+                    operatingCashFlow: item.operatingCashFlow,
+                    investingCashFlow: item.investingCashFlow,
+                    financingCashFlow: item.financingCashFlow
+                }
+            })
+        break
+    }
+
+    quarterData.forEach(item =>{
+        if(!item.price){
+            item.price = tickerData.getClosestPriceFromDate(item.date)
+        } 
+        if(!item.divYield){
+            item.divYield = roundToTwoDecimal((tickerData.getYearlyDivsFromDate(item.date)/item.price)*100) 
+        }
+        if(!item.payoutRatio){
+            let yearEps = tickerData.incomeStatement.find(item => 
+                new Date(item.date)<= new Date(item.date)
+            )
+            item.payoutRatio = roundToTwoDecimal(
+                ((tickerData.getYearlyDivsFromDate(item.date))/yearEps.eps)*100
+            )
+        }
+    })
+    return quarterData
 }

@@ -2,6 +2,7 @@ const axios = require('axios')
 
 const Ticker = require('../models/tickerModel')
 const TickerSlim = require('../models/tickerSlimModel')
+const TickerQuarter = require('../models/tickerQuarterModel')
 
 // @desc      Get ticker by id
 // @route     GET /:id
@@ -36,6 +37,28 @@ exports.updateTicker = async ( req, res, next ) => {
         next()
         res.send({message:'Ticker created',data:saved})  
     }
+}
+
+// @desc      Update ticker ratios from alphavantage api
+// @route     GET /ratios:id
+// @ access   Auth Admin
+exports.updateTickerQuarter = async ( req, res, next ) => {
+    let ticker = req.body.profile.ticker
+    const tickerQuarter = await TickerQuarter.findOne({ticker:ticker})
+    if(!tickerQuarter){
+        let newTickerQuarter = new TickerQuarter({
+            ticker: ticker,
+            name: req.body.profile.name,
+            quarterData: req.body.quarterData
+        })
+        await newTickerQuarter.save()
+        console.log('TickerQuarter created')
+    }else{
+        tickerQuarter.quarterData = req.body.quarterData
+        await tickerQuarter.save()
+        console.log('TickerQuarter saved')
+    }
+    next()
 }
 
 // @desc      Update ticker ratios from alphavantage api
@@ -143,6 +166,8 @@ exports.updateTickerList = async ( req,res ) => {
 // @ access   Auth Admin
 exports.getTicker = async ( req, res ) => {
     const ticker = await Ticker.findById(req.params.id)
+    const tickerQuarter = await TickerQuarter.findOne({ticker:ticker})
+    ticker.quarterData = tickerQuarter
     res.send({data:ticker})
 }
 

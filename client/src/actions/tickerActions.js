@@ -37,7 +37,8 @@ const getTickerData = (tickerId) => async (dispatch, getState) => {
     try{
         dispatch({type: TICKER_DATA_REQUEST})
         const { data } = await axios.get('/api/tickers/'+tickerId)
-        dispatch({type: TICKER_DATA_SUCCESS, payload:data.data})
+        console.log(data)
+        dispatch({type: TICKER_DATA_SUCCESS, payload:data})
     }catch(err){
         dispatch({type: TICKER_DATA_FAIL, payload:err.message})
     }

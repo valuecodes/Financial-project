@@ -43,8 +43,8 @@ export function Ticker(data,portfolioTicker){
     this.eventChart = (options) => calculateEventChart(this,options)
     this.ratioChart = (options) => calculateRatioChart(this,options)
     this.financialChart = (options) => calculateFinancialChart(this,options)
-    this.userPriceChart = (options) => calculateUserPriceChart(this.transactions,this.tickerData,options)
-    this.userReturnChart = (options) => calculateUserReturnChart(this.transactions,this.tickerData,options) 
+    this.userPriceChart = (options) => calculateUserPriceChart(this,options)
+    this.userReturnChart = (options) => calculateUserReturnChart(this,options) 
 }
 
 function calculateLatestPrice(ticker,format){
@@ -52,12 +52,12 @@ function calculateLatestPrice(ticker,format){
 }
 
 function calculateTotalCount(ticker,format){
-    let value = ticker.transactions.reduce((a,c)=> a+(c.count),0)
+    let value = ticker.transactions?ticker.transactions.reduce((a,c)=> a+(c.count),0):0
     return formatValue(value,format)
 }
 
 function calculatePurchasePrice(ticker,format){
-    let value = ticker.transactions.reduce((a,c)=> a+(c.count*c.price),0)
+    let value = ticker.transactions?ticker.transactions.reduce((a,c)=> a+(c.count*c.price),0):0
     return formatValue(value,format)
 }
 
@@ -67,8 +67,8 @@ function calculateAverageCost(ticker,format){
 }
 
 export function calculateCurrentPrice(ticker,format){
-    let price = ticker.tickerData.priceData[0].close
-    let value = ticker.transactions.reduce((a,c)=> a+(c.count*price),0)
+    let price = ticker.priceData[0]?ticker.priceData[0].close:0
+    let value = ticker.transactions?ticker.transactions.reduce((a,c)=> a+(c.count*price),0):0
     return formatValue(value,format)
 }
 
@@ -78,7 +78,7 @@ function calculatePriceChange(ticker,format){
 }
 
 function calculateMarketCap(ticker){
-    let marketCap = ticker.incomeStatement[0].sharesOutstanding*ticker.priceData[0].close
+    let marketCap =ticker.incomeStatement[0]?ticker.incomeStatement[0].sharesOutstanding*ticker.priceData[0].close:null
     if(marketCap){
        return roundToTwoDecimal(marketCap) 
     }else{
@@ -95,6 +95,7 @@ function calculatePriceChangePercentage(ticker,format){
 function calculateMyDivs(ticker){
 
     const { transactions, dividendData } = ticker
+    if(!transactions) return []
 
     let dividends = transactions.map(item => {
         let divs=dividendData.filter(div => new Date(div.date)>new Date(item.date))
@@ -359,12 +360,15 @@ function calculateFinancialChart(ticker,options){
     return { data1, data2, data3, data4, labels, financialData, fullFinancialData }
 }
 
-function calculateUserPriceChart(transactions,tickerData,options){
+function calculateUserPriceChart(ticker,options){
     const { time } = options
-    let priceData = tickerData.priceData.filter(item => new Date(item.date)>time.timeStart) 
-    let divData = tickerData.dividendData.filter(item => new Date(item.date)>time.timeStart)  
+    let priceData = ticker.priceData.filter(item => new Date(item.date)>time.timeStart) 
+    let divData = ticker.dividendData.filter(item => new Date(item.date)>time.timeStart)  
+    
     let data=[];
-    transactions.forEach(transaction =>{
+    if(!ticker.transactions) return data
+
+    ticker.transactions.forEach(transaction =>{
         priceData.forEach((price,index) =>{
             let week = getNumberOfWeek(new Date(price.date))
             if(week!==1&&index>0){
@@ -390,12 +394,15 @@ function calculateUserPriceChart(transactions,tickerData,options){
     return data
 }
 
-function calculateUserReturnChart(transactions,tickerData,options){
+function calculateUserReturnChart(ticker,options){
     const { time } = options
-    let priceData = tickerData.priceData.filter(item => new Date(item.date)>time.timeStart) 
-    let divData = tickerData.dividendData.filter(item => new Date(item.date)>time.timeStart)  
+    let priceData = ticker.priceData.filter(item => new Date(item.date)>time.timeStart) 
+    let divData = ticker.dividendData.filter(item => new Date(item.date)>time.timeStart)  
     let data=[];
-    transactions.forEach(transaction =>{
+    
+    if(!ticker.transactions) return data
+
+    ticker.transactions.forEach(transaction =>{
         priceData.forEach((price,index) =>{
             let week = getNumberOfWeek(new Date(price.date))
             if(week!==1&&index>0){

@@ -5,6 +5,7 @@ const { isAuth, isAdmin } = require('../util')
 const { 
     getTicker, 
     updateTicker, 
+    updateTickerQuarter,
     updateTickerList, 
     getTickerList,
     deleteTicker,
@@ -16,7 +17,7 @@ const {
 router
     .route('/')
     .get(isAuth, isAdmin, getTickerList)
-    .post(isAuth, isAdmin ,updateTicker,updateTickerList)
+    .post(isAuth, isAdmin ,updateTicker, updateTickerQuarter ,updateTickerList)
 
 router
     .route('/:id')

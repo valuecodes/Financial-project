@@ -41,7 +41,11 @@ function tickerDataReducer(state={},action){
         case TICKER_DATA_REQUEST:
             return {loading:true}
         case TICKER_DATA_SUCCESS:
-            return {loading:false, tickerFullData:action.payload}
+            return {
+                loading:false, 
+                tickerFullData: action.payload.data,
+                quarterData: action.payload.quarterData
+            }
         case TICKER_DATA_FAIL:
             return {loading:false, error: action.payload}
         default: return state

@@ -72,10 +72,10 @@ function calculatePortfolioStats(portfolio){
             currentValue: ticker.currentPrice(),
             marketCap:ticker.marketCap(),
             percentageChange:ticker.priceChangePercentage(),
-            sector:ticker.tickerData.profile.sector,
-            industry:ticker.tickerData.profile.industry,
-            subIndustry:ticker.tickerData.profile.subIndustry,
-            employees:Number(ticker.tickerData.profile.employees)
+            sector:ticker.profile.sector,
+            industry:ticker.profile.industry,
+            subIndustry:ticker.profile.subIndustry,
+            employees:Number(ticker.profile.employees)
         })
     })
 

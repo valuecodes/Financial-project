@@ -51,7 +51,7 @@ function MainSide({tickerList}){
     const { loading, userInfo, error } = userSignin
     const portfolioSelected = useSelector(state => state.portfolioSelected)
     const { selectedPortfolio } = portfolioSelected
-
+    console.log(selectedPortfolio)
     return(
         <section className='card portfolioSection'>
             {loading&&<div>Loading...</div>}

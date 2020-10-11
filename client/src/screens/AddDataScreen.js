@@ -23,7 +23,7 @@ export default function AddDataScreen() {
 
     const { tickerListData, tickerData, tickerSave } = useSelector(state => state)
     const { tickers } = tickerListData
-    const { loading:tickerLoading, tickerFullData, error:tickerError } = tickerData
+    const { loading:tickerLoading, tickerFullData, quarterData, error:tickerError } = tickerData
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
     const exhangeRateList = useSelector(state => state.exhangeRateList)
     const { loading, exhangeRate, error } = exhangeRateList
@@ -46,7 +46,7 @@ export default function AddDataScreen() {
 
     useEffect(()=>{
         if(tickerFullData&&exhangeRate&&tickerList.tickers.length!==0){
-            let ticker = new TickerData(tickerFullData,exhangeRate)
+            let ticker = new TickerData(tickerFullData,quarterData,exhangeRate)
             let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
             ticker.addTickerSlimData(tickerSlim)
             setCompanyInfo(ticker)
@@ -92,6 +92,7 @@ export default function AddDataScreen() {
                         <InputInfo dataKey={'priceData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                         <InputInfo dataKey={'dividendData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                         <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'quarterData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                     </div>
                     <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>   
                     </>          
@@ -316,8 +317,6 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         companyInfo.deleteRow(row)
         setCompanyInfo({...companyInfo})
     }
-
-
 
     const calculateInputWidth=(data,key)=>{
         if(data.length>8){
