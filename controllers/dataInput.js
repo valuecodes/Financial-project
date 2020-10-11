@@ -3,6 +3,7 @@ const axios = require('axios')
 const Ticker = require('../models/tickerModel')
 const TickerSlim = require('../models/tickerSlimModel')
 const TickerQuarter = require('../models/tickerQuarterModel')
+const TickerRatios = require('../models/tickerRatiosModel')
 
 // @desc      Get ticker by id
 // @route     GET /:id
@@ -61,10 +62,33 @@ exports.updateTickerQuarter = async ( req, res, next ) => {
     next()
 }
 
+// @desc      Update ticker ratios model
+// @route     GET /ratios:id
+// @ access   Auth Admin
+exports.updateTickerRatios = async ( req, res, next ) => {
+    let ticker = req.body.profile.ticker
+    const tickerRatios = await TickerRatios.findOne({ticker:ticker})
+    if(!tickerRatios){
+        let newTickerRatios = new TickerRatios({
+            ticker: ticker,
+            monthlyPrice: req.body.monthlyPrice,
+            yearlyData: req.body.yearlyData
+        })
+        await newTickerRatios.save()
+        console.log('TickerRatios created')
+    }else{
+        tickerRatios.monthlyPrice = req.body.monthlyPrice
+        tickerRatios.yearlyData = req.body.yearlyData
+        await tickerRatios.save()
+        console.log('TickerRatios saved')
+    }
+    next()
+}
+
 // @desc      Update ticker ratios from alphavantage api
 // @route     GET /ratios:id
 // @ access   Auth Admin
-exports.updateTickerRatios = async ( req, res ) => {
+exports.updateTickerApiRatios = async ( req, res ) => {
     let ticker = req.params.id
     let data = await axios.get(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${process.env.ALPHA_KEY}`)
     if(data.data.Symbol){
@@ -134,8 +158,9 @@ exports.getFinancialsDataFromApi = async (req,res) => {
 
 exports.updateTickerList = async ( req,res ) => {
     console.log('Updating ticker list...')
+    let ticker = req.body.profile.ticker
     let id = req.body._id
-    const tickerSlim = await TickerSlim.findOne({tickerId:id})
+    const tickerSlim = await TickerSlim.findOne({ticker:ticker})
     if(tickerSlim){
         tickerSlim.sector=req.body.profile.sector,
         tickerSlim.industry=req.body.profile.industry,
@@ -148,7 +173,6 @@ exports.updateTickerList = async ( req,res ) => {
             tickerId:id,
             ticker:req.body.profile.ticker,
             name:req.body.profile.name,
-            price:calculatePrice(req.body),
             sector:req.body.profile.sector,
             industry:req.body.profile.industry,
             subIndustry:req.body.profile.subIndustry,

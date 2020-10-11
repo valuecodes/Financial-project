@@ -22,9 +22,11 @@ import {
     alphaProfile,
     calculateLatestPrice,
     calculateQuarterData,
+    calculateMonthlyPrice,
+    calculateYearlyData,
 } from "./calculations/inputCalculations";
 
-export function TickerData(data, quarterData ,exhangeRate=null){
+export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
     this.profile = data.profile?data.profile:{
         ticker:'',
         name:'',
@@ -62,7 +64,9 @@ export function TickerData(data, quarterData ,exhangeRate=null){
         roe:null,
         roa:null,
     }
-    this.quarterData = quarterData?quarterData.quarterData:[]
+    this.quarterData = tickerQuarter?tickerQuarter.quarterData:[]
+    this.yearlyData = tickerRatios?tickerRatios.yearlyData: []
+    this.monthlyPrice = tickerRatios?tickerRatios.monthlyPrice: []
     this._id=data._id?data._id:null
     this.ratios = {}
     this.latestPrice = {}
@@ -96,6 +100,8 @@ export function TickerData(data, quarterData ,exhangeRate=null){
     this.updateRatiosFromApi = (data) => handleUpdateRatiosFromApi(this,data)
     this.updatePriceFromApi = (data) => handleUpdatePriceFromApi(this,data)
     this.updateFinancialsFromApi = (data) => handleUpdateFinancialsFromApi(this,data)
+
+    this.updateMonthlyYearly = () => handleUpdateMonthlyYearly(this)
 }
 
 function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
@@ -246,7 +252,13 @@ function calculateYearDivs(tickerData){
 function calculateValueStatements(tickerData){
     let keys = {}
     Object.keys(tickerDataModel).forEach(statement =>{
-        if(statement!=='latestPrice'&&statement!=='quarterData'){
+        if(
+            statement!=='latestPrice'&&
+            statement!=='quarterData'&&
+            statement!=='monthlyPrice'&&
+            statement!=='monthlyData'&&
+            statement!=='yearlyData'
+        ){
             Object.keys(tickerDataModel[statement]).forEach(value =>{
                 keys[value] = statement
             })            
@@ -279,7 +291,7 @@ function calculateGetFinancialNum(tickerData,key,year=null){
     }
     let keyStatements = tickerData.valueStatements
     let statement = keyStatements[key]
-
+    console.log(statement,keyStatements,key)
     if(statement){
         year = null
         let statementYear
@@ -338,10 +350,10 @@ function calculateTickerRatios(tickerData){
 function calculateUpdate(tickerData){
     if(tickerData.balanceSheet[0]){
         if(!tickerData.balanceSheet[0].bookValuePerShare){
-            tickerData.updateFinancialValue('bookValue')
+            // tickerData.updateFinancialValue('bookValue')
         }
     }
-    tickerData.ratios = tickerData.tickerRatios()
+    // tickerData.ratios = tickerData.tickerRatios()
     return tickerData
 }
 
@@ -395,7 +407,6 @@ function setAddData(tickerData,data){
     let newQuarterData
     let newData=[]
 
-    console.log(key)
     switch (key){
         case 'reutersIncome':
             tickerData.profile.financialDataCurrency = getReuterCurrency(array)
@@ -605,6 +616,7 @@ function setSelectDataToTable(tickerData,key){
         case 'balanceSheet':
         case 'cashFlow':
         case 'quarterData':
+        case 'yearlyData':
             headers = calculateTickerDataRowHeaders(selectedData,key)
             body = calculateTickerDataRowBody(selectedData,key)
             direction = 'row'
@@ -612,6 +624,7 @@ function setSelectDataToTable(tickerData,key){
         case 'priceData':
         case 'dividendData':
         case 'insiderTrading':
+        case 'monthlyPrice':
             headers = calculateTickerDataColHeaders(selectedData,key)
             body = calculateTickerDataColBody(selectedData,key)
             direction = 'col'
@@ -786,5 +799,13 @@ function handleUpdateFinancialsFromApi(tickerData,data){
     tickerData.updateData('balanceSheet',newBalanceSheets)
     tickerData.updateData('cashFlow',newCashflows)
     tickerData.updateRatiosFromApi(data.profile)
+    return tickerData
+}
+
+function handleUpdateMonthlyYearly(tickerData){
+    let monthlyPrice = calculateMonthlyPrice(tickerData)
+    tickerData.monthlyPrice = monthlyPrice
+    let yearlyData = calculateYearlyData(tickerData)
+    tickerData.yearlyData = yearlyData
     return tickerData
 }

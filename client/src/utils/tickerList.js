@@ -33,11 +33,7 @@ function handleGetLatestPrice(tickerList,ticker){
 function handleSortBy(tickerList,sortOrder){
 
     function compareLatestPrice(a,b){
-        if(a.latestPrice){
-            return -1
-        }else{
-            return 1
-        }
+        return new Date(b.latestPrice.date).getTime() -new Date(a.latestPrice.date).getTime()
     }
 
     if(sortOrder){

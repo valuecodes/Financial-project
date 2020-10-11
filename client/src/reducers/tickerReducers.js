@@ -44,7 +44,8 @@ function tickerDataReducer(state={},action){
             return {
                 loading:false, 
                 tickerFullData: action.payload.data,
-                quarterData: action.payload.quarterData
+                tickerQuarter: action.payload.tickerQuarter,
+                tickerRatios: action.payload.tickerRatios
             }
         case TICKER_DATA_FAIL:
             return {loading:false, error: action.payload}

@@ -884,7 +884,7 @@ input[type=checkbox] {
 .inputInfoButtons{
   width: 120rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(5rem,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15rem,1fr));
   gap:0.5rem;
 }
 
@@ -981,12 +981,11 @@ input[type=checkbox] {
 
 .tableHeader span{
   height: 0;
-  width: 100%;
-  display: block;
+  /* display: block; */
 }
 
 .tableHeader button{
-  width: 3rem;
+  width: 2rem;
   display: block;
   margin-left: auto;
   background-color: rgb(241, 158, 158);

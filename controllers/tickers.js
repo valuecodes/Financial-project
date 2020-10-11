@@ -2,6 +2,7 @@ const Ticker = require('../models/tickerModel')
 const TickerSlim = require('../models/tickerSlimModel')
 const Portfolio = require('../models/portfolioModel')
 const TickerQuarter = require('../models/tickerQuarterModel')
+const TickerRatios = require('../models/tickerRatiosModel')
 
 // @desc      Get all Tickers
 // @route     GET /
@@ -35,7 +36,8 @@ exports.getTickerData = async (req, res) => {
     const ticker = await Ticker.findOne({'profile.ticker':tickerId})
     if(ticker){
         const tickerQuarter = await TickerQuarter.findOne({ticker:ticker.profile.ticker})
-        return res.send({data: ticker,quarterData: tickerQuarter})
+        const tickerRatios = await TickerRatios.findOne({ticker:ticker.profile.ticker})
+        return res.send({data: ticker, tickerQuarter, tickerRatios})
     }else{
         return res.status(401).send({msg: 'Ticker not found'})
     }

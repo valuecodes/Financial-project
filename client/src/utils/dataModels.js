@@ -116,5 +116,28 @@ export const tickerDataModel={
         roa:null,
         payoutRatio:null,
         sharesOutstanding:null,
+    },
+    monthlyData:{
+        date:new Date().toISOString(),
+        revenue:null,
+        netIncome:null,
+        eps:null,
+        currentAssets:null,
+        currentLiabilities:null,
+        bookValuePerShare:null,
+        operatingCashFlow:null,
+        investingCashFlow:null,
+        financingCashFlow:null,
+        divYield:null,
+        operatingMargin:null,
+        profitMargin:null,
+        roe:null,
+        roa:null,
+        payoutRatio:null,
+        sharesOutstanding:null,
+    },
+    monthlyPrice:{
+        date:new Date().toISOString(),
+        price:null
     }
 }

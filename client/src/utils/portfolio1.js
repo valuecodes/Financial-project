@@ -278,9 +278,6 @@ function searchTickerData(ticker,tickerData){
     return tickerData.find(item => item.profile.ticker===ticker)
 }
 
-
-
-
 function calculateTickerCurrent(ticker,portfolio){
     const { tickerData } = portfolio
     let price = tickerData.find(item => item.profile.ticker===ticker.ticker).priceData[0].close

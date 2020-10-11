@@ -835,3 +835,68 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
     })
     return quarterData
 }
+
+export function calculateMonthlyPrice(tickerData){
+
+    const { priceData } = tickerData
+    let filteredData = priceData.filter(item => new Date(item.date).getFullYear()>=2015)
+
+    filteredData.forEach(item =>{
+        let year = new Date(item.date).getFullYear()
+        let month = new Date(item.date).getMonth()+1
+        item.date = year+'.'+month
+    }) 
+
+    let monthly = []
+
+    filteredData.forEach(item => {
+        let found = monthly.findIndex(i => i.date === item.date)
+        if(found<=-1){
+            let newData = {
+                date: item.date,
+                close: item.close
+            }
+            monthly.push(newData)
+        }
+        return null
+    })
+
+    monthly.forEach(item => item.date=new Date(item.date.split('.')))
+    return monthly
+}
+
+export function calculateYearlyData(tickerData){
+
+    const { incomeStatement, balanceSheet, cashFlow } = tickerData
+
+    let yearlyData = []
+
+    incomeStatement.forEach(income =>{
+        let balance = balanceSheet.find(item => new Date(item.date).getTime()===new Date(income.date).getTime())
+        let cash = cashFlow.find(item => new Date(item.date).getTime()===new Date(income.date).getTime())
+        
+        if(new Date(income.date).getFullYear()>=2010){
+            yearlyData.push({
+                date: income.date,
+                revenue: income?income.revenue:null,
+                netIncome: income?income.netIncome:null,
+                eps: income?income.eps:null,
+                currentAssets: balance?balance.currentAssets:null,
+                currentLiabilities: balance?balance.currentLiabilities:null,
+                bookValuePerShare: balance?balance.bookValuePerShare:null,
+                operatingCashFlow: cash?cash.operatingCashFlow:null,
+                investingCashFlow: cash?cash.investingCashFlow:null,
+                financingCashFlow: cash?cash.financingCashFlow:null,
+                operatingMargin: income?roundToTwoDecimal((income.operatingIncome/income.revenue)*100):null,
+                profitMargin: income?roundToTwoDecimal((income.netIncome/income.revenue)*100):null,
+                roe: income&&balance?roundToTwoDecimal((income.netIncome/balance.totalEquity)*100):null,
+                roa: income&&balance?roundToTwoDecimal((income.netIncome/balance.totalAssets)*100):null,
+                sharesOutstanding: income?income.sharesOutstanding:null,
+                price:tickerData.getClosestPriceFromDate(income.date),
+                dividends: tickerData.getYearlyDivsFromDate(income.date)
+            })            
+        }
+    })
+
+    return yearlyData
+}

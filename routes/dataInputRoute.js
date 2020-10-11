@@ -6,10 +6,11 @@ const {
     getTicker, 
     updateTicker, 
     updateTickerQuarter,
+    updateTickerRatios,
     updateTickerList, 
     getTickerList,
     deleteTicker,
-    updateTickerRatios,
+    updateTickerApiRatios,
     getPriceDataFromApi,
     getFinancialsDataFromApi
 } = require('../controllers/dataInput')
@@ -17,7 +18,7 @@ const {
 router
     .route('/')
     .get(isAuth, isAdmin, getTickerList)
-    .post(isAuth, isAdmin ,updateTicker, updateTickerQuarter ,updateTickerList)
+    .post(isAuth, isAdmin ,updateTicker, updateTickerQuarter,updateTickerRatios ,updateTickerList)
 
 router
     .route('/:id')
@@ -26,7 +27,7 @@ router
 
 router  
     .route('/ratios/:id')
-    .get(isAuth,isAdmin,updateTickerRatios)
+    .get(isAuth,isAdmin,updateTickerApiRatios)
 
 router  
     .route('/price/:id')

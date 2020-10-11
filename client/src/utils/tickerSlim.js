@@ -15,7 +15,7 @@ export function TickerSlim(ticker){
     this.selected = false
     this.updatedThisSession = false
     this.percentageChangeColor = () => handlePercentageChangeColor(this)
-    this.updateTickerPrice = (userInfo) => handleUpdateTickerPrice(this,userInfo)
+    this.updateTickerPrice = (userInfo,exhangeRate) => handleUpdateTickerPrice(this,userInfo,exhangeRate)
 }
 
 function handlePercentageChangeColor(tickerSlim){
@@ -24,15 +24,17 @@ function handlePercentageChangeColor(tickerSlim){
 }
 
 
-async function handleUpdateTickerPrice(tickerSlim,userInfo){
+async function handleUpdateTickerPrice(tickerSlim,userInfo,exhangeRate){
 
     const { ticker } = tickerSlim
     let fullTickerData = await axios.get('/api/tickers/'+ticker)
-    let tickerData = new TickerData(fullTickerData.data.data)
+    
+    const { data, tickerQuarter, tickerRatios} = fullTickerData.data
+    let tickerData = new TickerData(data, tickerQuarter, tickerRatios,exhangeRate)
     tickerData.addTickerSlimData(tickerSlim)
-
+    
     let apiSymbol = getApiSymbol(tickerData.profile.country,ticker)
-
+console.log(tickerData)
     const apiData = await axios.get('/dataInput/price/'+apiSymbol,{
         headers:{
             Authorization: 'Bearer'+userInfo.token
@@ -57,7 +59,8 @@ async function handleUpdateTickerPrice(tickerSlim,userInfo){
     
     tickerSlim.ratios = updatedTickerData.ratios
     tickerSlim.updatedThisSession = true
+
     tickerData.addTickerSlimData(tickerSlim)
-    
+    tickerData.updateMonthlyYearly()
     return { updatedTickerData }
 }

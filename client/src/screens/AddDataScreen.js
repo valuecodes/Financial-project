@@ -23,7 +23,7 @@ export default function AddDataScreen() {
 
     const { tickerListData, tickerData, tickerSave } = useSelector(state => state)
     const { tickers } = tickerListData
-    const { loading:tickerLoading, tickerFullData, quarterData, error:tickerError } = tickerData
+    const { loading:tickerLoading, tickerFullData, tickerQuarter, tickerRatios,error:tickerError } = tickerData
     const { loading:saveLoading, success:saveSuccess, ticker:tickerSaved, error:saveError } = tickerSave
     const exhangeRateList = useSelector(state => state.exhangeRateList)
     const { loading, exhangeRate, error } = exhangeRateList
@@ -46,7 +46,7 @@ export default function AddDataScreen() {
 
     useEffect(()=>{
         if(tickerFullData&&exhangeRate&&tickerList.tickers.length!==0){
-            let ticker = new TickerData(tickerFullData,quarterData,exhangeRate)
+            let ticker = new TickerData(tickerFullData,tickerQuarter,tickerRatios,exhangeRate)
             let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
             ticker.addTickerSlimData(tickerSlim)
             setCompanyInfo(ticker)
@@ -93,12 +93,14 @@ export default function AddDataScreen() {
                         <InputInfo dataKey={'dividendData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                         <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                         <InputInfo dataKey={'quarterData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'yearlyData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'monthlyPrice'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                     </div>
                     <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>   
                     </>          
                 }
                 {navigation.selected.name==='overview'&&
-                    <Overview tickerList={tickerList} setTickerList={setTickerList}/>
+                    <Overview tickerList={tickerList} setTickerList={setTickerList} exhangeRate={exhangeRate}/>
                 }
             </div>
         </div>
@@ -350,28 +352,20 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                 <tr>
                     <th>
                     {selectedKey&&
-                        <>
-                            <button 
-                                onClick={e => addRowHandler(selectedKey)}
-                                className='tableButton'
-                            >
-                                Add row
-                            </button>
-                            {/* <button
-                                onClick={e => updateFromApi(selectedKey)}
-                                className='tableButton'
-                            >
-                            UpdateFrom API
-                            </button> */}
-                        </>
+                        <button 
+                            onClick={e => addRowHandler(selectedKey)}
+                            className='tableButton'
+                        >
+                            Add row
+                        </button>
                     }
                     </th>
                     {table.headers.map((item,index) =>
                         <th className='tableHeader' key={index}>
-                           <span>{camelCaseToString(item.value)}</span>
                             {table.direction==='row'&&
                                 <button onClick={e => deleteDataHandler(item)}>X</button>
-                            }
+                            }                        
+                           <span>{camelCaseToString(item.value)}</span>
                         </th>
                     )}
                 </tr>                
@@ -474,6 +468,11 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
         dispatch(getFinancialsDataFromApi(ticker))
     }
 
+    const updateMonthlyYearly = () => {
+        let updatedData = companyInfo.updateMonthlyYearly()
+        setCompanyInfo({...updatedData})
+    }
+
     return(
         <div className='inputInfoHeader'>
             <div className='inputInfoProfile'>
@@ -486,6 +485,9 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
                     </button>
                     <button className='tableButton' onClick={updateFinancials}>
                         Update Financials
+                    </button>
+                    <button className='tableButton' onClick={updateMonthlyYearly}>
+                        Update MonthlyYearly Data
                     </button>
                 </div>
                 {keys.map((item,index) =>
@@ -577,7 +579,7 @@ function InputInfo({ dataKey, data, setSelectedKey}){
     )
 }
 
-function Overview({tickerList,setTickerList}){
+function Overview({tickerList,setTickerList,exhangeRate}){
 
     const dispatch = useDispatch()
     const [updateStatus, setUpdateStatus] = useState({
@@ -614,7 +616,7 @@ function Overview({tickerList,setTickerList}){
                 let tickerSlim = updateList[count]
                 handleUpdateStatus(tickerList,'Running...',tickerSlim.ticker)
 
-                const { updatedTickerData } = await tickerSlim.updateTickerPrice(userInfo)
+                const { updatedTickerData } = await tickerSlim.updateTickerPrice(userInfo,exhangeRate)
 
                 let updateMessages = updatedTickerData.updateMessages
                 tickerList.updateMessages = tickerList.updateMessages.concat(updateMessages)
