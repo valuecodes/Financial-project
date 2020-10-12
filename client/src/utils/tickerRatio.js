@@ -17,15 +17,10 @@ function handleGetYearlyRatio(tickerRatio,ratioName){
     tickerRatio.yearlyData.forEach(year => {
         
         const {
-            revenue,
-            netIncome,
             eps,
             currentAssets,
             currentLiabilities,
             bookValuePerShare,
-            operatingCashFlow,
-            investingCashFlow,
-            financingCashFlow,
             operatingMargin,
             profitMargin,
             roe,
@@ -68,6 +63,7 @@ function handleGetYearlyRatio(tickerRatio,ratioName){
             case 'roa':
                     value = roa
                 break
+            default: value = null
         }        
 
         ratio.push({
@@ -90,6 +86,7 @@ function handleGetScatterChart(tickerRatio,y,x){
             x: xRatios.find(item => item.year === ratio.year).value,
             yName: ratio.year,
             xName: ratio.year,
+            ticker: tickerRatio.ticker
         }
     })
 

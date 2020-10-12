@@ -50,10 +50,10 @@ export default function ScatterScreen() {
     }
 
     const { scatterOptions, selectedRatios } = scatterPlot
-    console.log(scatterPlot)
+
     return (
         <div className='scatterScreen container'>
-            <SectionNav navigation={navigation} setNavigation={setNavigation}/>   
+            <SectionNav navigation={navigation} setNavigation={setNavigation}/>
             <OptionsBar 
                 options={scatterOptions} 
                 selected={selectedRatios} 
@@ -74,16 +74,19 @@ export default function ScatterScreen() {
 function ScatterInputs({scatterPlot, setScatterPlot, navigation}){
 
     const { tickers, chartData } = scatterPlot
-    const { index } = navigation.selected
     let tickersFound = chartData.labels&&chartData.labels.length
 
     return(
         <div className='scatterInputs'>
             <TickersFound 
-                tickersFound={tickersFound} 
+                tickersFound={tickersFound}
                 total={tickers.length}
                 showTotal={true}
                 className={'tickersFoundSmall'}
+            />
+            <ChartControls
+                scatterPlot={scatterPlot} 
+                setScatterPlot={setScatterPlot}
             />
             {navigation.selected.index===0 &&
                 <ScatterFilters 
@@ -97,6 +100,32 @@ function ScatterInputs({scatterPlot, setScatterPlot, navigation}){
                     setScatterPlot={setScatterPlot}
                 />            
             }
+        </div>
+    )
+}
+
+function ChartControls({scatterPlot, setScatterPlot}){
+
+    const { chartControls } = scatterPlot
+
+    const setChartControls = (item) => {
+        scatterPlot.chartControls[item] = !scatterPlot.chartControls[item] 
+        let updated = scatterPlot.updateChart()
+        setScatterPlot({...updated})
+    }
+
+    return(
+        <div className='scatterChartControls'>
+            {Object.keys(chartControls).map(item =>
+                <div key={item}>
+                    <input 
+                        onChange={() => setChartControls(item)}
+                        checked={chartControls[item]} type={'checkbox'}
+                    />
+                    <label>{camelCaseToString(item)}</label>
+                </div>
+            )}
+            
         </div>
     )
 }
@@ -128,8 +157,6 @@ function ScatterFilters({scatterPlot, setScatterPlot}){
         sectors, 
         countries, 
         filterTotals, 
-        chartData, 
-        tickers,
     } = scatterPlot
     
     return(
@@ -206,6 +233,7 @@ function ScatterHistoricalFilters({scatterPlot, setScatterPlot}){
                             <h3>Selected: </h3>
                             {selectedTickers.map(ticker =>
                                 <button
+                                    key={ticker}
                                     style={{backgroundColor:'lightgreen'}}
                                     onClick={() => filterTicker(ticker)}
                                 >{ticker}</button>
@@ -213,11 +241,12 @@ function ScatterHistoricalFilters({scatterPlot, setScatterPlot}){
                         </div>
                     </div>                
                     {Object.keys(scatterPlot[category]).map(item =>
-                        <div className='tickerCategory'>
+                        <div className='tickerCategory' key={item}>
                             <h4>{item}</h4>
                             <div className='categoryTickers'>
                                 {scatterPlot[category][item].tickers.map(item =>
                                     <button
+                                        key={item.ticker}
                                         style={{backgroundColor:selectedTickers.includes(item.ticker)&&'lightgreen'}}
                                         onClick={() => filterTicker(item.ticker)}
                                     >{item.ticker}</button>
@@ -230,7 +259,6 @@ function ScatterHistoricalFilters({scatterPlot, setScatterPlot}){
         </div>
     )
 }
-
 
 function ScatterChart({scatterPlot,setScatterPlot}){
     
@@ -254,6 +282,7 @@ function ScatterChart({scatterPlot,setScatterPlot}){
                 <Scatter
                     data={scatterPlot.chartData}
                     options={scatterPlot.chartOptions}
+                    // datasetKeyProvider={datasetKeyProvider}
                 />
             </div>
             <div className='xAxis'>

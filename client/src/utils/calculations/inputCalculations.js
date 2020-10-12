@@ -815,6 +815,7 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
                 }
             })
         break
+        default: break
     }
 
     quarterData.forEach(item =>{
@@ -825,8 +826,8 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
             item.divYield = roundToTwoDecimal((tickerData.getYearlyDivsFromDate(item.date)/item.price)*100) 
         }
         if(!item.payoutRatio){
-            let yearEps = tickerData.incomeStatement.find(item => 
-                new Date(item.date)<= new Date(item.date)
+            let yearEps = tickerData.incomeStatement.find(elem => 
+                new Date(elem.date)<= new Date(item.date)
             )
             item.payoutRatio = roundToTwoDecimal(
                 ((tickerData.getYearlyDivsFromDate(item.date))/yearEps.eps)*100

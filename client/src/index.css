@@ -1195,12 +1195,28 @@ input[type='range']:focus {
 
 .scatterInputs{
   display: grid;
-  grid-template-columns: 25rem 1fr;
+  grid-template-columns: 25rem 18rem 1fr;
   grid-column-gap: 1rem;
 }
 
 .scatterInputs .options{
   grid-column: 1/4;
+}
+
+.scatterChartControls{
+  height: 4rem;
+  margin: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.scatterChartControls div{
+  font-size: 1.2rem;
+}
+.scatterChartControls div input{
+  height: 1rem;
+  margin-left: 0;
+  /* height: 1rem; */
 }
 
 .scatterFilterSection{

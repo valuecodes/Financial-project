@@ -1,7 +1,5 @@
 import React from 'react'
-import Icon from '@material-ui/core/Icon';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
-import { height, width } from '@material-ui/system';
 import { camelCaseToString } from '../utils/utils';
 
 export default function Table(props){

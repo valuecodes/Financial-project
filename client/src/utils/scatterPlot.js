@@ -1,4 +1,4 @@
-import { camelCaseToString, uniqueValuesArray } from "./utils";
+import { camelCaseToString, uniqueValuesArray, regress } from "./utils";
 import { datalabels } from 'chartjs-plugin-datalabels'
 import { TickerRatio } from "./tickerRatio";
 
@@ -26,12 +26,18 @@ export default function ScatterPlot(tickers,tickerRatios=[],portfolio){
         category:'sectors',
         selectedTickers:['AKTIA','EVLI','EQV1V']
     }
+    this.chartControls={
+        scale:true,
+        regression:true,
+        average:false,
+    }
     this.chartData = {}
     this.chartOptions = {
         responsive:true,
         maintainAspectRatio: false,
     }
-    this.historical =tickerRatios.length?true:false
+    this.fullData = []
+    this.historical = tickerRatios.length?true:false
     this.init = () => handleInit(this)
     this.changeMode = (historical) => handleChangeMode(this,historical)
     this.setOption = (option) => handleSetOption(this,option)
@@ -79,13 +85,23 @@ function handleInit(scatterPlot){
         scatterPlot.ratios = ratios
         scatterPlot.countries = countries
         scatterPlot.sectors = sectors
+        if(scatterPlot.tickerRatios.length>0){
+            scatterPlot.chartControls.scale = false
+            scatterPlot.chartControls.regression = false            
+            scatterPlot.chartControls.average = false            
+        }
         scatterPlot.updateFilterTotals()        
         scatterPlot.updateChart()
     }
 }
 
 function handleChangeMode(scatterPlot,historical){
+
     scatterPlot.historical = historical
+    scatterPlot.chartControls.scale = !historical
+    scatterPlot.chartControls.regression = !historical
+    scatterPlot.chartControls.average = false          
+    
     scatterPlot.updateChart()
     return scatterPlot
 }
@@ -167,9 +183,12 @@ function handleUpdateChart(scatterPlot){
             tickerName:ticker.name,
             ticker:ticker.ticker,
             country:ticker.country,
-            sector:ticker.sector
+            sector:ticker.sector,
+            ratioOptionsY:ratioOptions[y]?ratioOptions[y]:{min:-Infinity,max:Infinity},
+            ratioOptionsX:ratioOptions[x]?ratioOptions[x]:{min:-Infinity,max:Infinity}
         }
     })
+    scatterPlot.fullData = data
     let filteredData = scatterPlot.filterData(data)
     scatterPlot.setChartData(filteredData)
     scatterPlot.setChartOptions(scatterPlot)
@@ -178,16 +197,34 @@ function handleUpdateChart(scatterPlot){
 
 function handleSetChartOptions(scatterPlot){
 
+    const { scale } = scatterPlot.chartControls
     const { y, x } = scatterPlot.selectedRatios
 
-    const data = scatterPlot.chartData.labels
+    let data = scatterPlot.chartData.labels    
+
+    if(!scale){
+        data = scatterPlot.chartData.datasets
+            .filter(item => item.label!=='Regression chart')
+            .map(item => item.data)
+            .flat(1)
+            .filter(item => item!==undefined)
+    }
+    if(data[0]===undefined) data = []
+
     let yData = data.map(item => item.y).filter(item => Number(item))
     let xData = data.map(item => item.x).filter(item => Number(item))
 
-    let yMin = ratioOptions[y]?ratioOptions[y].min:Math.min(...yData)
-    let yMax = ratioOptions[y]?ratioOptions[y].max:Math.max(...yData)
-    let xMin = ratioOptions[x]?ratioOptions[x].min:Math.min(...xData)
-    let xMax = ratioOptions[x]?ratioOptions[x].max:Math.max(...xData)
+    let yMin = ratioOptions[y]&&scale?ratioOptions[y].min:Math.min(...yData)
+    let yMax = ratioOptions[y]&&scale?ratioOptions[y].max:Math.max(...yData)
+    let xMin = ratioOptions[x]&&scale?ratioOptions[x].min:Math.min(...xData)
+    let xMax = ratioOptions[x]&&scale?ratioOptions[x].max:Math.max(...xData)
+
+    if(!scale){
+        yMin=yMin>0?0:yMin
+        xMin=xMin>0?0:xMin
+        yMax=yMax*1.1
+        xMax=xMax*1.1
+    }
 
     scatterPlot.chartOptions={
         responsive:true,
@@ -201,7 +238,12 @@ function handleSetChartOptions(scatterPlot){
                     size:11
                 },
                 formatter: function(value, context) {
-                    if(context.datasetIndex>0) return value.yName
+                    if(context.datasetIndex>0){
+                        if(value.yName) return value.yName
+                        if(value.averageY) return value.y.toFixed(2)
+                        if(value.averageX) return value.x.toFixed(2)
+                        return ''
+                    } 
                     return value.ticker;
                 }
             }
@@ -209,9 +251,13 @@ function handleSetChartOptions(scatterPlot){
         tooltips: {
             callbacks: {
                 label: function(tooltipItem, data) {
-                    if(tooltipItem.datasetIndex>0) return ''
-                    let index = tooltipItem.index
-                    var tickerName = data.labels[index].tickerName;
+
+                    const { index, datasetIndex } = tooltipItem
+                    if(datasetIndex>0){
+                        return '' 
+                    }
+
+                    let tickerName = data.labels[index].tickerName;
                     return tickerName
                 },
                 footer: function(tooltipItems, data) {
@@ -256,14 +302,72 @@ function handleSetChartOptions(scatterPlot){
 
 function handleSetChartData(scatterPlot,data){
 
-    const {
-        y:yRatio,
-        x:xRatio
-    } = scatterPlot.selectedRatios
+    let scatterData = calculateScatterData(scatterPlot,data) 
+    let historicData = calculateHistoricalData(scatterPlot,data)
+    let regressionData = calculateRegressionData(scatterPlot,data)
+    let averageData = calculateAverageData(scatterPlot,data)
 
-    let label = ''    
+    scatterPlot.chartData={
+        datasets: [
+            scatterData,
+            regressionData,
+            ...historicData,
+            ...averageData
+        ],
+        labels:data
+    }
+}
+
+function handleFilterData(scatterPlot,data){
+    let filteredData = []
+
+    let sectorsToRemove = Object.keys(scatterPlot.sectors)
+        .filter(item => !scatterPlot.sectors[item].selected)
+    let countriesToRemove = Object.keys(scatterPlot.countries)
+        .filter(item => !scatterPlot.countries[item].selected)
+    
+    data.forEach((item,index) =>{
+        let remove = false
+        let country = item.country
+        let sector = item.sector
+        if(sectorsToRemove.find(item => item === sector)){
+            remove=true
+        }
+        if(countriesToRemove.find(item => item === country)){
+            remove=true
+        }
+        if(!remove){
+            filteredData.push(item)
+        }
+    })
+
+    if(scatterPlot.historical){
+        const { selectedTickers } = scatterPlot.filterTickers
+        filteredData = data.filter(item => selectedTickers.includes(item.ticker))
+    }
+
+    return filteredData
+}
+
+function handleFilterTicker(scatterPlot,ticker){
+    let found = scatterPlot.filterTickers.selectedTickers.findIndex(item => item ===ticker)
+
+    if(found===-1){
+        scatterPlot.filterTickers.selectedTickers.push(ticker)
+    }else{
+        scatterPlot.filterTickers.selectedTickers.splice(found,1)
+    }
+
+    scatterPlot.updateFilterTotals()
+    scatterPlot.updateChart()
+    return scatterPlot
+}
+
+function calculateScatterData(scatterPlot, data){
+
+    let label = 'Scatter: '    
     if(data.length>0){
-        label = `${data[0].yName} & ${data[0].xName}`
+        label = `Scatter: ${data[0].yName} & ${data[0].xName}`
     }
 
     let highlightColor = scatterPlot.highlightColor
@@ -271,8 +375,7 @@ function handleSetChartData(scatterPlot,data){
     let value = scatterPlot.highlight.split('.')[1]
 
     let tickers = []
-    let tickerRatios = []
-
+    
     switch(filter){
         case 'myPortfolio':
             if(scatterPlot.portfolio){
@@ -301,10 +404,32 @@ function handleSetChartData(scatterPlot,data){
         }
     })
 
-    let tickerKeys = data.map(item => item.ticker)
-    tickerRatios = scatterPlot.tickerRatios.filter(item => tickerKeys.includes(item.ticker))
+    return {
+        label,
+        backgroundColor: highlightColor,
+        pointBorderColor: 'rgba(51, 51, 51,1)',
+        pointBackgroundColor:pointBackgroundColor,
+        pointBorderWidth: 2,
+        pointHoverRadius: 12,
+        pointHoverBorderWidth: 2,
+        pointRadius:pointRadius,
+        pointHitRadius: 10,
+        data
+      }
 
-    let historicData =[{}]
+}
+
+function calculateHistoricalData(scatterPlot, data){
+
+    let tickerKeys = data.map(item => item.ticker)
+    let tickerRatios = scatterPlot.tickerRatios.filter(item => tickerKeys.includes(item.ticker))
+    
+    const {
+        y:yRatio,
+        x:xRatio
+    } = scatterPlot.selectedRatios
+
+    let historicData = [{label:'Historic'}]
 
     if(scatterPlot.historical) {
         historicData = tickerRatios.map(ticker =>{
@@ -314,96 +439,104 @@ function handleSetChartData(scatterPlot,data){
                 y: tickerLatest[yRatio],
                 x: tickerLatest[xRatio],
                 yName: '',
-                xName:''
+                xName:'',
+                year:true,
+                ticker:scatterPlot.ticker
             })
             return historic
         })        
     }
 
+    return historicData
+}
 
-    scatterPlot.chartData={
-        datasets: [
+function calculateRegressionData(scatterPlot,data){
+
+    const { regression } = scatterPlot.chartControls
+
+    if(!regression) return {label: 'Regression chart',}
+
+    let regressionData = data.filter(item =>
+        item.x>item.ratioOptionsX.min&&
+        item.x<item.ratioOptionsX.max&&
+        item.y>item.ratioOptionsY.min&&
+        item.y<item.ratioOptionsY.max
+    )
+
+    let yPoints = regressionData.map(item => item.y)
+    let xPoints = regressionData.map(item => item.x)
+
+    let regData = regress(xPoints,yPoints)
+
+    return {
+        label: 'Regression chart',
+        borderColor:'rgba(26, 26, 26,0.4)',
+        borderWidth:2,
+        data: [{
+                x: 0,
+                y: regData.intercept
+            }, 
             {
-              label,
-              backgroundColor: highlightColor,
-            //   pointBorderColor: 'rgba(75,192,232,1)',
-              pointBorderColor: 'rgba(51, 51, 51,1)',
-              pointBackgroundColor:pointBackgroundColor,
-              pointBorderWidth: 2,
-              pointHoverRadius: 12,
-            //   pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-            //   pointHoverBorderColor: 'rgba(220,220,220,1)',
-              pointHoverBorderWidth: 2,
-              pointRadius:pointRadius,
-              pointHitRadius: 10,
-              data
-            },
-            ...historicData,
-            // {
-            //     label: 'Line Dataset',
-            //     data: [{
-            //         x: 0,
-            //         y: 0
-            //     }, {
-            //         x: 5,
-            //         y: 7
-            //     }, {
-            //         x: 9,
-            //         y: 9
-            //     }],
-            //     type: 'line',
-            //     fill:false,
-                
-            //     // this dataset is drawn on top
-            //     order: 2
-            // },
+                x: 5000000,
+                y: regData.slope*5000000
+            }
         ],
-        labels:data
+        order:-2,
+        type: 'line',
+        fill: false,
     }
 }
 
-function handleFilterData(scatterPlot,data){
-    let filteredData = []
+function calculateAverageData(scatterPlot,data){
 
-    let sectorsToRemove = Object.keys(scatterPlot.sectors)
-        .filter(item => !scatterPlot.sectors[item].selected)
-    let countriesToRemove = Object.keys(scatterPlot.countries)
-        .filter(item => !scatterPlot.countries[item].selected)
-    
-    data.forEach((item,index) =>{
-        let remove = false
-        let country = item.country
-        let sector = item.sector
-        if(sectorsToRemove.find(item => item === sector)){
-            remove=true
-        }
-        if(countriesToRemove.find(item => item === country)){
-            remove=true
-        }
-        if(!remove){
-            filteredData.push(item)
-        }
-    })
-    if(scatterPlot.historical){
-        const { selectedTickers } = scatterPlot.filterTickers
-        filteredData = data.filter(item => selectedTickers.includes(item.ticker))
+    const fullData = scatterPlot.fullData
+
+    const { average } = scatterPlot.chartControls
+
+    if(!average) return []
+
+    let xAverage = fullData.reduce((a,c) => a + c.x ,0) / fullData.length  
+    let yAverage = fullData.reduce((a,c) => a + c.y ,0) / fullData.length
+
+    const { y, x } = scatterPlot.selectedRatios
+
+    let yMax = ratioOptions[y]?ratioOptions[y].max:yAverage
+    let xMax = ratioOptions[x]?ratioOptions[x].max:xAverage
+
+    let xLine = {
+        label: 'X-Average',
+        borderColor:'rgba(26, 26, 26,0.4)',
+        borderWidth:2,
+        pointRadius:5,
+        data:[{
+            x:xAverage,
+            y:0
+        },{
+            x:xAverage,
+            y:yMax*0.9,
+            averageX:true,
+        }],
+        type: 'line',
+        fill: false,
     }
-    console.log(scatterPlot,scatterPlot.historical)
-    return filteredData
-}
-
-function handleFilterTicker(scatterPlot,ticker){
-    let found = scatterPlot.filterTickers.selectedTickers.findIndex(item => item ===ticker)
-
-    if(found===-1){
-        scatterPlot.filterTickers.selectedTickers.push(ticker)
-    }else{
-        scatterPlot.filterTickers.selectedTickers.splice(found,1)
+    let yLine = {
+        label: 'Y-Average',
+        borderColor:'rgba(26, 26, 26,0.4)',
+        borderWidth:2,
+        pointRadius:5,        
+        data:[{
+            x:0,
+            y:yAverage
+        },{
+            x:xMax*0.9,
+            y:yAverage,
+            averageY:true,            
+        }],
+        type: 'line',
+        fill: false,
     }
 
-    scatterPlot.updateFilterTotals()
-    scatterPlot.updateChart()
-    return scatterPlot
+    return [xLine,yLine]
 }
 
 let scatterOptions=[

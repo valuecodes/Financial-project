@@ -1,11 +1,7 @@
 import React,{useState,useEffect} from 'react'
 import { useSelector } from 'react-redux'
 import { Screener } from '../utils/screener';
-import { camelCaseToString } from '../utils/utils';
 import MultiRange from '../components/MultiRange'
-import Icon from '@material-ui/core/Icon';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
-import { height, width } from '@material-ui/system';
 import Table from '../components/Table'
 import TickersFound from '../components/TickersFound'
 
