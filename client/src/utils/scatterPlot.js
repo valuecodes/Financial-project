@@ -22,6 +22,10 @@ export default function ScatterPlot(tickers,tickerRatios=[],portfolio){
         countries:0,
         countriesSelected:0
     }
+    this.filterTickers={
+        category:'sectors',
+        selectedTickers:['AKTIA','EVLI','EQV1V']
+    }
     this.chartData = {}
     this.chartOptions = {
         responsive:true,
@@ -29,6 +33,7 @@ export default function ScatterPlot(tickers,tickerRatios=[],portfolio){
     }
     this.historical =tickerRatios.length?true:false
     this.init = () => handleInit(this)
+    this.changeMode = (historical) => handleChangeMode(this,historical)
     this.setOption = (option) => handleSetOption(this,option)
     this.filterValue = (newValue) => handleFilterValue(this,newValue)
     this.filterSelectAll = (filterName) => handleFilterSelectAll(this,filterName)
@@ -40,6 +45,8 @@ export default function ScatterPlot(tickers,tickerRatios=[],portfolio){
     this.setChartOptions = () => handleSetChartOptions(this)
     this.updateFilterTotals = () => handleUpdateFilterTotals(this)
     this.filterData = (data) => handleFilterData(this,data)
+
+    this.filterTicker = (ticker) => handleFilterTicker(this,ticker)
 }
 
 function handleInit(scatterPlot){
@@ -52,7 +59,8 @@ function handleInit(scatterPlot){
                 name:country,
                 selected:true,
                 filterName:'countries',
-                count: scatterPlot.tickers.filter(item=>item.country===country).length 
+                count: scatterPlot.tickers.filter(item=>item.country===country).length,
+                tickers:scatterPlot.tickers.filter(item=>item.country===country)
             }
         })
         
@@ -63,7 +71,8 @@ function handleInit(scatterPlot){
                 name:sector,
                 selected:true,
                 filterName:'sectors',    
-                count: scatterPlot.tickers.filter(item=>item.sector===sector).length    
+                count: scatterPlot.tickers.filter(item=>item.sector===sector).length,
+                tickers: scatterPlot.tickers.filter(item=>item.sector===sector) 
             }
         })
         
@@ -73,6 +82,12 @@ function handleInit(scatterPlot){
         scatterPlot.updateFilterTotals()        
         scatterPlot.updateChart()
     }
+}
+
+function handleChangeMode(scatterPlot,historical){
+    scatterPlot.historical = historical
+    scatterPlot.updateChart()
+    return scatterPlot
 }
 
 function handleSetOption(scatterPlot,option){
@@ -155,13 +170,13 @@ function handleUpdateChart(scatterPlot){
             sector:ticker.sector
         }
     })
-
     let filteredData = scatterPlot.filterData(data)
     scatterPlot.setChartData(filteredData)
     scatterPlot.setChartOptions(scatterPlot)
+    return scatterPlot
 }
 
-export function handleSetChartOptions(scatterPlot){
+function handleSetChartOptions(scatterPlot){
 
     const { y, x } = scatterPlot.selectedRatios
 
@@ -173,11 +188,6 @@ export function handleSetChartOptions(scatterPlot){
     let yMax = ratioOptions[y]?ratioOptions[y].max:Math.max(...yData)
     let xMin = ratioOptions[x]?ratioOptions[x].min:Math.min(...xData)
     let xMax = ratioOptions[x]?ratioOptions[x].max:Math.max(...xData)
-
-    // yMin=''
-    // yMax=''
-    // xMin=''
-    // xMax=''
 
     scatterPlot.chartOptions={
         responsive:true,
@@ -191,7 +201,6 @@ export function handleSetChartOptions(scatterPlot){
                     size:11
                 },
                 formatter: function(value, context) {
-                    console.log(value,context)
                     if(context.datasetIndex>0) return value.yName
                     return value.ticker;
                 }
@@ -200,7 +209,6 @@ export function handleSetChartOptions(scatterPlot){
         tooltips: {
             callbacks: {
                 label: function(tooltipItem, data) {
-                    console.log(tooltipItem,data)
                     if(tooltipItem.datasetIndex>0) return ''
                     let index = tooltipItem.index
                     var tickerName = data.labels[index].tickerName;
@@ -246,7 +254,7 @@ export function handleSetChartOptions(scatterPlot){
     }
 }
 
-export function handleSetChartData(scatterPlot,data){
+function handleSetChartData(scatterPlot,data){
 
     const {
         y:yRatio,
@@ -282,7 +290,7 @@ export function handleSetChartData(scatterPlot,data){
 
     let pointBackgroundColor = []
     let pointRadius = []
-
+    
     data.forEach(item =>{
         if(tickers.find(elem=>elem===item.ticker)){
             pointBackgroundColor.push(highlightColor)
@@ -298,18 +306,21 @@ export function handleSetChartData(scatterPlot,data){
 
     let historicData =[{}]
 
-    historicData = tickerRatios.map(ticker =>{
-        let historic = ticker.getScatterChart(yRatio,xRatio)
-        let tickerLatest = scatterPlot.tickers.find(item => item.ticker === ticker.ticker).ratios
-        historic.data.unshift({            
-            y: tickerLatest[yRatio],
-            x: tickerLatest[xRatio],
-            yName: '',
-            xName:''
-        })
-        return historic
-    })
-    console.log(historicData)
+    if(scatterPlot.historical) {
+        historicData = tickerRatios.map(ticker =>{
+            let historic = ticker.getScatterChart(yRatio,xRatio)
+            let tickerLatest = scatterPlot.tickers.find(item => item.ticker === ticker.ticker).ratios
+            historic.data.unshift({            
+                y: tickerLatest[yRatio],
+                x: tickerLatest[xRatio],
+                yName: '',
+                xName:''
+            })
+            return historic
+        })        
+    }
+
+
     scatterPlot.chartData={
         datasets: [
             {
@@ -373,8 +384,26 @@ function handleFilterData(scatterPlot,data){
             filteredData.push(item)
         }
     })
-
+    if(scatterPlot.historical){
+        const { selectedTickers } = scatterPlot.filterTickers
+        filteredData = data.filter(item => selectedTickers.includes(item.ticker))
+    }
+    console.log(scatterPlot,scatterPlot.historical)
     return filteredData
+}
+
+function handleFilterTicker(scatterPlot,ticker){
+    let found = scatterPlot.filterTickers.selectedTickers.findIndex(item => item ===ticker)
+
+    if(found===-1){
+        scatterPlot.filterTickers.selectedTickers.push(ticker)
+    }else{
+        scatterPlot.filterTickers.selectedTickers.splice(found,1)
+    }
+
+    scatterPlot.updateFilterTotals()
+    scatterPlot.updateChart()
+    return scatterPlot
 }
 
 let scatterOptions=[

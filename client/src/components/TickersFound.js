@@ -5,6 +5,7 @@ export default function TickersFound(props) {
     const {
         tickersFound=0,
         total, 
+        showTotal = false,
         className='',
         loading=false
     } = props
@@ -23,7 +24,7 @@ export default function TickersFound(props) {
             style={tickersFoundStyle(tickersFound)}
         >
             <h3>Tickers found: </h3>
-            <label>{tickersFound}</label>
+            <label>{tickersFound} {showTotal&&`/ ${total}`}</label>
         </div>    
     )
 }

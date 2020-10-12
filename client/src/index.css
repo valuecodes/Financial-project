@@ -317,6 +317,46 @@ th{
   width: 7.5rem;
 }
 
+/* TickerCategory */
+
+.tickerCategoriesContainer{
+  max-width: inherit;
+  height: 4rem;
+  margin: 1rem 0;
+}
+
+.tickerCategoriesHeader{
+  display: flex;
+  align-items: center;
+  height: 4rem;
+}
+
+.tickerCategories{
+  position: relative;
+  height: 4rem;
+  padding: 0.2rem;
+  overflow: hidden;
+  z-index: 5;
+  background-color: var(--primary-variant);
+}
+
+.tickerCategoriesSelected{
+  display: flex;
+}
+
+.tickerCategories:hover{
+  height: auto;
+}
+
+.tickerCategory h4{
+  margin: 0.5rem 0;
+}
+
+.categoryTickers{
+  display: flex;
+  flex-wrap: wrap;
+}
+
 /* SelectPortfolio */
 .selectPortfolio{
   display: flex;
@@ -1155,12 +1195,17 @@ input[type='range']:focus {
 
 .scatterInputs{
   display: grid;
-  grid-template-columns: 25rem 1fr auto;
+  grid-template-columns: 25rem 1fr;
   grid-column-gap: 1rem;
 }
 
 .scatterInputs .options{
   grid-column: 1/4;
+}
+
+.scatterFilterSection{
+  display: flex;
+  justify-content: space-between;
 }
 
 .scatterFilters{
@@ -1672,9 +1717,6 @@ td{
     display: grid;
     grid-template-columns: 1fr;
     grid-column-gap: 1rem;
-  }
-  .scatterInputs .options{
-    grid-column: 1/2;
   }
 
   .scatterFilters{
