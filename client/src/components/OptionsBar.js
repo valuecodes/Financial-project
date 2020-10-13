@@ -40,7 +40,7 @@ export default function OptionsBar(props){
     return(
         <div className='options'>
             <ul>
-            {options.map((option,index) =>
+            {options && options.map((option,index) =>
                 <li 
                     key={index}
                     style={getStyle(option,selected)}

@@ -1,4 +1,4 @@
-import { roundFinancialNumber } from "./utils";
+import { roundFinancialNumber, camelCaseToString } from "./utils";
 
 export function TickerRatio(data){
     this.ticker = data.ticker
@@ -79,21 +79,26 @@ function handleGetScatterChart(tickerRatio,y,x){
     
     let yRatios = tickerRatio.getYearlyRatio(y)
     let xRatios = tickerRatio.getYearlyRatio(x)
-
+    
     let data = yRatios.map(ratio =>{
         return{
             y: ratio.value,
             x: xRatios.find(item => item.year === ratio.year).value,
             yName: ratio.year,
-            xName: ratio.year,
-            ticker: tickerRatio.ticker
+            yRatio: camelCaseToString(y),
+            xRatio: camelCaseToString(x),
+            historicTicker: tickerRatio.ticker
         }
     })
-
     return {
         label: 'Line Dataset'+tickerRatio.ticker,
         data: data,
         type: 'line',
         fill: false,
+        pointRadius: data.map(item => 5),
+        pointHitRadius: data.map(item => 10),
+        borderColor:'rgba(51, 51, 51,0.6)',
+        borderWidth:2,
+        pointHoverRadius: 8,
     }
 }

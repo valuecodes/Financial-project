@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from 'react'
+import React,{useState,useEffect,useRef} from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import SectionNav from '../components/SectionNav'
 import ScatterPlot from '../utils/scatterPlot'
@@ -13,30 +13,31 @@ import { getTickerRatiosData } from '../actions/tickerActions';
 export default function ScatterScreen() {
 
     const dispatch = useDispatch()
-    const [scatterPlot, setScatterPlot] = useState(new ScatterPlot())
-    const [navigation,setNavigation] = useState({
-        selected:{name:'scatter',index:0},
-        options:['scatter','historicalScatter']
-    })
     const tickerListData = useSelector(state => state.tickerListData)
+    const { tickers } = tickerListData
     const portfolioSelected = useSelector(state => state.portfolioSelected)
     const { selectedPortfolio } = portfolioSelected
     const tickerRatios = useSelector(state => state.tickerRatios)
-    const { loading, tickerRatiosData, error } = tickerRatios
+    const { tickerRatiosData } = tickerRatios
+
+    const [scatterPlot, setScatterPlot] = useState({...new ScatterPlot(tickers||[])})
+        const [navigation,setNavigation] = useState({
+        selected:{name:'scatter',index:0},
+        options:['scatter','historicalScatter']
+    })
 
     useEffect(()=>{
-        if(tickerListData.tickers&&selectedPortfolio){
-            let newScatter = new ScatterPlot(tickerListData.tickers,tickerRatiosData,selectedPortfolio)
+        if(tickers){
+            let newScatter = new ScatterPlot(tickers,tickerRatiosData,selectedPortfolio)
             newScatter.init()
-            setScatterPlot(newScatter)
+            setScatterPlot({...newScatter})                
         }
-    },[tickerListData,tickerRatiosData,selectedPortfolio])
-
+    },[tickers,tickerRatiosData,selectedPortfolio])
+    
     useEffect(()=>{
         if(
             scatterPlot.tickerRatios.length === 0&&
-            navigation.selected.index === 1
-        ){
+            navigation.selected.index === 1){
             dispatch(getTickerRatiosData())
         }
         let historical = navigation.selected.name==='historicalScatter'
@@ -222,10 +223,12 @@ function ScatterHistoricalFilters({scatterPlot, setScatterPlot}){
                     <div className='tickerCategoriesHeader'>
                         <h3>Category: </h3>
                         <button 
+                            className='categoriesButton'                            
                             style={{backgroundColor:category==='sectors'&&'lightgreen'}}
                             onClick={() => setCategory('sectors')}
                         >Sectors</button>
                         <button 
+                            className='categoriesButton'                            
                             style={{backgroundColor:category==='countries'&&'lightgreen'}}
                             onClick={() => setCategory('countries')}
                         >Countries</button>
@@ -233,6 +236,7 @@ function ScatterHistoricalFilters({scatterPlot, setScatterPlot}){
                             <h3>Selected: </h3>
                             {selectedTickers.map(ticker =>
                                 <button
+                                    className='categoriesButton'
                                     key={ticker}
                                     style={{backgroundColor:'lightgreen'}}
                                     onClick={() => filterTicker(ticker)}
@@ -246,6 +250,7 @@ function ScatterHistoricalFilters({scatterPlot, setScatterPlot}){
                             <div className='categoryTickers'>
                                 {scatterPlot[category][item].tickers.map(item =>
                                     <button
+                                        className='categoriesButton' 
                                         key={item.ticker}
                                         style={{backgroundColor:selectedTickers.includes(item.ticker)&&'lightgreen'}}
                                         onClick={() => filterTicker(item.ticker)}
@@ -267,6 +272,12 @@ function ScatterChart({scatterPlot,setScatterPlot}){
         setScatterPlot({...updated})
     }
 
+    const resetChart=()=>{
+        scatterPlot.chartControls.scale = true
+        let updated = scatterPlot.updateChart()
+        setScatterPlot({...updated})
+    }
+
     return(
         <div className='scatterChart'>
             <div className='yAxis'>
@@ -279,10 +290,12 @@ function ScatterChart({scatterPlot,setScatterPlot}){
                 />
             </div>
             <div className='chartContainer'>
+                <button
+                className='button'
+                onClick={resetChart}>Reset Chart</button>
                 <Scatter
                     data={scatterPlot.chartData}
                     options={scatterPlot.chartOptions}
-                    // datasetKeyProvider={datasetKeyProvider}
                 />
             </div>
             <div className='xAxis'>
