@@ -93,7 +93,6 @@ export function calculatePriceChart(chartComponents,options){
         options  
     })
 
-
     return {
         datasets:dataSets,
         labels: labels

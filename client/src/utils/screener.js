@@ -3,12 +3,14 @@ export function Screener(tickers){
     this.inputs = {}
     this.screenedTickers = []
     this.ratios = []
-    this.sortOrder = {value:'Tickers',min:true}
+    this.tickerList={
+        headers:[],
+        tbody:[],
+    }
     this.selectActiveInput = (inputName) => calculatSelectActiveInput(this,inputName)
     this.resetInput = (inputName) => calculateResetInput(this,inputName)
     this.updateInput = (input,type,value) => updateScreenerInput(this,input,type,value)
     this.screenTickers = () => calculateScreenTickers(this)
-    this.setSortOrder = (value) => handleSetSortOrder(this,value)
     this.init = () => initScreener(this)
 }
 
@@ -83,28 +85,7 @@ function calculateScreenTickers(screener){
         })
         screenedTickers=screenedTickers.filter(item => !remove.includes(item.ticker))
     })
-    let sortedTickers = []
-    let sortOrder = screener.sortOrder.value
-    let min = screener.sortOrder.min
-    switch(sortOrder){
-        case 'Tickers':
-            sortedTickers = screenedTickers.sort((a,b)=>
-                min?a.ticker-b.ticker:b.ticker-a.ticker  
-            )
-            break
-        default: screenedTickers.sort((a,b)=>
-            min?a.ratios[sortOrder]-b.ratios[sortOrder]:
-            b.ratios[sortOrder]-a.ratios[sortOrder]
-        )
-    }
     screener.screenedTickers = screenedTickers
-    return screener
-}
-
-function handleSetSortOrder(screener,value){
-    let min = !screener.sortOrder.min
-    screener.sortOrder={ value, min }
-    screener.screenTickers()
     return screener
 }
 
@@ -135,10 +116,21 @@ function initScreener(screener){
                 scaleTo: scaleTo+1*ticks
             }   
         })
+        
         const ratios = Object.keys(tickers[0].ratios)
             .filter(item => item!=='date')
         ratios.unshift('Tickers')   
-        
+
+        screener.tickerList.headers = ratios
+        let tbody = tickers.map(ticker => {
+            let symbol = ticker.ticker
+            return{
+                symbol,
+                ...ticker.ratios                
+            }
+        })
+
+        screener.tickerList.tbody = tbody
         screener.ratios = ratios
         screener.inputs = inputs
     }

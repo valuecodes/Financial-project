@@ -6,9 +6,6 @@ import {
     TICKER_DATA_REQUEST,
     TICKER_DATA_SUCCESS, 
     TICKER_DATA_FAIL, 
-    TICKER_PORTFOLIO_DATA_REQUEST,
-    TICKER_PORTFOLIO_DATA_SUCCESS,
-    TICKER_PORTFOLIO_DATA_FAIL,
     TICKER_SAVE_REQUEST,
     TICKER_SAVE_SUCCESS,
     TICKER_SAVE_FAIL,
@@ -44,21 +41,6 @@ const getTickerData = (tickerId) => async (dispatch, getState) => {
         dispatch({type: TICKER_DATA_SUCCESS, payload:data})
     }catch(err){
         dispatch({type: TICKER_DATA_FAIL, payload:err.message})
-    }
-}
-
-const getPortfolioTickersData = (portfolioId) => async (dispatch,getState) => {
-    try{
-        dispatch({type: TICKER_PORTFOLIO_DATA_REQUEST})
-        const {userSignin:{userInfo}} = getState()
-        const { data } = await axios.get('/api/tickers/portfolio/'+portfolioId,{
-            headers:{
-                Authorization: 'Bearer'+userInfo.token
-            }
-        })
-        dispatch({type: TICKER_PORTFOLIO_DATA_SUCCESS, payload: data})
-    } catch(err){   
-        dispatch({type: TICKER_PORTFOLIO_DATA_FAIL, payload: err.message})
     }
 }
 
@@ -122,10 +104,10 @@ const getFinancialsDataFromApi = (ticker) => async (dispatch, getState) => {
     }
 }
 
-const getTickerRatiosData = () => async (dispatch, getState) => {
+const getTickerRatiosData = (tickers=[]) => async (dispatch, getState) => {
     try{
         dispatch({type: TICKER_RATIOS_REQUEST})
-        const { data } = await axios.get('/api/tickers/ratios')
+        const { data } = await axios.post('/api/tickers/ratios',tickers)
         dispatch({type: TICKER_RATIOS_SUCCESS, payload:data})
     }catch(err){
         dispatch({type: TICKER_RATIOS_FAIL, payload:err.message})
@@ -135,7 +117,6 @@ const getTickerRatiosData = () => async (dispatch, getState) => {
 export{
     listTickers,
     getTickerData,
-    getPortfolioTickersData,
     saveTicker,
     deleteTicker,
     updateTickerRatios,

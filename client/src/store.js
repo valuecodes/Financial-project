@@ -38,7 +38,6 @@ const reducer = combineReducers({
     
     tickerListData: tickerListDataReducer,
     tickerData:tickerDataReducer,
-    tickerPortfolioData: tickerPortfolioDataReducer,
     tickerSave: tickerSaveReducer,
     tickerDelete: tickerDeleteReducer,
     tickerUpdateRatios: tickerUpdateRatiosReducer,

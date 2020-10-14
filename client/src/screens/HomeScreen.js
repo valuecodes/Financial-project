@@ -62,7 +62,7 @@ function MainSide({tickerList}){
                 <div className='portfolioListTickers'>
                     {selectedPortfolio&&
                         <>
-                        <h2>Portfolio: <Link to={'/portfolio/'+selectedPortfolio._id}>{selectedPortfolio.name}</Link></h2>
+                        <h2>Portfolio: <Link to={'/portfolio'}>{selectedPortfolio.name}</Link></h2>
                         {selectedPortfolio.tickers.map(ticker =>
                             <div key={ticker._id} className='portfolioListTicker'>
                                 <Link to={'/ticker/'+ticker.ticker}>{ticker.ticker}</Link>   

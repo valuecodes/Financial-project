@@ -71,19 +71,18 @@ function ScreenerOptions({screener, setScreener}){
 function ScreenerList({screener, setScreener}){
 
     const setSortOrder = (value) => {
-        let updated = screener.setSortOrder(value)
-        setScreener({...updated})
+        // let updated = screener.setSortOrder(value)
+        // setScreener({...updated})
     }
+
+    
+    const { headers, tbody } = screener.tickerList
 
     return(
         <div className='screenerList'>
             <Table
-                headers={screener.ratios}
-                currentHeader={screener.sortOrder.value}
-                setCurrentHeader={setSortOrder}
-                tbody={screener.screenedTickers}
-                tbodyHead={'ticker'}
-                tbodyItems={'ratios'}
+                headers={headers}
+                tbody={tbody}
             />
         </div>
     )

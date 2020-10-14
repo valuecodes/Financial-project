@@ -5,9 +5,6 @@ import {
     TICKER_DATA_REQUEST, 
     TICKER_DATA_SUCCESS, 
     TICKER_DATA_FAIL, 
-    TICKER_PORTFOLIO_DATA_REQUEST, 
-    TICKER_PORTFOLIO_DATA_SUCCESS, 
-    TICKER_PORTFOLIO_DATA_FAIL,
     TICKER_SAVE_REQUEST,
     TICKER_SAVE_SUCCESS,
     TICKER_SAVE_FAIL,
@@ -51,18 +48,6 @@ function tickerDataReducer(state={},action){
                 tickerRatios: action.payload.tickerRatios
             }
         case TICKER_DATA_FAIL:
-            return {loading:false, error: action.payload}
-        default: return state
-    }
-}
-
-function tickerPortfolioDataReducer(state={},action){
-    switch(action.type){
-        case TICKER_PORTFOLIO_DATA_REQUEST:
-            return {loading:true}
-        case TICKER_PORTFOLIO_DATA_SUCCESS:
-            return {loading:false, portfolioData:{tickerData:action.payload.tickerData,portfolio:action.payload.portfolio}, tickers:action.payload.tickerData,portfolio:action.payload.portfolio}
-        case TICKER_PORTFOLIO_DATA_FAIL:
             return {loading:false, error: action.payload}
         default: return state
     }
@@ -131,7 +116,6 @@ function tickerRatiosReducer(state={},action){
 export {
     tickerListDataReducer,
     tickerDataReducer,
-    tickerPortfolioDataReducer,
     tickerSaveReducer,
     tickerDeleteReducer,
     tickerUpdateRatiosReducer,

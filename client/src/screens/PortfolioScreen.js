@@ -1,7 +1,7 @@
 import React,{ useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { getPortfolioTickersData } from '../actions/tickerActions';
-import { Portfolio } from '../utils/portfolio1';
+import { getTickerRatiosData } from '../actions/tickerActions';
+import Portfolio from '../utils/portfolio';
 import { datasetKeyProvider } from '../utils/utils';
 import PortfolioList from '../components/portfolio/PortfolioList'
 import PortfolioChart from '../components/portfolio/PortfolioChart'
@@ -10,239 +10,132 @@ import { calculateDividendChart, calculateStatCharts, calculateStatTreeMap } fro
 import SectionNav from '../components/SectionNav'
 import Options from '../components/Options'
 import { portfolioDivChartOptions, portfolioStatChartOptions } from '../utils/chartOptions';
-import { useHistory } from 'react-router';
 import Chart from "react-google-charts";
+import PortfolioData from '../utils/portfolioData';
+import OptionsBar from '../components/OptionsBar'
+import Table from '../components/Table'
 
 export default function PortfolioScreen(props) {
 
-    const history = useHistory();
-    const dispatch = useDispatch()
-    const [portfolio, setPortfolio] = useState(null)
+    const dispatch = useDispatch()    
+
+    const [navigation,setNavigation] = useState({
+        selected:{name:'statistics',index:2},
+        options:['statistics','tickers','priceChart','dividends']
+    })
+    
+    const [portfolioData, setPortfolioData] = useState({...new PortfolioData()})
     const portfolioSelected = useSelector(state => state.portfolioSelected)
     const { selectedPortfolio } = portfolioSelected
-    const tickerPortfolioData = useSelector(state => state.tickerPortfolioData)
-    const { loading, portfolioData, error } = tickerPortfolioData
-
-    useEffect(()=>{
-        if(!portfolioData){
-            let portfolioId = props.match.params.id
-            dispatch(getPortfolioTickersData(portfolioId))            
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps        
-    },[])
-
-    useEffect(()=>{
-        if(portfolioData){
-            setPortfolio(new Portfolio(portfolioData))
-        }
-    },[portfolioData])
+    const tickerRatios = useSelector(state => state.tickerRatios)
+    const { tickerRatiosData } = tickerRatios
 
     useEffect(()=>{
         if(selectedPortfolio){
-            let portfolioId = props.match.params.id
-            if(portfolioId!==selectedPortfolio._id){
-                history.push("/portfolio/"+selectedPortfolio._id);
-                dispatch(getPortfolioTickersData(selectedPortfolio._id)) 
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+            let tickers = selectedPortfolio.tickers.map(item => item.ticker)
+            dispatch(getTickerRatiosData(tickers))    
+        }    
     },[selectedPortfolio])
 
-    const [navigation,setNavigation] = useState({
-        selected:{name:'statistics',index:0},
-        options:['statistics','tickers','priceChart','dividends']
-    })
-
+    useEffect(()=>{
+        if(selectedPortfolio&&tickerRatiosData){
+            let newPortfolioData = new PortfolioData(selectedPortfolio,tickerRatiosData)
+            newPortfolioData.init()
+            setPortfolioData({...newPortfolioData})
+        }
+    },[selectedPortfolio,tickerRatiosData])
     return (
         <section className='portfolioScreen container'>
-            <PortfolioHeader portfolio={portfolio}/>
+            <PortfolioHeader portfolioData={portfolioData}/>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
-            {loading?<div>Loading...</div>:error?<div>{error}</div>:
                 <div className='sectionContainer'>
                     <div 
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >
-                        <PortfolioStats portfolio={portfolio} navigation={navigation} />
-                        <PortfolioList portfolio={portfolio} navigation={navigation}/>
-                        <PortfolioChart portfolio={portfolio} navigation={navigation}/>
-                        <DividendChart portfolio={portfolio} navigation={navigation}/>
+                        <div></div>
+                        <TickerList portfolioData={portfolioData} setPortfolioData={setPortfolioData}/>
+                        <PriceChart portfolioData={portfolioData} setPortfolioData={setPortfolioData}/>
                     </div>
                 </div>
-            }
         </section>
     )
 }
 
-function PortfolioStats({portfolio,navigation}){
+function PriceChart({portfolioData,setPortfolioData}){
 
-    const [treeMapData,setTreeMapData] = useState([])
-    const [chartData,setChartData]=useState({
-        sector:{},
-        industry:{},
-        subIndustry:{}
-    })
+    const selectPriceChart=(value)=>{   
+        portfolioData.priceChart.selected = value
+        let updated = portfolioData.updatePriceChart()
+        setPortfolioData({...updated})
+    }
 
-    useEffect(()=>{
-        if(portfolio){
-            const portfolioStatComponents = portfolio.statComponents()
-            const chartData = calculateStatCharts(portfolioStatComponents)
+    const { priceChart } = portfolioData
+    const { charts, selected } = priceChart
 
-            setTreeMapData(calculateStatTreeMap(portfolioStatComponents))
-            setChartData({
-                sector:chartData.sectorData,
-                industry:chartData.industryData,
-                subIndustry:chartData.subIndustryData
-            })
-        }
-    },[portfolio])
-    
     return(
-        <div>
-            <div className='portfolioStats'>
-                <Chart
-                    height={600}
-                    chartType="TreeMap"
-                    maxDepth={1}
-                    maxPostDepth={2}
-                    loader={<div>Loading Chart</div>}
-                    data={treeMapData}
-
-                    options={{
-                        maxDepth: 3,
-                        maxPostDepth: 3,
-                        title: 'Portfolio',
-                        chartArea: { width: '30%' },
-                        fontSize:14,
-                        fontColor:'white',
-                        headerColor:'rgb(white)',
-                        textStyle:{
-                            color:'black',
-                            bold:true
-                        },  
-                        hAxis: {
-                            title: 'Total Population',
-                            minValue: 0,
-                        },
-                        vAxis: {
-                            title: 'City',
-                        },
-                        useWeightedAverageForAggregation: true
-                    }}
-                    legendToggle
+        <div className='portfolioPriceChart'>
+            <OptionsBar
+                options={charts} 
+                selected={selected} 
+                selectOption={selectPriceChart}
+            />
+            <div className='chartContainer'>
+                <Line
+                    id='canvas'
+                    data={portfolioData.priceChartData}
+                    options={portfolioData.priceChartOptions}
                 />
-                <div className='chartContainer'>
-                    <Pie
-                        data={chartData.sector}
-                        options={portfolioStatChartOptions('Sectors')} 
-                    />                
-                </div>
-                <div className='chartContainer'>
-                    <Doughnut
-                        data={chartData.industry}
-                        options={portfolioStatChartOptions('Industries')} 
-                    />                 
-                </div>
-                <div className='chartContainer'>
-                    <Doughnut
-                        data={chartData.subIndustry}
-                        options={portfolioStatChartOptions('SubIndustries')} 
-                    />                   
-                </div>
             </div>
         </div>
-
     )
 }
 
-function DividendChart({portfolio,navigation}){
+function TickerList({portfolioData,setPortfolioData}){
 
-    const [dividendComponents, setDividendComponents] = useState(null)
-    const [options,setOptions]=useState({
-        selected:'dividends',
-        options:['dividends','yearlyDividends','cumulativeDividends'],
-        time:{
-            timeValue:'20.years-years',
-            timeStart:new Date().getFullYear(),
-            timeEnd:new Date().getFullYear(),            
-        },
-    })
-    const [chart, setChart] = useState({})
-
-    useEffect(()=>{
-        if(portfolio){
-            setDividendComponents(portfolio.dividendComponents())
-        }
-    },[portfolio])
-
-    useEffect(()=>{
-        if(dividendComponents){
-            let chartData = calculateDividendChart(dividendComponents,options)
-            setChart(chartData)   
-        }
-    },[dividendComponents,options])
+    const { headers, tbody } = portfolioData.tickerList
 
     return(
-        <section className='section'>
-            <Options options={options} setOptions={setOptions}/>
-            <div className='dividendChart'>
-                <div className='chartContainer'>
-                {navigation.selected.name==='dividends'&&
-                    <Line
-                        id={'canvas'}
-                        datasetKeyProvider={datasetKeyProvider}
-                        data={chart}
-                        options={portfolioDivChartOptions()}
-                    /> 
-                }
-                </div>
-                <ChartOptions/>     
-            </div>
-        </section>
-
-    )
-}
-
-function ChartOptions(){
-    return(
-        <div className='chartOptions'>
-
+        <div className='portfolioTickerList'>
+            <Table
+                headers={headers}
+                tbody={tbody}
+            />
         </div>
     )
 }
 
-function PortfolioHeader({portfolio}){
+function PortfolioHeader({portfolioData}){
+
+    const { name, tickers } = portfolioData.portfolio
+
     return(
         <ul className='portfolioHeader'>
-            {portfolio&&
-                <>
-                    <li>
-                        <p>Portfolio</p>
-                        <h2>{portfolio.name}</h2>
-                    </li>
-                    <li>
-                        <p>Number of Stocks</p>
-                        <h2>{portfolio.userTickers.length}</h2>                        
-                    </li>
-                    <li>
-                        <p>Purchase price</p>
-                        <h2>{portfolio.purchasePrice('currency')}</h2>
-                    </li>
-                    <li>
-                        <p>Current value</p>
-                        <h2>{portfolio.currentValue('currency')}</h2>
-                    </li>
-                    <li>
-                        <p>Price change</p>
-                        <h2>
-                            {portfolio.priceChange('currency')}{' '}(
-                            <span style={{color:portfolio.priceChange()>0?'green':'red'}}>
-                            {portfolio.priceChangePercentage('percentage')}
-                            </span>)
-                        </h2>
-                    </li>
-                </>
-            }
+            <li>
+                <p>Portfolio</p>
+                <h2>{name}</h2>
+            </li>
+            <li>
+                <p>Number of Stocks</p>
+                <h2>{tickers.length}</h2>      
+            </li>
+            <li>
+                <p>Purchase price</p>
+                {/* <h2>{portfolioData.portfolio.getPurchasePrice()}</h2> */}
+            </li>
+            {/* <li>
+                <p>Current value</p>
+                <h2>{portfolio.currentValue('currency')}</h2>
+            </li>
+            <li>
+                <p>Price change</p>
+                <h2>
+                    {portfolio.priceChange('currency')}{' '}(
+                    <span style={{color:portfolio.priceChange()>0?'green':'red'}}>
+                    {portfolio.priceChangePercentage('percentage')}
+                    </span>)
+                </h2>
+            </li> */}
         </ul>
     )
 }

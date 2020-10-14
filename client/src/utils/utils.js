@@ -196,3 +196,8 @@ export const regress = (x, y) => {
     const ssr = sst - sse;
     return {slope, intercept, r, r2, sse, ssr, sst, sy, sx, see};
 }
+
+export const toPercentage = (value) => {
+    if(isNaN(value)) return ''
+    return roundToTwoDecimal(value*100)
+}

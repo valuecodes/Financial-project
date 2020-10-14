@@ -32,7 +32,13 @@ exports.getTickersList = async (req,res) => {
 // @route     GET /ratios
 // @ access   
 exports.getRatiosList = async (req,res) => {
-    let tickerRatios = await TickerRatios.find()
+    let list = req.body
+    let tickerRatios = []
+    if(list.length===0){
+        tickerRatios = await TickerRatios.find()
+    }else{
+        tickerRatios = await TickerRatios.find({ticker:list})
+    }
     res.send({data:tickerRatios})
 }
 
@@ -48,25 +54,5 @@ exports.getTickerData = async (req, res) => {
         return res.send({data: ticker, tickerQuarter, tickerRatios})
     }else{
         return res.status(401).send({msg: 'Ticker not found'})
-    }
-}
-
-// @desc      Get Portfolio Ticker data
-// @route     GET /
-// @ access   Auth
-exports.getPortfolioTickerData = async (req, res) => {
-    
-    const portfolioId = req.params.id
-    const portfolio = await Portfolio.findById(portfolioId)
-
-    if(portfolio){
-        
-        let tickers = portfolio.tickers.map(ticker => ticker.ticker)
-        let portfolioTickers = await Ticker.find({'profile.ticker':{$in:tickers}})
-         
-        return res.send({tickerData:portfolioTickers,portfolio})
-        
-    }else{
-        return res.status(401).send({msg: 'Portfolio not found'})
     }
 }

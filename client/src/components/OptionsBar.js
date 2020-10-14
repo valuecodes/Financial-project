@@ -7,7 +7,7 @@ export default function OptionsBar(props){
         options, 
         selected, 
         format=null, 
-        selectOption
+        selectOption,
     } = props
 
     const getStyle=(option,selected)=>{
@@ -21,7 +21,11 @@ export default function OptionsBar(props){
                     borderColor='0.2rem solid lightgreen'
                 } 
                 break
-            default: return option
+            default: 
+                if(option === selected){
+                    color='rgba(0, 0, 0, 0.2)'
+                    borderColor='0.2rem solid lightgreen'
+                }
         }
         return{
             backgroundColor:color,
@@ -33,7 +37,7 @@ export default function OptionsBar(props){
         switch(format){
             case 'y/x':
                 return `${camelCaseToString(option.y)} / ${camelCaseToString(option.x)}`
-            default: return option
+            default: return camelCaseToString(option)
         }
     }
 
@@ -50,6 +54,7 @@ export default function OptionsBar(props){
                 </li>
             )}                
             </ul>
+
         </div>  
     )
 }

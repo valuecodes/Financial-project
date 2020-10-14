@@ -11,6 +11,7 @@
     "axios": "^0.19.2",
     "chart.js": "^2.9.3",
     "chartjs-plugin-annotation": "^0.5.7",
+    "chartjs-plugin-crosshair": "^1.1.6",
     "chartjs-plugin-datalabels": "^0.7.0",
     "chartjs-plugin-piechart-outlabels": "^0.1.4",
     "chartjs-plugin-zoom": "^0.7.7",

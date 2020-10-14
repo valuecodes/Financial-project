@@ -228,6 +228,10 @@ th{
 }
 
 /* Table */
+.table{
+    width: 100%;
+}
+
 .table thead{
   display: block;
 }
@@ -417,6 +421,14 @@ select{
 
 .portfolioSection{
   padding: 2rem;
+}
+
+.portfolioTickerList{
+  width: 100%;
+}
+
+.portfolioPriceChart .chartContainer{
+  background-color: white;
 }
 
 .portfolioListTicker{

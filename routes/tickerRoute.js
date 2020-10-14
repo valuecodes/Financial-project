@@ -15,14 +15,10 @@ router
 
 router
     .route('/ratios')
-    .get(getRatiosList)
+    .post(getRatiosList)
 
 router
     .route('/:id')
     .get(getTickerData)
-
-router
-    .route('/portfolio/:id')
-    .get(isAuth, getPortfolioTickerData)
 
 module.exports = router

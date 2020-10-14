@@ -21,7 +21,7 @@ function App() {
           <Route path='/register' component={RegisterScreen}/>
           <Route path='/signin' component={SigninScreen}/>
           <Route path='/ticker/:id' component={TickerScreen}/>
-          <Route path='/portfolio/:id' component={PortfolioScreen}/>
+          <Route path='/portfolio' component={PortfolioScreen}/>
           <Route path='/trading' component={TradingScreen}/>
           <Route path='/screener' component={ScreenerScreen}/>
           <Route path='/scatter' component={ScatterScreen}/>
