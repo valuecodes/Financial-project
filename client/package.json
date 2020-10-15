@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^7.2.1",
     "axios": "^0.19.2",
     "chart.js": "^2.9.3",
+    "chartjs-chart-geo": "^2.1.0",
     "chartjs-plugin-annotation": "^0.5.7",
     "chartjs-plugin-crosshair": "^1.1.6",
     "chartjs-plugin-datalabels": "^0.7.0",
@@ -19,7 +20,8 @@
     "react-chartjs-2": "^2.10.0",
     "react-dom": "^16.13.1",
     "react-google-charts": "^3.0.15",
-    "react-scripts": "3.4.1"
+    "react-scripts": "3.4.1",
+    "world-atlas": "^2.0.2"
   },
   "scripts": {
     "start": "react-scripts start",

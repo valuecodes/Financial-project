@@ -1,16 +1,8 @@
 import React,{ useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { getTickerRatiosData } from '../actions/tickerActions';
-import Portfolio from '../utils/portfolio';
-import { datasetKeyProvider } from '../utils/utils';
-import PortfolioList from '../components/portfolio/PortfolioList'
-import PortfolioChart from '../components/portfolio/PortfolioChart'
-import { Line,Doughnut, Pie } from 'react-chartjs-2'
-import { calculateDividendChart, calculateStatCharts, calculateStatTreeMap } from '../utils/chart';
+import { Line,Doughnut } from 'react-chartjs-2'
 import SectionNav from '../components/SectionNav'
-import Options from '../components/Options'
-import { portfolioDivChartOptions, portfolioStatChartOptions } from '../utils/chartOptions';
-import Chart from "react-google-charts";
 import PortfolioData from '../utils/portfolioData';
 import OptionsBar from '../components/OptionsBar'
 import Table from '../components/Table'
@@ -20,7 +12,7 @@ export default function PortfolioScreen(props) {
     const dispatch = useDispatch()    
 
     const [navigation,setNavigation] = useState({
-        selected:{name:'statistics',index:2},
+        selected:{name:'statistics',index:0},
         options:['statistics','tickers','priceChart','dividends']
     })
     
@@ -29,6 +21,8 @@ export default function PortfolioScreen(props) {
     const { selectedPortfolio } = portfolioSelected
     const tickerRatios = useSelector(state => state.tickerRatios)
     const { tickerRatiosData } = tickerRatios
+    const tickerListData = useSelector(state => state.tickerListData)
+    const { tickers:tickerList } = tickerListData
 
     useEffect(()=>{
         if(selectedPortfolio){
@@ -38,12 +32,13 @@ export default function PortfolioScreen(props) {
     },[selectedPortfolio])
 
     useEffect(()=>{
-        if(selectedPortfolio&&tickerRatiosData){
-            let newPortfolioData = new PortfolioData(selectedPortfolio,tickerRatiosData)
+        if(selectedPortfolio&&tickerRatiosData&&tickerList){
+            let newPortfolioData = new PortfolioData(selectedPortfolio,tickerRatiosData,tickerList)
             newPortfolioData.init()
             setPortfolioData({...newPortfolioData})
         }
-    },[selectedPortfolio,tickerRatiosData])
+    },[selectedPortfolio,tickerRatiosData,tickerList])
+
     return (
         <section className='portfolioScreen container'>
             <PortfolioHeader portfolioData={portfolioData}/>
@@ -53,12 +48,41 @@ export default function PortfolioScreen(props) {
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >
-                        <div></div>
+                        <PortfolioOverview />
                         <TickerList portfolioData={portfolioData} setPortfolioData={setPortfolioData}/>
                         <PriceChart portfolioData={portfolioData} setPortfolioData={setPortfolioData}/>
                     </div>
                 </div>
         </section>
+    )
+}
+
+
+
+function PortfolioOverview(){
+    
+    return(
+        <div className='portfolioOverview'>
+            <div className='chartContainer'>
+                <Doughnut
+                    data={{
+                        datasets: [{
+                            data: [10, 20, 30]
+                        }],
+                    
+                        // These labels appear in the legend and in the tooltips when hovering different arcs
+                        labels: [
+                            'Red',
+                            'Yellow',
+                            'Blue'
+                        ]
+                    }}
+                />
+            </div>
+            <div className='geoChartContainer'>
+                <canvas id='geo'></canvas>
+            </div>
+        </div>
     )
 }
 

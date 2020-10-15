@@ -69,12 +69,6 @@ function ScreenerOptions({screener, setScreener}){
 }
 
 function ScreenerList({screener, setScreener}){
-
-    const setSortOrder = (value) => {
-        // let updated = screener.setSortOrder(value)
-        // setScreener({...updated})
-    }
-
     
     const { headers, tbody } = screener.tickerList
 

@@ -406,6 +406,18 @@ select{
   font-size: 1.2rem;
 }
 
+.portfolioOverview{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+
+
+.geoChartContainer{
+  height: 60rem;
+  /* width: 60rem; */
+}
+
  /* HomeScreen */
 .homeScreen{
   display: grid;
@@ -444,13 +456,13 @@ select{
   font-weight: bold;
 }
 
+/* TickerTable */
 .tickerTable{
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(10rem,1fr));
   grid-auto-rows: 6rem;
   grid-gap: 0.3rem;
   align-items: center;
-  /* justify-content: space-around; */
 }
 
 .tickerTable{
@@ -1439,6 +1451,11 @@ input[type=color]::-webkit-color-swatch-wrapper {
   align-items: center;
 }
 
+.tickerScreenChart .chartContainer{
+  background-color: rgb(194, 194, 194);
+  
+}
+
 /* PortfolioScreen */
 .portfolioScreen{
   margin-top: 5rem;
@@ -1603,8 +1620,9 @@ input[type=color]::-webkit-color-swatch-wrapper {
 }
 
 .chartContainer{
+  /* margin: auto; */
   height: 40rem;
-  background-color: rgb(194, 194, 194);
+  /* background-color: rgb(194, 194, 194); */
 }
 
 .tickerRatios {
@@ -1828,6 +1846,7 @@ td{
     margin: 0 0.2rem; 
   }
 
+  
   .section{
     grid-template-rows: auto 1fr;
     max-width: 100vw;

@@ -11,6 +11,7 @@ export function Screener(tickers){
     this.resetInput = (inputName) => calculateResetInput(this,inputName)
     this.updateInput = (input,type,value) => updateScreenerInput(this,input,type,value)
     this.screenTickers = () => calculateScreenTickers(this)
+    this.updateScreenerList = () => handleUpdateScreenerList(this)
     this.init = () => initScreener(this)
 }
 
@@ -86,6 +87,7 @@ function calculateScreenTickers(screener){
         screenedTickers=screenedTickers.filter(item => !remove.includes(item.ticker))
     })
     screener.screenedTickers = screenedTickers
+    screener.updateScreenerList()
     return screener
 }
 
@@ -120,20 +122,23 @@ function initScreener(screener){
         const ratios = Object.keys(tickers[0].ratios)
             .filter(item => item!=='date')
         ratios.unshift('Tickers')   
-
-        screener.tickerList.headers = ratios
-        let tbody = tickers.map(ticker => {
-            let symbol = ticker.ticker
-            return{
-                symbol,
-                ...ticker.ratios                
-            }
-        })
-
-        screener.tickerList.tbody = tbody
         screener.ratios = ratios
         screener.inputs = inputs
     }
+}
+
+function handleUpdateScreenerList(screener){
+    const { ratios, screenedTickers } = screener
+    screener.tickerList.headers = ratios
+    let tbody = screenedTickers.map(ticker => {
+        let symbol = ticker.ticker
+        return{
+            symbol,
+            ...ticker.ratios                
+        }
+    })
+
+    screener.tickerList.tbody = tbody
 }
 
 const ratioOptions={

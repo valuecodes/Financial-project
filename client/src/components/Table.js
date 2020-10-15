@@ -46,7 +46,7 @@ export default function Table(props){
 
     const sortItemsBy = (newValue) => {
         const updatedTable = {...table}
-        const { value,ascending } = updatedTable.sortOrder
+        const { ascending } = updatedTable.sortOrder
         const oldValue = updatedTable.sortOrder.value
         
         updatedTable.sortOrder.value = newValue
@@ -63,10 +63,7 @@ export default function Table(props){
 
     const {
         headers,
-        currentHeader,
         tbody,
-        tbodyHead,
-        tbodyItems,
         sortOrder
     } = table
     

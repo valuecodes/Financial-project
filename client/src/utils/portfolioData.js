@@ -1,10 +1,14 @@
 import Portfolio from "./portfolio";
 import { TickerRatio } from "./tickerRatio";
 import { roundToTwoDecimal, toPercentage } from "./utils";
+import { Chart } from 'react-chartjs-2'
+import * as ChartGeo from 'chartjs-chart-geo'
+import worldMap from 'world-atlas/countries-50m.json'
 
-export default function PortfolioData(portfolio,tickerRatios=[]){
+export default function PortfolioData(portfolio,tickerRatios=[],tickerListData){
     this.portfolio = new Portfolio(portfolio)
     this.tickerRatios = tickerRatios.map(ticker => new TickerRatio(ticker))
+    this.tickerListData = tickerListData
     this.portfolioTickers = []
     this.priceChart = {
         charts:['price','win/loss','dividends'],
@@ -20,15 +24,85 @@ export default function PortfolioData(portfolio,tickerRatios=[]){
         maintainAspectRatio: false,
     }
     this.init = () => handleInit(this)
+
     this.createPortfolioTickers = () => handleCreatePortfolioTickers(this)
+    this.createDougnutChart = () => handleCreateDoughnutChart(this)
+    this.createGeoChart = () => handleCreateGeoChart(this)
     this.updatePriceChart = () => handleUpdatePriceChart(this)
     this.updatePortfolioList = () => handleUpdatePortfolioList(this)
 }
 
 function handleInit(portfolioData){
     portfolioData.createPortfolioTickers()
+    portfolioData.createDougnutChart()
+    portfolioData.createGeoChart()
     portfolioData.updatePortfolioList()
     portfolioData.updatePriceChart()
+}
+
+function handleCreateDoughnutChart(portfolioData){
+    console.log(portfolioData)
+}
+
+function handleCreateGeoChart(portfolioData){
+
+    let total = portfolioData.portfolioTickers.reduce((a,c)=> a+c.marketPrice,0)
+    let countryTotals={}
+
+    portfolioData.portfolioTickers.forEach(item =>{
+        let country = item.country
+        if(countryTotals[country]){
+            countryTotals[country]+=item.marketPrice
+        }else{
+            countryTotals[country]=item.marketPrice
+        }
+    })
+    
+    let data = worldMap
+    let countries = ChartGeo.topojson.feature(data, data.objects.countries).features;
+    countries = countries.filter(item => item.properties.name!=='Antarctica')
+
+    function getCountryValue(d){
+        let country = d.properties.name
+        if(country ==='United States of America') country = 'United States'
+        if(countryTotals[country]){
+            return countryTotals[country]
+        }
+        return 0
+    }
+
+    new Chart(document.getElementById("geo").getContext("2d"), {
+        type: 'choropleth',
+        data: {
+        labels: countries.map((d) => d.properties.name),
+        datasets: [{
+            label: 'Countries',
+            data: countries.map((d) => ({feature: d, value: getCountryValue(d)})),
+        }]
+        },
+        options: {
+            responsive:true,
+            maintainAspectRatio: false,
+            showOutline: false,
+            showGraticule: false,
+            plugins: {
+                datalabels: {
+                    display: false,
+                },
+            },
+            legend: {
+                display: false
+            },
+            scale: {
+                projection: 'mercator'
+            },
+            geo: {
+                colorScale: {
+                    display: false,
+                },
+            },
+        }
+    });            
 }
 
 function handleCreatePortfolioTickers(portfolioData){
@@ -37,13 +111,15 @@ function handleCreatePortfolioTickers(portfolioData){
         let combinedTicker = {
             ...tickerRatio,
             ...portfolioData.portfolio.tickers
+                .find(item => item.ticker===tickerRatio.ticker),
+            ...portfolioData.tickerListData
                 .find(item => item.ticker===tickerRatio.ticker)
         }
         portfolioTickers.push(combinedTicker)
     })
     
     portfolioTickers.forEach(ticker =>{
-        let { transactions } = ticker
+        let { transactions=[] } = ticker
         let { close } = ticker.monthlyPrice[0]
         ticker.purchasePrice = roundToTwoDecimal(transactions.reduce((a,c)=>a+c.total,0))
         ticker.shareCount = transactions.reduce((a,c)=>a+c.count,0)
@@ -158,7 +234,6 @@ function calculateChartGradient(data){
     let min = Math.min(...data)
     let percentage=0
     let red=0
-    let barData=data.map(item => max*1)
 
     if(min<0){
         percentage= 1- Math.abs(min)/(max+Math.abs(min))
