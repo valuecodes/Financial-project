@@ -30,10 +30,8 @@ export default function TickerScreen(props) {
         selected:{name:'price',index:0},
         options:['price','events','ratios','financials']
     })
-
-    const [userTicker,setUserTicker] = useState(new UserTicker({}))
     
-    const [ticker, setTicker] = useState(null)
+    const [ticker, setTicker] = useState(new Ticker())
     const tickerData = useSelector(state => state.tickerData)
     const { loading, tickerFullData, error } = tickerData
 
@@ -51,6 +49,7 @@ export default function TickerScreen(props) {
             let ticker=tickerFullData.profile.ticker
             let portfolioTicker = selectedPortfolio.getTicker(ticker)
             let newTicker = new Ticker(tickerFullData,portfolioTicker)
+            newTicker.init()
             setTicker(newTicker)
         }
         
@@ -66,10 +65,10 @@ export default function TickerScreen(props) {
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >    
-                        <PriceChart ticker={ticker} navigation={navigation}/>    
-                        <EventChart ticker={ticker} navigation={navigation}/>
-                        <TickerRatios ticker={ticker} navigation={navigation}/>
-                        <Financials ticker={ticker} navigation={navigation}/>   
+                        <PriceChart ticker={ticker} setTicker={setTicker} navigation={navigation}/>    
+                        {/* <EventChart ticker={ticker} navigation={navigation}/> */}
+                        {/* <TickerRatios ticker={ticker} navigation={navigation}/> */}
+                        {/* <Financials ticker={ticker} navigation={navigation}/>    */}
                     </div>
                 </div>
             }
@@ -262,52 +261,37 @@ function EventChart({ticker,navigation}){
     )
 }
 
-function PriceChart({ticker,navigation}){
+function PriceChart({ ticker, setTicker ,navigation }){
 
-    const chartRef = useRef()
+    const priceChart=useRef()
     const [options,setOptions]=useState({
-        selected:'',
-        options:[],
+        selected:'priceChart',
+        options:['priceChart','movingAverages','MACD'],
         time:{
             timeValue:'15.years-years',
             timeStart:new Date(),
             timeEnd:new Date(),            
         },
     })
-    const [chartOptions, setChartOptions] = useState({    
-        responsive:true,
-        maintainAspectRatio: false,
-    })
-
-    const [chart, setChart] = useState({})
 
     useEffect(()=>{
-        if(ticker){
-            let chartComponents = ticker.priceChart(options)
-            let chartData = calculatePriceChart(chartComponents,options)
-            setChart(chartData)
-            setChartOptions(priceChartOptions(chartComponents.data,options))    
-        }
-    },[ticker, options])
+        ticker.priceChart.chart = priceChart
+        const updated = ticker.updatePriceChart(options)
+        setTicker({...updated})
+    },[options])
 
     return(
-        <section className='section'
-            onClick={e => setChartOptions(priceChartOptions(chart.datasets[0].data,options,chartRef)) }
-        >
+        <section className='section'>
             <Options options={options} setOptions={setOptions}/>
             <div className='tickerScreenChart'>
-
                 <div className='chartContainer'>
                     {navigation.selected.name==='price'&&
-                        <Line            
-                            ref = {chartRef}
-                            id={'canvas'}
-                            datasetKeyProvider={datasetKeyProvider}
-                            data={chart}
-                            options={chartOptions}
+                        <Line
+                            ref={priceChart}
+                            data={ticker.priceChart.data}
+                            options={ticker.priceChart.options}
                             plugins={[{
                                 beforeInit: (chart, options) => {
-                                    
                                 chart.legend.afterFit = () => {
                                     if (chart.legend.margins) {
                                     chart.legend.options.labels.boxWidth = 100;
@@ -321,7 +305,15 @@ function PriceChart({ticker,navigation}){
                             }
                         />
                     }
-                </div>                  
+                </div>     
+                <div className='chartContainerSmall'>
+                    {options.selected==='MACD' &&
+                        <Bar
+                            data={ticker.priceChart.MACDData}
+                            options={ticker.priceChart.MACDDataOptions}
+                        />                  
+                    }
+                </div>             
             </div>
 
         </section>

@@ -343,6 +343,11 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         }
     }
 
+    const deleteAll=()=>{
+        companyInfo.priceData=[]
+        setCompanyInfo({...companyInfo})
+    }
+
     return(
         <table className='inputDataTable'>
             <thead>
@@ -352,12 +357,15 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                 <tr>
                     <th>
                     {selectedKey&&
+                        <>
                         <button 
                             onClick={e => addRowHandler(selectedKey)}
                             className='tableButton'
                         >
                             Add row
                         </button>
+                        <button onClick={deleteAll}>Delete All</button>
+                        </>
                     }
                     </th>
                     {table.headers.map((item,index) =>

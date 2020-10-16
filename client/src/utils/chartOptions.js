@@ -1,19 +1,36 @@
 import { formatMillions, formatCurrency } from "./utils";
 
-export function priceChartOptions(data,options,chart){
+export function MACDDataOptions(){
+    return {
+        responsive:true,
+        maintainAspectRatio: false,
+        plugins: {
+            datalabels: {
+                display: false,
+            }
+        },
+        legend: {
+            display:false,
+            align:'start',
+            labels: {
+                fontSize:20,
+            },
+
+        },
+    }
+
+}
+
+export function priceChartOptions(ticker,options){
+    const { selected } = options
+
+    const data = ticker.priceChart.data.datasets[0].data
 
     let min = Math.min(...data)
     let max = Math.max(...data)
     let minOffset = (max-min)*0.1*(min>=0?-1:1)
 
     let startFromZero=false
-
-    if(chart){
-        let chartKey = Object.keys(chart.current.props.data.datasets[0]['_meta'])[0]        
-        if(chart.current.props.data.datasets[0]['_meta'][chartKey].hidden){
-            startFromZero=true
-        }
-    }
 
     return {
         responsive:true,
@@ -28,6 +45,7 @@ export function priceChartOptions(data,options,chart){
             labels: {
                 fontSize:20,
             },
+
         },
         layout: {
             padding: {
@@ -55,7 +73,7 @@ export function priceChartOptions(data,options,chart){
                 gridLines: {
                     // color: "rgba(0, 0, 0, 0)",
                 },
-                stacked: true,
+                stacked: selected==='priceChart'?true:false,
                 ticks: {
                     maxTicksLimit: 20,
                     min:startFromZero?0:min+minOffset,

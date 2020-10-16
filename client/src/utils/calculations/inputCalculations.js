@@ -842,7 +842,9 @@ export function calculateMonthlyPrice(tickerData){
     const { priceData } = tickerData
     let filteredData = priceData.filter(item => new Date(item.date).getFullYear()>=2015)
 
-    filteredData.forEach(item =>{
+    const copy = JSON.parse(JSON.stringify(filteredData))
+
+    copy.forEach(item =>{
         let year = new Date(item.date).getFullYear()
         let month = new Date(item.date).getMonth()+1
         item.date = year+'.'+month
@@ -850,7 +852,7 @@ export function calculateMonthlyPrice(tickerData){
 
     let monthly = []
 
-    filteredData.forEach(item => {
+    copy.forEach(item => {
         let found = monthly.findIndex(i => i.date === item.date)
         if(found<=-1){
             let newData = {

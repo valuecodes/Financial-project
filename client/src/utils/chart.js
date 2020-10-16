@@ -58,43 +58,146 @@ export function calculateRatioPriceChart(chartComponents,ratioChartComponents,op
     }
 }
 
-export function calculatePriceChart(chartComponents,options){
+export function calculatePriceChart(ticker,options){
+    
+    const { selected } = options
 
-    let { 
-        labels, 
-        data, 
-        cumulativeDividends,      
-        percentageChange, 
-        percentageChangeWithDivs 
-    } = chartComponents
+    let priceData = ticker.filterByDate('priceData',options)
+    let dividends = ticker.filterByDate('dividendData',options)
+
+    let data=[] 
+    let labels = []
+    let dataoff = []
+    let divs = []
+    let MA50 = []
+    let MA200 = []
+    let MA12 = []
+    let MA26 = []
+    let MACD = []
+    let goldenCross=[]
+    let deathCross=[]
+
+    priceData.forEach((item,index) =>{
+        let divAmount = 0
+        let closestDiv = dividends.find(div => (Math.abs(new Date(div.date)-new Date(item.date))<604800000)) 
+        if(closestDiv){
+            dividends=dividends.filter(item => item._id!==closestDiv._id)
+            divAmount=closestDiv.dividend
+        }
+        data.unshift(item.close)
+        dataoff.unshift(item.close)
+        labels.unshift(item.date.substring(0, 7))
+        divs.unshift(divAmount)
+        MA50.unshift(item.MA50?item.MA50:null)
+        MA200.unshift(item.MA200?item.MA200:null)
+        MA12.unshift(item.MA12?item.MA12:null)
+        MA26.unshift(item.MA26?item.MA26:null)
+        MACD.unshift(item.MA26&&item.MA12? item.MA12-item.MA26:null )
+
+        if(item.MA50&&item.MA200&&priceData[index+1]){
+            if(item.MA50>item.MA200 && priceData[index+1].MA50<priceData[index+1].MA200){
+                 goldenCross.unshift(5)
+            }else{
+                goldenCross.unshift(0)
+            }
+
+            if(item.MA50<item.MA200 && priceData[index+1].MA50>priceData[index+1].MA200){
+                deathCross.unshift(5)
+            }else{
+                deathCross.unshift(0)
+            }
+           
+        }else{
+            goldenCross.unshift(0)
+            deathCross.unshift(0)
+        }
+        
+    })    
+
+    let total=0
+    let cumulativeDividends = divs.map((item,index) => (total+=item))
+    total=0
+    let cumulativeDividendsPrice = divs.map((item,index) => ((total+=item)+data[index]))
+    let percentageChangeWithDivs = cumulativeDividendsPrice.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
+    let percentageChange = dataoff.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
 
     let dataSets=[]
 
+    if(selected==='movingAverages'||selected==='MACD'){
+        dataSets.push({
+            type:'line',
+            label: selected==='movingAverages'?'Moving average 50':'Moving average 12',           
+            pointRadius: selected==='movingAverages'?goldenCross:0,
+            pointBackgroundColor:'yellow',
+            pointBorderColor:'yellow',
+            borderWidth:selected==='movingAverages'?3:2,
+            borderColor:'blue',
+            data:selected==='movingAverages'?MA50:MA12,
+            percentageChange,
+            percentageChangeWithDivs,
+            options,  
+            fill:false,
+        })
+        dataSets.push({
+            type:'line',
+            label: selected==='movingAverages'?'Moving average 200':'Moving average 26',    
+            pointRadius: selected==='movingAverages'?deathCross:0,
+            pointBackgroundColor:'black',
+            pointBorderColor:'black',      
+            borderWidth:selected==='movingAverages'?3:2,
+            borderColor:'red',
+            data:selected==='movingAverages'?MA200:MA26,
+            percentageChange,
+            percentageChangeWithDivs,
+            options,  
+            fill:false,
+        })        
+    }
+
+    let MACDData=[]
+
+    if(selected==='MACD'){
+        let bgColor = MACD.map(item => item>=0?'green':'red')
+        MACDData.push({ 
+            backgroundColor: bgColor,
+            borderWidth:2,
+            data: MACD,
+            percentageChange,
+            percentageChangeWithDivs,
+            options,  
+            fill:false,
+        })     
+    }
+
     dataSets.push({
         label: 'Share Price',
-        backgroundColor:'rgba(133, 133, 133,0.8)',
+        backgroundColor: 'rgba(133, 133, 133,0.8)',
         pointRadius:0,
         pointHitRadius:5,
         borderColor:'black',
+        borderWidth:1,
         data: data,    
         percentageChange,
         percentageChangeWithDivs,
-        options
+        options,
     })
 
-    dataSets.push({
-        label: 'Dividends',
-        backgroundColor:'rgba(255, 234, 94,0.2)',            
-        pointRadius:0,
-        borderColor:'yellow',
-        data:cumulativeDividends,
-        percentageChange,
-        percentageChangeWithDivs,
-        options  
-    })
-
+    if(selected==='priceChart'){
+        dataSets.push({
+            label: 'Dividends',
+            backgroundColor:'rgba(255, 234, 94,0.2)',            
+            pointRadius:0,
+            borderWidth:1,
+            borderColor:'yellow',
+            data:cumulativeDividends,
+            percentageChange,
+            percentageChangeWithDivs,
+            options,
+        })        
+    }
 
     return {
+        MACDData,
         datasets:dataSets,
         labels: labels
     }

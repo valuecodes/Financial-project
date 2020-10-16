@@ -1,8 +1,10 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
 import { TickerData } from "./tickerData";
+import { calculatePriceChart } from "./chart";
+import { priceChartOptions, MACDDataOptions } from "./chartOptions";
 
 export function Ticker(data,portfolioTicker){
-    this.profile = data.profile?data.profile:{
+    this.profile = data?data.profile:{
         ticker:'',
         name:'',
         description:'',
@@ -18,14 +20,28 @@ export function Ticker(data,portfolioTicker){
         tickerCurrency:'',
         financialDataCurrency:'',
     }
-    this.incomeStatement = data.incomeStatement?data.incomeStatement:[]
-    this.balanceSheet = data.balanceSheet?data.balanceSheet:[]
-    this.cashFlow = data.cashFlow?data.cashFlow:[]
-    this.insiderTrading = data.insiderTrading?data.insiderTrading:[]
-    this.dividendData = data.dividendData?data.dividendData:[]
-    this.priceData = data.priceData?data.priceData:[]
-    this.transactions=portfolioTicker?portfolioTicker.transactions:[]
+    this.incomeStatement = data?data.incomeStatement:[]
+    this.balanceSheet = data?data.balanceSheet:[]
+    this.cashFlow = data?data.cashFlow:[]
+    this.insiderTrading = data?data.insiderTrading:[]
+    this.dividendData = data?data.dividendData:[]
+    this.priceData = data?data.priceData:[]
+    this.transactions = portfolioTicker?portfolioTicker.transactions:[]
     
+    this.priceChart={
+        chart:null,
+        data:[],
+        options:{
+            responsive:true,
+            maintainAspectRatio: false,            
+        },        
+        MACDData:[],
+        MACDDataOptions:{
+            responsive:true,
+            maintainAspectRatio: false,  
+        },
+    }
+
     this.latestPrice = (format) => calculateLatestPrice(this,format)
     this.totalCount = (format) => calculateTotalCount(this,format)
     this.averageCost = (format) => calculateAverageCost(this,format)
@@ -39,15 +55,70 @@ export function Ticker(data,portfolioTicker){
     this.filterByDate = (key,options) => calculateFilterByDate(this,key,options)
     this.filterFinancialRatio = (statement, ratio, options) => calculateFilterFinancialRatio(this, statement, ratio, options)
     this.getTickerData = (key) => calculateGetTickerData(this,key)
-    this.priceChart = (options) => calculatePriceChart(this,options)
+    this.updatePriceChart = (options,chart) => handleUpdatePriceChart(this,options,chart)
+
     this.eventChart = (options) => calculateEventChart(this,options)
     this.ratioChart = (options) => calculateRatioChart(this,options)
     this.financialChart = (options) => calculateFinancialChart(this,options)
     this.userPriceChart = (options) => calculateUserPriceChart(this,options)
     this.userReturnChart = (options) => calculateUserReturnChart(this,options) 
+
+    this.init = () => handleInit(this)
+    this.setMovingAverages = () => handleSetMovingAverages(this)
+}
+
+function handleInit(ticker){
+    ticker.setMovingAverages()
+}
+
+function handleSetMovingAverages(ticker){
+    const { priceData } = ticker
+    
+    priceData.forEach((item,index) =>{
+        let total12=0
+        let total26=0
+        let total50=0
+        let total200=0
+        for(let i=index;i<index+2;i++){
+            if(!priceData[i]){
+                total12=null
+                break
+            }
+            total12+=priceData[i].close
+        }
+        for(let i=index;i<index+4;i++){
+            if(!priceData[i]){
+                total26=null
+                break
+            }
+            total26+=priceData[i].close
+        }
+        for(let i=index;i<index+7;i++){
+            if(!priceData[i]){
+                total50=null
+                break
+            }
+            total50+=priceData[i].close
+        }
+        for(let i=index;i<index+29;i++){
+            if(!priceData[i]){
+                total200=null
+                break
+            }
+            total200+=priceData[i].close
+        }
+
+        if(total200===null) total50=null
+
+        item.MA12 = total12?total12/2:item.close
+        item.MA26 = total26?total26/4:item.close
+        item.MA50 = total50?total50/7.14:item.close
+        item.MA200 = total200?total200/28.57:item.close
+    })
 }
 
 function calculateLatestPrice(ticker,format){
+    if(!ticker.transactions[0]) return 0
     return formatValue(ticker.priceData[0].close,format)
 }
 
@@ -173,43 +244,13 @@ function calculateGetTickerData(ticker, key){
 
 }
 
-function calculatePriceChart(ticker,options){
-    
-    let priceData = ticker.filterByDate('priceData',options)
-    let dividends = ticker.filterByDate('dividendData',options)
-
-    let data=[] 
-    let labels = []
-    let dataoff = []
-
-    priceData.forEach(item =>{
-        let divAmount = 0
-        let closestDiv = dividends.find(div => (Math.abs(new Date(div.date)-new Date(item.date))<604800000)) 
-        if(closestDiv){
-            dividends=dividends.filter(item => item._id!==closestDiv._id)
-            divAmount=closestDiv.dividend
-        }
-        data.unshift(item.close)
-        dataoff.unshift(item.close)
-        labels.unshift(item.date.substring(0, 7))
-        dividends.unshift(divAmount)
-    })    
-
-    let total=0
-    let cumulativeDividends = dividends.map((item,index) => (total+=item))
-    total=0
-    let cumulativeDividendsPrice = dividends.map((item,index) => ((total+=item)+data[index]))
-    let percentageChangeWithDivs = cumulativeDividendsPrice.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
-    let percentageChange = dataoff.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
-
-    return { 
-        data, 
-        labels,
-        cumulativeDividends,
-        cumulativeDividendsPrice,
-        percentageChange,
-        percentageChangeWithDivs  
-    }
+function handleUpdatePriceChart(ticker,options,chart){
+    const { MACDData, datasets, labels } = calculatePriceChart(ticker,options)
+    ticker.priceChart.data = { datasets, labels }
+    ticker.priceChart.options = priceChartOptions(ticker,options,chart) 
+    ticker.priceChart.MACDData= { datasets:MACDData, labels }
+    ticker.priceChart.MACDDataOptions = MACDDataOptions()
+    return ticker
 }
 
 function calculateEventChart(ticker,options){
