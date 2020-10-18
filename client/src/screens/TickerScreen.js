@@ -4,24 +4,12 @@ import { getTickerData } from '../actions/tickerActions';
 import { camelCaseToString, datasetKeyProvider } from '../utils/utils';
 import { Line, Bar } from 'react-chartjs-2';
 import { Ticker } from '../utils/ticker';
-import {  
-    calculatePriceChart, 
-    calculateEventChart, 
-    calculateRatioPriceChart, 
-    calculateRatioChart, 
-    calculateRatioFinacialChart, 
-    calculateFinancialChart 
-} from '../utils/chart';
 import { 
-    priceChartOptions,
-    financialChartOptions, 
-    eventChartOptions, 
     ratioChartOptions, 
     barChartOptions 
 } from '../utils/chartOptions'
 import SectionNav from '../components/SectionNav';
 import Options from '../components/Options'
-import {UserTicker} from '../utils/userTicker'
 
 export default function TickerScreen(props) {
 
@@ -45,9 +33,11 @@ export default function TickerScreen(props) {
     },[props])
 
     useEffect(()=>{
-        if(tickerFullData&&selectedPortfolio){
+        if(tickerFullData){
             let ticker=tickerFullData.profile.ticker
-            let portfolioTicker = selectedPortfolio.getTicker(ticker)
+            let portfolioTicker = selectedPortfolio?
+                selectedPortfolio.getTicker(ticker):
+                null
             let newTicker = new Ticker(tickerFullData,portfolioTicker)
             newTicker.init()
             setTicker(newTicker)
@@ -66,9 +56,9 @@ export default function TickerScreen(props) {
                         className='sections'
                     >    
                         <PriceChart ticker={ticker} setTicker={setTicker} navigation={navigation}/>    
-                        {/* <EventChart ticker={ticker} navigation={navigation}/> */}
-                        {/* <TickerRatios ticker={ticker} navigation={navigation}/> */}
-                        {/* <Financials ticker={ticker} navigation={navigation}/>    */}
+                        <EventChart ticker={ticker} setTicker={setTicker} navigation={navigation}/>
+                        <TickerRatios ticker={ticker} setTicker={setTicker} navigation={navigation}/>
+                        <Financials ticker={ticker} setTicker={setTicker} navigation={navigation}/>   
                     </div>
                 </div>
             }
@@ -76,7 +66,7 @@ export default function TickerScreen(props) {
     )
 }
 
-function Financials({ticker,navigation}){
+function Financials({ticker,setTicker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'incomeStatement',
@@ -87,23 +77,14 @@ function Financials({ticker,navigation}){
             timeEnd:new Date(),            
         },
     })
-    const [financialData, setFinancialData] = useState(null)
-    const [financialChart, setFinancialChart] = useState({})
-    const [chartOptions, setChartOptions] = useState({      
-        responsive:true,
-        maintainAspectRatio: false
-    })
 
     useEffect(()=>{
         if(ticker){            
-            let financialChartCoponents = ticker.financialChart(options)    
-            let financialChartData = calculateFinancialChart(financialChartCoponents,options)
-            setFinancialChart(financialChartData)
-            setChartOptions(financialChartOptions(options))
-            setFinancialData(financialChartCoponents.fullFinancialData)
+            const updated = ticker.updateFinancialChart(options)
+            setTicker({...updated})
         }
-    },[ticker,options])  
-    
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[options])  
 
     return(
         <div className='tickerFinancials'>
@@ -112,43 +93,41 @@ function Financials({ticker,navigation}){
                 {navigation.selected.name==='financials'&&
                     <Bar
                         datasetKeyProvider={datasetKeyProvider}
-                        data={financialChart}
-                        options={chartOptions}
+                        data={ticker.financialChart.data}
+                        options={ticker.financialChart.options}
                     />          
                 }
             </div>
             <div className='financialStatement'>
-                
-                {financialData&&
+                {ticker.financialChart.fullFinancialData&&
                     <table>
                         <thead>
                             <tr>
                             <th>Year</th>
-                            {financialData.map(item =>
+                            {ticker.financialChart.fullFinancialData.map(item =>
                                 <th key={item._id}>{item.date.substring(0, 7)}</th>
                             )}
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.keys(financialData[0]).map((item,index) =>{
+                            {Object.keys(ticker.financialChart.fullFinancialData[0]).map((item,index) =>{
                                 return  index>1&&
                                     <tr key={index}>
                                         <td>{camelCaseToString(item)}</td>
-                                        {financialData.map((elem,index) =>
-                                            <td key={index}>{financialData[index][item]}</td>
+                                        {ticker.financialChart.fullFinancialData.map((elem,index) =>
+                                            <td key={index}>{ticker.financialChart.fullFinancialData[index][item]}</td>
                                         )}
                                     </tr>   
                             })}
                         </tbody> 
                     </table>                   
                 }
-                
             </div>
         </div>
     )
 }
 
-function TickerRatios({ticker,navigation}){
+function TickerRatios({ticker,setTicker,navigation}){
 
     const ratioChartRef = useRef()
     const ratioPriceChartRef = useRef()
@@ -163,25 +142,13 @@ function TickerRatios({ticker,navigation}){
         },
     })
 
-    const [ratioChart, setRatioChart] = useState({})
-    const [priceChart, setPriceChart] = useState({})
-    const [ratioFinancialChart, setRatioFinancialChart] = useState({})
-
     useEffect(()=>{
         if(ticker){            
-            
-            let ratioChartComponents = ticker.ratioChart(options)
-            let ratioChartData = calculateRatioChart(ratioChartComponents,options)
-            setRatioChart(ratioChartData)
-
-            let ratioFinancialChartData = calculateRatioFinacialChart(ratioChartComponents,options)
-            setRatioFinancialChart(ratioFinancialChartData)
-    
-            let priceChartData = calculateRatioPriceChart(ratioChartComponents,ratioChartComponents,options)
-            setPriceChart(priceChartData)
-
+            let updated = ticker.updateRatiosChart(options)
+            setTicker({...updated})
         }
-    },[ticker,options])   
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[options])   
 
     return(
         <div className='section'>
@@ -192,7 +159,7 @@ function TickerRatios({ticker,navigation}){
                             id={'ratioChart'}
                             ref={ratioChartRef}
                             datasetKeyProvider={datasetKeyProvider}
-                            data={ratioChart}
+                            data={ticker.ratiosChart.ratioChartData}
                             options={ratioChartOptions(ratioChartRef,ratioPriceChartRef)}
                         />
                     }  
@@ -202,7 +169,7 @@ function TickerRatios({ticker,navigation}){
                         id={'ratioPriceChart'}
                         ref={ratioPriceChartRef}
                         datasetKeyProvider={datasetKeyProvider}
-                        data={priceChart}
+                        data={ticker.ratiosChart.priceChartData}
                         options={ratioChartOptions(ratioChartRef,ratioPriceChartRef)}
                     />                 
                 </div>
@@ -210,7 +177,7 @@ function TickerRatios({ticker,navigation}){
                     {navigation.selected.name==='ratios'&&
                         <Bar
                             datasetKeyProvider={datasetKeyProvider}
-                            data={ratioFinancialChart}
+                            data={ticker.ratiosChart.financialChartData}
                             options={barChartOptions()}
                         />                 
                     }
@@ -221,7 +188,7 @@ function TickerRatios({ticker,navigation}){
     )
 }
 
-function EventChart({ticker,navigation}){
+function EventChart({ticker,setTicker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'',
@@ -232,27 +199,25 @@ function EventChart({ticker,navigation}){
             timeEnd:new Date(),            
         },
     })
-    const [chart, setChart] = useState({})
 
     useEffect(()=>{
         if(ticker){
-            let chartComponents = ticker.eventChart(options)
-            let chartData = calculateEventChart(chartComponents,options)
-            setChart(chartData)     
+            let updated = ticker.updateEventChart(options)
+            setTicker({...updated})   
         }
-    },[ticker, options])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[options])
 
     return(
         <section className='section'>
-            <Options options={options} setOptions={setOptions}/>        
+            <Options options={options} setOptions={setOptions}/>   
             <div className='tickerScreenChart'>
                 <div className='chartContainer eventChart'>
                     {navigation.selected.name==='events'&&
                         <Line
                             id={'canvas'}
-                            datasetKeyProvider={datasetKeyProvider}
-                            data={chart}
-                            options={eventChartOptions()}
+                            data={ticker.eventChart.data}
+                            options={ticker.eventChart.options}
                         />  
                     }
                 </div>
@@ -278,6 +243,7 @@ function PriceChart({ ticker, setTicker ,navigation }){
         ticker.priceChart.chart = priceChart
         const updated = ticker.updatePriceChart(options)
         setTicker({...updated})
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[options])
 
     return(

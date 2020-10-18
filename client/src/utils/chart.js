@@ -6,9 +6,70 @@ import {
 } from "./chartUtils";
 import { randomColor, roundToTwoDecimal } from "./utils";
 
-export function calculateRatioFinacialChart(chartComponents,options){
-    const { financialData, financialLabels } = chartComponents
+export function calculateRatioChartComponents(ticker,options){
+    const key = options.selected
+    let priceData = ticker.filterByDate('priceData',options)
+    
+    let ratios = [];
+    let ratioName=''
 
+    switch(key){
+        case 'pe':
+            ratios = ticker.filterByDate('incomeStatement',options)
+            
+            ratioName='eps'
+            break
+        case 'pb':
+            ratios = ticker.filterByDate('balanceSheet',options)
+            ratioName='bookValuePerShare'
+            break
+        case 'dividendYield':
+            ratios = ticker.filterByDate('dividendData',options)
+            ratioName='dividend'
+            break
+        default: return ''
+    }
+
+    let data=[]
+    let labels=[]
+    let tickerPriceData=[]
+
+    priceData.forEach(price =>{
+        let ratio=ratios.find(item => new Date(item.date).getFullYear()<=new 
+        Date(price.date).getFullYear())
+        if(ratio){
+            switch(key){
+                case 'pe':
+                case 'pb':
+                    if(ratio[ratioName]){
+                        data.unshift(Number((price.close/ratio[ratioName]).toFixed(1)) )                        
+                    }
+                    break
+                case 'dividendYield':
+                    let yearDivs = ratios.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
+                    let totalDiv = yearDivs.reduce((a,b)=>a+b.dividend,0)
+                    data.unshift(Number(((totalDiv/price.close)*100).toFixed(1)))
+                    break
+                default: return ''
+            }
+            labels.unshift(price.date.substring(0, 7))
+            tickerPriceData.unshift(price.close)
+        }
+    })
+    
+    if(ratios.length>1){
+        if(new Date(ratios[0].date)>new Date(ratios[1].date)){
+            ratios = ratios.reverse()
+        }
+    }
+
+    let financialData = ratios.map(item => item[ratioName])
+    let financialLabels = ratios.map(item => item.date.split('T')[0])
+    return { data, labels, tickerPriceData, financialData, financialLabels }
+}
+
+export function calculateRatioFinacialChart(ratioChartComponents,options){
+    const { financialData, financialLabels } = ratioChartComponents
     const key = options.selected
     const financialKey = getFinancialKeyName(key)
 
@@ -29,16 +90,11 @@ export function calculateRatioFinacialChart(chartComponents,options){
     }
 }
 
-export function calculateRatioPriceChart(chartComponents,ratioChartComponents,options){
-    let{
-        data:ratioData
-    } = ratioChartComponents
-    
-    let { 
-        labels, 
-        tickerPriceData, 
-    } = chartComponents
+export function calculateRatioPriceChart(ratioChart,ratioChartComponents,options){
 
+    const { tickerPriceData,labels } = ratioChartComponents
+
+    let ratioData = ratioChart.datasets[0].data
     let gradient = calculateChartBorderGradient(ratioData,options)
 
     let dataSets=[]
@@ -203,6 +259,297 @@ export function calculatePriceChart(ticker,options){
     }
 }
 
+export function calculateEventChart(ticker,options){
+    
+    let priceData = ticker.filterByDate('priceData',options)
+    
+    let dividends = ticker.filterByDate('dividendData',options)
+    
+    let myDivs = ticker.getMyDivs(options)
+
+    let data=[] 
+    let labels = []
+    let dataoff = []
+
+    priceData.forEach(item =>{
+        let divAmount = 0
+        let closestDiv = dividends.find(div => (Math.abs(new Date(div.date)-new Date(item.date))<604800000)) 
+        if(closestDiv){
+            dividends=dividends.filter(item => item._id!==closestDiv._id)
+            divAmount=closestDiv.dividend
+        }
+        data.unshift(item.close)
+        dataoff.unshift(item.close)
+        labels.unshift(item.date.substring(0, 7))
+        dividends.unshift(divAmount)
+    })    
+
+    let total=0
+    let cumulativeDividends = dividends.map((item,index) => (total+=item))
+    total=0
+    let cumulativeDividendsPrice = cumulativeDividends.map((item,index) => ((total+=item)+data[index]))
+    let percentageChangeWithDivs = cumulativeDividendsPrice.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
+    let percentageChange = dataoff.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
+
+    const events = calculateChartEvents(data,labels,ticker,options,myDivs)
+
+    const {        
+        tradePoints,
+        insiderPoints,
+        dividendPoints,
+        userDivPoints,
+        insiderPointColors,
+        insiderTooltipLabels,
+        tradeTooltipLabels,
+        userDivTooltipLabels,
+        divTooltipLabels,
+        tradePointColors
+    }= events
+
+
+    let dataSets=[]
+
+    let pointBorderColor = 'rgba(64, 64, 64,0.8)'
+    let pointBorderWidth = 7
+
+    dataSets.push({
+        label: 'Filter events',
+        backgroundColor:'rgba(133, 133, 133,0)',
+        pointRadius:0,
+        pointHitRadius:0,
+        hoverRadius:0,
+        borderColor:'black',
+        data: data,    
+        percentageChange,
+        percentageChangeWithDivs,
+        borderWidth:0.01,
+        options,
+    })
+
+    dataSets.push({
+        label: 'User trades',
+        fill:false,        
+        pointBackgroundColor:tradePointColors,
+        pointRadius:tradePoints,
+        hitRadius:tradePoints,
+        pointBorderColor,
+        pointBorderWidth:2,
+        hoverRadius:tradePoints,     
+        borderWidth:0.01,
+        borderColor:'rgba(0, 255, 128,0.8)',
+        data: data,    
+        tooltipLabels:tradeTooltipLabels,
+    })    
+
+    dataSets.push({
+        label: 'Insider Trades',
+        fill:false,
+        pointBackgroundColor:insiderPointColors,
+        borderColor:'rgba(76, 212, 122,0.8)',
+        pointRadius:insiderPoints,
+        pointBorderColor,
+        pointBorderWidth,
+        hitRadius:insiderPoints,
+        hoverRadius:insiderPoints,    
+        borderWidth:0.01,
+        data: data,    
+        tooltipLabels:insiderTooltipLabels,
+    })    
+
+    dataSets.push({
+        label: 'User Dividends',
+        fill:false,
+        pointBackgroundColor:'yellow',
+        borderColor:'rgba(247, 243, 104,1)',
+        pointRadius:userDivPoints,
+        pointBorderWidth:2, 
+        hitRadius:userDivPoints,
+        hoverRadius:userDivPoints,    
+        borderWidth:0.01,
+        pointBorderColor,
+        data: data,    
+        tooltipLabels:userDivTooltipLabels, 
+    })
+
+    dataSets.push({
+        label: 'All Dividends',
+        fill:false,
+        pointBackgroundColor:'rgba(255, 123, 0,0.1)',
+        pointRadius:dividendPoints,
+        hitRadius:dividendPoints,
+        hoverRadius:dividendPoints, 
+        pointBorderColor,
+        pointBorderWidth:2, 
+        borderWidth:0.01,
+        borderColor:'rgba(255, 123, 0,0.1)',
+        data: data, 
+        tooltipLabels:divTooltipLabels, 
+        hidden: true,
+    })
+    
+    dataSets.push({
+        label: 'Price chart',
+        backgroundColor:'rgba(133, 133, 133,0.5)', 
+        borderColor:'black',
+        borderWidth:2,
+        pointRadius:0,
+        data: data,  
+    })
+    
+    return {
+        datasets:dataSets,
+        labels: labels
+    }
+
+}
+
+function calculateChartEvents(data,labels,ticker,options,myDivs){
+
+    const  { time } = options 
+    const { transactions } = ticker
+
+    let trades = transactions.filter(item => new Date(item.date)>time.timeStart)
+    let insider = ticker.insiderTrading.reverse().filter(item => new Date(item.date)>time.timeStart)
+    let dividends = ticker.dividendData.reverse().filter(item => new Date(item.date)>time.timeStart)
+    let userDivs = myDivs.filter(item => new Date(item.date)>time.timeStart)
+
+    let tradePoints = data.map(item => 0)
+    let insiderPoints = data.map(item => 0)
+    let insiderBuyPoints = data.map(item => 0)
+    let insiderSellPoints = data.map(item => 0)
+    let insiderOtherPoints = data.map(item => 0)
+    let dividendPoints = data.map(item => 0)
+    let userDivPoints = data.map(item => 0)
+    let insiderPointColors = data.map(item => 0)
+    let tradePointColors = data.map(item => 0)
+
+    let insiderTooltipLabels = data.map(item => [])
+    let insiderBuyLabels = data.map(item => [])
+    let insiderSellLabels = data.map(item => [])
+    let insiderOtherLabels = data.map(item => [])
+    let tradeTooltipLabels = data.map(item => [])
+    let userDivTooltipLabels = data.map(item => [])
+    let divTooltipLabels = data.map(item => [])
+
+    let tooltipLabels = data.map(item => [])
+
+
+    dividends.forEach(item =>{
+        let divDate = new Date(item.date)
+        let index = labels.findIndex(elem => Math.abs(new Date(elem)-divDate)<1604800000)
+        if(index>=0){
+            divTooltipLabels[index].push('Dividend '+item.dividend)
+            dividendPoints[index]=7            
+        }
+    })
+
+    userDivs.forEach(item =>{
+        let userDivDate = new Date(item.date)
+        let index = labels.findIndex(elem => Math.abs(new Date(elem)-userDivDate)<1604800000)
+        if(index>=0){
+            userDivTooltipLabels[index].push('Dividend '+item.payment)
+            userDivPoints[index]=7           
+        }
+    })
+
+
+    insider.forEach(item => {
+        let insiderDate = new Date(item.date)
+        let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<1604800000)
+        if(index>=0){
+            insiderTooltipLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
+            insiderPointColors[index]=getInsiderTradeType(item.type)
+            insiderPoints[index]=10             
+            if(item.type==='buy'){
+                insiderBuyPoints[index]=10 
+                insiderBuyLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
+            }else if(item.type==='sell'){
+                insiderSellPoints[index]=10 
+                insiderSellLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
+            }else{
+                insiderOtherPoints[index]=10 
+                insiderOtherLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
+            }
+        }
+    })             
+
+    trades.forEach(item => {
+        let insiderDate = new Date(item.date)
+        let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<1604800000)
+        if(tradeTooltipLabels[index]){
+            tradeTooltipLabels[index].push(item.type+` ${item.count}pcs ${item.price}$` )
+            tradePoints[index]=10 
+            tradePointColors[index] = item.type==='buy'?'rgba(0, 255, 128,0.9)':'rgba(255, 89, 0,0.9)'            
+        }
+    }) 
+
+    return { 
+        tooltipLabels,
+        tradePoints,
+        insiderPoints,
+        dividendPoints,
+        userDivPoints,
+        insiderPointColors,
+        insiderTooltipLabels,
+        tradeTooltipLabels,
+        userDivTooltipLabels,
+        divTooltipLabels,
+        insiderBuyPoints,
+        insiderSellPoints,
+        insiderOtherPoints,
+        insiderBuyLabels,
+        insiderSellLabels,
+        insiderOtherLabels,
+        tradePointColors
+    }
+}
+
+function getInsiderTradeType(type){
+    switch(type) {
+        case 'Buy':
+            return 'rgba(76, 212, 122,0.9)'
+        case 'Sell':
+            return 'rgba(255, 79, 79,0.9)'
+        default: return 'yellow'
+      }
+}
+
+export function calculateFinancialChartComponents(ticker,options){
+    let selectedStatement = options.selected
+    let financialData = ticker.filterByDate(selectedStatement,options)
+    
+    let data1=[]
+    let data2=[]
+    let data3=[]
+    let data4=[]
+    let labels=[]
+
+    financialData.forEach(item =>{
+        switch(selectedStatement){
+            case 'incomeStatement':
+                data1.unshift(item.revenue)
+                data2.unshift(item.netIncome)
+                break
+            case 'balanceSheet':
+                data1.unshift(item.currentAssets)
+                data2.unshift(item.currentLiabilities)
+                break
+            case 'cashFlow':
+                data1.unshift(item.operatingCashFlow)
+                data2.unshift(item.investingCashFlow)
+                data3.unshift(item.financingCashFlow)
+                data4.unshift(item.operatingCashFlow+item.investingCashFlow+item.financingCashFlow)
+                break
+            default: return ''
+        }
+        labels.unshift(item.date.substring(0, 7))
+    })
+
+    let fullFinancialData = ticker.getTickerData(selectedStatement)
+
+    return { data1, data2, data3, data4, labels, financialData, fullFinancialData }
+}
+
 export function calculateFinancialChart(chartComponents,options){
     const {
         data1,
@@ -354,128 +701,9 @@ export function calculateDividendChart(chartComponents,options){
     }    
 }
 
-export function calculateEventChart(chartComponents,options){
-    let { 
-        labels, 
-        data, 
-        percentageChange, 
-        percentageChangeWithDivs,
-        events,
-    } = chartComponents
+export function calculateRatioChart(ratioChartComponents,options){
 
-    const {        
-        tradePoints,
-        insiderPoints,
-        dividendPoints,
-        userDivPoints,
-        insiderPointColors,
-        insiderTooltipLabels,
-        tradeTooltipLabels,
-        userDivTooltipLabels,
-        divTooltipLabels,
-        tradePointColors
-    }= events
-
-    let dataSets=[]
-
-    let pointBorderColor = 'rgba(64, 64, 64,0.8)'
-    let pointBorderWidth = 7
-
-    dataSets.push({
-        label: 'Filter events',
-        backgroundColor:'rgba(133, 133, 133,0)',
-        pointRadius:0,
-        pointHitRadius:0,
-        hoverRadius:0,
-        borderColor:'black',
-        data: data,    
-        percentageChange,
-        percentageChangeWithDivs,
-        borderWidth:0.01,
-        options,
-    })
-
-    dataSets.push({
-        label: 'User trades',
-        fill:false,        
-        pointBackgroundColor:tradePointColors,
-        pointRadius:tradePoints,
-        hitRadius:tradePoints,
-        pointBorderColor,
-        pointBorderWidth:2,
-        hoverRadius:tradePoints,     
-        borderWidth:0.01,
-        borderColor:'rgba(0, 255, 128,0.8)',
-        data: data,    
-        tooltipLabels:tradeTooltipLabels,
-    })    
-
-    dataSets.push({
-        label: 'Insider Trades',
-        fill:false,
-        pointBackgroundColor:insiderPointColors,
-        borderColor:'rgba(76, 212, 122,0.8)',
-        pointRadius:insiderPoints,
-        pointBorderColor,
-        pointBorderWidth,
-        hitRadius:insiderPoints,
-        hoverRadius:insiderPoints,    
-        borderWidth:0.01,
-        data: data,    
-        tooltipLabels:insiderTooltipLabels,
-    })    
-
-    dataSets.push({
-        label: 'User Dividends',
-        fill:false,
-        pointBackgroundColor:'yellow',
-        borderColor:'rgba(247, 243, 104,1)',
-        pointRadius:userDivPoints,
-        pointBorderWidth:2, 
-        hitRadius:userDivPoints,
-        hoverRadius:userDivPoints,    
-        borderWidth:0.01,
-        pointBorderColor,
-        data: data,    
-        tooltipLabels:userDivTooltipLabels, 
-    })
-
-    dataSets.push({
-        label: 'All Dividends',
-        fill:false,
-        pointBackgroundColor:'rgba(255, 123, 0,0.1)',
-        pointRadius:dividendPoints,
-        hitRadius:dividendPoints,
-        hoverRadius:dividendPoints, 
-        pointBorderColor,
-        pointBorderWidth:2, 
-        borderWidth:0.01,
-        borderColor:'rgba(255, 123, 0,0.1)',
-        data: data, 
-        tooltipLabels:divTooltipLabels, 
-        hidden: true,
-    })
-    
-    dataSets.push({
-        label: 'Price chart',
-        backgroundColor:'rgba(133, 133, 133,0.5)', 
-        borderColor:'black',
-        borderWidth:2,
-        pointRadius:0,
-        data: data,  
-    })
-    
-    return {
-        datasets:dataSets,
-        labels: labels
-    }
-}
-
-export function calculateRatioChart(chartComponents,options){
-    let { 
-        labels, 
-        data, 
-    } = chartComponents
+    const { data, labels } = ratioChartComponents
 
     let dataSets=[]
 

@@ -34,7 +34,7 @@ async function handleUpdateTickerPrice(tickerSlim,userInfo,exhangeRate){
     tickerData.addTickerSlimData(tickerSlim)
     
     let apiSymbol = getApiSymbol(tickerData.profile.country,ticker)
-console.log(tickerData)
+
     const apiData = await axios.get('/dataInput/price/'+apiSymbol,{
         headers:{
             Authorization: 'Bearer'+userInfo.token

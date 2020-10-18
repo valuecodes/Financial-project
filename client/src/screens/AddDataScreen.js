@@ -9,6 +9,7 @@ import { updateTickerRatios } from '../actions/tickerActions';
 import SectionNav from '../components/SectionNav'
 import { TickerList } from '../utils/tickerList';
 import Table from '../components/Table'
+import { calculateLatestPrice } from '../utils/calculations/inputCalculations';
 
 export default function AddDataScreen() {
 
@@ -56,7 +57,7 @@ export default function AddDataScreen() {
     function selectTicker(id) {
         dispatch(getTickerData(id))
     }
-
+    console.log(companyInfo)
     return (
         <div className='inputPage'>
             <div>     
@@ -481,6 +482,12 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
         setCompanyInfo({...updatedData})
     }
 
+    const updateLatestPrice=()=>{
+        let updated = {...companyInfo}
+        updated.latestPrice = calculateLatestPrice(updated)
+        setCompanyInfo({...updated})
+    }
+
     return(
         <div className='inputInfoHeader'>
             <div className='inputInfoProfile'>
@@ -532,7 +539,7 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
                     <div className='latestPrice'>                        
                         <button
                             className='button'
-                            // onClick={() => manualUpdateRatios(companyInfo,setCompanyInfo)}
+                            onClick={() => updateLatestPrice()}
                         >Update</button>  
                         <div className='inputInfoRatio'>
                             <p className='itemLabel'>Price</p>

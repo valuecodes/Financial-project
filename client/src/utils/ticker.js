@@ -1,7 +1,7 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
 import { TickerData } from "./tickerData";
-import { calculatePriceChart } from "./chart";
-import { priceChartOptions, MACDDataOptions } from "./chartOptions";
+import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart } from "./chart";
+import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions } from "./chartOptions";
 
 export function Ticker(data,portfolioTicker){
     this.profile = data?data.profile:{
@@ -30,16 +30,39 @@ export function Ticker(data,portfolioTicker){
     
     this.priceChart={
         chart:null,
-        data:[],
+        data:{},
         options:{
             responsive:true,
             maintainAspectRatio: false,            
         },        
-        MACDData:[],
+        MACDData:{},
         MACDDataOptions:{
             responsive:true,
             maintainAspectRatio: false,  
         },
+    }
+
+    this.eventChart={
+        data:{},
+        options:{
+            responsive:true,
+            maintainAspectRatio: false,   
+        }
+    }
+
+    this.ratiosChart={
+        priceChartData:{},
+        ratioChartData:{},
+        financialChartData:{}
+    }
+
+    this.financialChart={
+        data:{},
+        options:{
+            responsive:true,
+            maintainAspectRatio: false,   
+        },
+        fullFinancialData:null
     }
 
     this.latestPrice = (format) => calculateLatestPrice(this,format)
@@ -56,10 +79,10 @@ export function Ticker(data,portfolioTicker){
     this.filterFinancialRatio = (statement, ratio, options) => calculateFilterFinancialRatio(this, statement, ratio, options)
     this.getTickerData = (key) => calculateGetTickerData(this,key)
     this.updatePriceChart = (options,chart) => handleUpdatePriceChart(this,options,chart)
+    this.updateEventChart = (options) => handleUpdateEventChart(this,options)
+    this.updateRatiosChart = (options) => handleUpdateRatiosChart(this,options)
+    this.updateFinancialChart = (options) => handleUpdateFinancialChart(this,options)
 
-    this.eventChart = (options) => calculateEventChart(this,options)
-    this.ratioChart = (options) => calculateRatioChart(this,options)
-    this.financialChart = (options) => calculateFinancialChart(this,options)
     this.userPriceChart = (options) => calculateUserPriceChart(this,options)
     this.userReturnChart = (options) => calculateUserReturnChart(this,options) 
 
@@ -118,7 +141,7 @@ function handleSetMovingAverages(ticker){
 }
 
 function calculateLatestPrice(ticker,format){
-    if(!ticker.transactions[0]) return 0
+    if(!ticker.priceData[0]) return 0
     return formatValue(ticker.priceData[0].close,format)
 }
 
@@ -253,152 +276,30 @@ function handleUpdatePriceChart(ticker,options,chart){
     return ticker
 }
 
-function calculateEventChart(ticker,options){
-    
-    let priceData = ticker.filterByDate('priceData',options)
-    
-    let dividends = ticker.filterByDate('dividendData',options)
-    
-    let myDivs = ticker.getMyDivs(options)
-
-    let data=[] 
-    let labels = []
-    let dataoff = []
-
-    priceData.forEach(item =>{
-        let divAmount = 0
-        let closestDiv = dividends.find(div => (Math.abs(new Date(div.date)-new Date(item.date))<604800000)) 
-        if(closestDiv){
-            dividends=dividends.filter(item => item._id!==closestDiv._id)
-            divAmount=closestDiv.dividend
-        }
-        data.unshift(item.close)
-        dataoff.unshift(item.close)
-        labels.unshift(item.date.substring(0, 7))
-        dividends.unshift(divAmount)
-    })    
-
-    let total=0
-    let cumulativeDividends = dividends.map((item,index) => (total+=item))
-    total=0
-    let cumulativeDividendsPrice = cumulativeDividends.map((item,index) => ((total+=item)+data[index]))
-    let percentageChangeWithDivs = cumulativeDividendsPrice.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
-    let percentageChange = dataoff.map(item => Number((((item-dataoff[0])/dataoff[0])*100).toFixed(2)))
-
-    const events = calculateChartEvents(data,labels,ticker,options,myDivs)
-
-    return { 
-        data, 
-        labels,
-        cumulativeDividends,
-        cumulativeDividendsPrice,
-        percentageChange,
-        percentageChangeWithDivs,
-        events
-    }
+function handleUpdateEventChart(ticker,options) {
+    ticker.eventChart.data = calculateEventChart(ticker,options)
+    ticker.eventChart.options = eventChartOptions()
+    return ticker
 }
 
-function calculateRatioChart(ticker,options){
-
-    const key = options.selected
-    let priceData = ticker.filterByDate('priceData',options)
-    
-    let ratios = [];
-    let ratioName=''
-    console.log(ticker)
-    switch(key){
-        case 'pe':
-            ratios = ticker.filterByDate('incomeStatement',options)
-            
-            ratioName='eps'
-            break
-        case 'pb':
-            ratios = ticker.filterByDate('balanceSheet',options)
-            ratioName='bookValuePerShare'
-            break
-        case 'dividendYield':
-            ratios = ticker.filterByDate('dividendData',options)
-            
-            ratioName='dividend'
-            break
-        default: return ''
-    }
-
-    let data=[]
-    let labels=[]
-    let tickerPriceData=[]
-
-    priceData.forEach(price =>{
-        let ratio=ratios.find(item => new Date(item.date).getFullYear()<=new 
-        Date(price.date).getFullYear())
-        if(ratio){
-            switch(key){
-                case 'pe':
-                case 'pb':
-                    if(ratio[ratioName]){
-                        data.unshift(Number((price.close/ratio[ratioName]).toFixed(1)) )                        
-                    }
-                    break
-                case 'dividendYield':
-                    let yearDivs = ratios.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
-                    let totalDiv = yearDivs.reduce((a,b)=>a+b.dividend,0)
-                    data.unshift(Number(((totalDiv/price.close)*100).toFixed(1)))
-                    break
-                default: return ''
-            }
-            labels.unshift(price.date.substring(0, 7))
-            tickerPriceData.unshift(price.close)
-        }
-    })
-    
-    if(ratios.length>1){
-        if(new Date(ratios[0].date)>new Date(ratios[1].date)){
-            ratios = ratios.reverse()
-        }
-    }
-
-    let financialData = ratios.map(item => item[ratioName])
-    let financialLabels = ratios.map(item => item.date.split('T')[0])
-
-    return { data, labels, tickerPriceData, financialData, financialLabels }
-
+function handleUpdateRatiosChart(ticker,options){
+    let ratioChartComponents = calculateRatioChartComponents(ticker,options)
+    let ratioChart = calculateRatioChart(ratioChartComponents,options)
+    let priceChart = calculateRatioPriceChart(ratioChart,ratioChartComponents,options)
+    let financialChart = calculateRatioFinacialChart(ratioChartComponents,options)
+    ticker.ratiosChart.priceChartData = priceChart
+    ticker.ratiosChart.ratioChartData = ratioChart
+    ticker.ratiosChart.financialChartData = financialChart
+    return ticker
 }
 
-function calculateFinancialChart(ticker,options){
-
-    let selectedStatement = options.selected
-    let financialData = ticker.filterByDate(selectedStatement,options)
-    
-    let data1=[]
-    let data2=[]
-    let data3=[]
-    let data4=[]
-    let labels=[]
-
-    financialData.forEach(item =>{
-        switch(selectedStatement){
-            case 'incomeStatement':
-                data1.unshift(item.revenue)
-                data2.unshift(item.netIncome)
-                break
-            case 'balanceSheet':
-                data1.unshift(item.currentAssets)
-                data2.unshift(item.currentLiabilities)
-                break
-            case 'cashFlow':
-                data1.unshift(item.operatingCashFlow)
-                data2.unshift(item.investingCashFlow)
-                data3.unshift(item.financingCashFlow)
-                data4.unshift(item.operatingCashFlow+item.investingCashFlow+item.financingCashFlow)
-                break
-            default: return ''
-        }
-        labels.unshift(item.date.substring(0, 7))
-    })
-
-    let fullFinancialData = ticker.getTickerData(selectedStatement)
-
-    return { data1, data2, data3, data4, labels, financialData, fullFinancialData }
+function handleUpdateFinancialChart(ticker,options){
+    let financialChartComponents = calculateFinancialChartComponents(ticker,options)  
+    let financialChartData = calculateFinancialChart(financialChartComponents,options)
+    ticker.financialChart.data = financialChartData
+    ticker.financialChart.options = financialChartOptions(options)
+    ticker.financialChart.fullFinancialData = financialChartComponents.fullFinancialData.length>0?financialChartComponents.fullFinancialData:null
+    return ticker
 }
 
 function calculateUserPriceChart(ticker,options){
@@ -467,115 +368,4 @@ function calculateUserReturnChart(ticker,options){
     })
 
     return data
-}
-
-function calculateChartEvents(data,labels,ticker,options,myDivs){
-
-    const  { time } = options 
-    const { transactions } = ticker
-
-    let trades = transactions.filter(item => new Date(item.date)>time.timeStart)
-    let insider = ticker.insiderTrading.reverse().filter(item => new Date(item.date)>time.timeStart)
-    let dividends = ticker.dividendData.reverse().filter(item => new Date(item.date)>time.timeStart)
-    let userDivs = myDivs.filter(item => new Date(item.date)>time.timeStart)
-
-    let tradePoints = data.map(item => 0)
-    let insiderPoints = data.map(item => 0)
-    let insiderBuyPoints = data.map(item => 0)
-    let insiderSellPoints = data.map(item => 0)
-    let insiderOtherPoints = data.map(item => 0)
-    let dividendPoints = data.map(item => 0)
-    let userDivPoints = data.map(item => 0)
-    let insiderPointColors = data.map(item => 0)
-    let tradePointColors = data.map(item => 0)
-
-    let insiderTooltipLabels = data.map(item => [])
-    let insiderBuyLabels = data.map(item => [])
-    let insiderSellLabels = data.map(item => [])
-    let insiderOtherLabels = data.map(item => [])
-    let tradeTooltipLabels = data.map(item => [])
-    let userDivTooltipLabels = data.map(item => [])
-    let divTooltipLabels = data.map(item => [])
-
-    let tooltipLabels = data.map(item => [])
-
-
-    dividends.forEach(item =>{
-        let divDate = new Date(item.date)
-        let index = labels.findIndex(elem => Math.abs(new Date(elem)-divDate)<1604800000)
-        if(index>=0){
-            divTooltipLabels[index].push('Dividend '+item.dividend)
-            dividendPoints[index]=7            
-        }
-    })
-
-    userDivs.forEach(item =>{
-        let userDivDate = new Date(item.date)
-        let index = labels.findIndex(elem => Math.abs(new Date(elem)-userDivDate)<1604800000)
-        if(index>=0){
-            userDivTooltipLabels[index].push('Dividend '+item.payment)
-            userDivPoints[index]=7           
-        }
-    })
-
-
-    insider.forEach(item => {
-        let insiderDate = new Date(item.date)
-        let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<1604800000)
-        if(index>=0){
-            insiderTooltipLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
-            insiderPointColors[index]=getInsiderTradeType(item.type)
-            insiderPoints[index]=10             
-            if(item.type==='buy'){
-                insiderBuyPoints[index]=10 
-                insiderBuyLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
-            }else if(item.type==='sell'){
-                insiderSellPoints[index]=10 
-                insiderSellLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
-            }else{
-                insiderOtherPoints[index]=10 
-                insiderOtherLabels[index].push(item.type+` ${item.name} (${item.position})   ${item.volume}pcs ${item.price}$` )
-            }
-        }
-    })             
-
-    trades.forEach(item => {
-        let insiderDate = new Date(item.date)
-        let index = labels.findIndex(elem => Math.abs(new Date(elem)-insiderDate)<1604800000)
-        if(tradeTooltipLabels[index]){
-            tradeTooltipLabels[index].push(item.type+` ${item.count}pcs ${item.price}$` )
-            tradePoints[index]=10 
-            tradePointColors[index] = item.type==='buy'?'rgba(0, 255, 128,0.9)':'rgba(255, 89, 0,0.9)'            
-        }
-    }) 
-
-    return { 
-        tooltipLabels,
-        tradePoints,
-        insiderPoints,
-        dividendPoints,
-        userDivPoints,
-        insiderPointColors,
-        insiderTooltipLabels,
-        tradeTooltipLabels,
-        userDivTooltipLabels,
-        divTooltipLabels,
-        insiderBuyPoints,
-        insiderSellPoints,
-        insiderOtherPoints,
-        insiderBuyLabels,
-        insiderSellLabels,
-        insiderOtherLabels,
-        tradePointColors
-    }
-}
-
-function getInsiderTradeType(type){
-    switch(type) {
-        case 'Buy':
-            return 'rgba(76, 212, 122,0.9)'
-        case 'Sell':
-            return 'rgba(255, 79, 79,0.9)'
-        default: return 'yellow'
-      }
 }
