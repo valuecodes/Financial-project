@@ -23,8 +23,9 @@ export function MACDDataOptions(){
 
 export function priceChartOptions(ticker,options){
     const { selected } = options
-
-    const data = ticker.priceChart.data.datasets[0].data
+    
+    const {data,oscillator,MACD} = ticker.priceChart.data.datasets[0]
+    const datasets = ticker.priceChart.data.datasets
 
     let min = Math.min(...data)
     let max = Math.max(...data)
@@ -38,7 +39,7 @@ export function priceChartOptions(ticker,options){
         plugins: {
             datalabels: {
                 display: false,
-            }
+            },     
         },
         legend: {
             align:'start',
@@ -86,10 +87,18 @@ export function priceChartOptions(ticker,options){
             intersect: false,
             titleFontColor:'rgba(0,0,0,0)',
             enabled:false,
-            custom: function(tooltipModel) {
+            custom: function(tooltipModel,index) {
                 if(tooltipModel.dataPoints){
                     let tooltipPoints = tooltipModel.dataPoints.length
                     for(var i=0;i<tooltipPoints;i++){
+                        
+                        if(selected==='movingAverages'&&i<2){
+                            continue
+                        }
+                        if(selected==='MACD'&&i<2){
+                            continue
+                        }
+                        
                         let tooltip = document.getElementById('chartjs-tooltip'+i);
                         let tooltipLine =  document.getElementById('chartjs-tooltip-line'+i);
                         if(!tooltip){
@@ -117,6 +126,7 @@ export function priceChartOptions(ticker,options){
     
                         // Set Text 
                         if (tooltipModel.body) {
+                            let text = ''
                             var bodyLines = tooltipModel.body.map(getBody);
                             var tableRoot = tooltipLine.querySelector('table');
                             tableRoot.textContent = bodyLines[i];
@@ -131,8 +141,9 @@ export function priceChartOptions(ticker,options){
                         tooltip.style.width = '10px';
                         tooltip.style.height = '10px';
                         tooltip.style.borderRadius = '20px';
-                        tooltip.style.border = '2px solid black';
+                        tooltip.style.border = '1px solid black';
                         tooltip.style.backgroundColor = 'white';
+                        
     
                         tooltipLine.style.opacity = 1;
                         tooltipLine.style.position = 'absolute';
@@ -141,12 +152,34 @@ export function priceChartOptions(ticker,options){
                         tooltipLine.style.backgroundColor='dimgray'
                         tooltipLine.style.color='white'
                         tooltipLine.style.fontSize='15px'
-                        tooltipLine.style.borderRadius='25%'
-                        tooltipLine.style.border='3px solid black'
+                        tooltipLine.style.borderLeft='5px solid white'
+                        tooltipLine.style.padding = '2px';
 
+                        let datasetIndex=tooltipModel.dataPoints[i].datasetIndex
+                        let index=tooltipModel.dataPoints[i].index
+
+                        if(selected==='priceChart'){
+                            let value = 0;
+                            if(datasetIndex===1){
+                                value=datasets[datasetIndex].percentageChangeWithDivs[index]
+                            }
+                            if(datasetIndex===0){
+                                value=datasets[datasetIndex].percentageChange[index]
+                            }
+                            tooltipLine.style.borderLeft = value>=0?'5px solid lightgreen':'5px solid red'
+                        }
+                        if(selected==='stochasticOscillator'){
+                            let value = datasets[datasetIndex].oscillator[index]
+                            let color='white'
+                            if(value>=60)color='salmon'
+                            if(value<=-60)color='lightgreen'
+                            tooltipLine.style.borderLeft = '5px solid '+'gray'  
+                            tooltipLine.style.backgroundColor=color
+                            tooltipLine.style.color='black'
+                        }
                     }                    
                 }else{
-                    for(var z=0;z<2;z++){
+                    for(var z=0;z<3;z++){
                         if(document.getElementById('chartjs-tooltip'+z)){
                             document.getElementById('chartjs-tooltip'+z).style.opacity=0;
                         }
@@ -159,12 +192,22 @@ export function priceChartOptions(ticker,options){
             callbacks: {
                 label: function (tooltipItem, data) {
                     const { datasetIndex,index } = tooltipItem
-                    // tt.current.textContent=`${formatCurrency( tooltipItem.yLabel)}`
-                    let currentData = (datasetIndex===0?data.datasets[datasetIndex].percentageChange[index]:data.datasets[datasetIndex].percentageChangeWithDivs[index])+'%'
-                    // if(data.datasets[datasetIndex].options.price.chartType.selectedOption==='dividends'){
-                    //     currentData = data.datasets[datasetIndex].data[index].toFixed(2)+'$'
-                    // }
-                    return currentData
+                    let text=''
+                    text = data.datasets[datasetIndex].percentageChange[index]+'%'
+                    if(selected==='stochasticOscillator'){
+                        let value = (oscillator[index]+100)/2
+                        let valueText = 'Neutral'
+                        if(value<=20) valueText='Oversold'
+                        if(value>=80) valueText='Overbought'
+                        text = `${valueText} (${value.toFixed(1)})` 
+                    }
+                    if(selected==='MACD'){
+                        text=tooltipItem.value
+                    }
+                    if(selected==='movingAverages'){
+                        text = tooltipItem.value
+                    }
+                    return text
                 }
             }
         }   

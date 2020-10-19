@@ -5,6 +5,7 @@ import {
     getRatioName
 } from "./chartUtils";
 import { randomColor, roundToTwoDecimal } from "./utils";
+import { stochasticOscillatorGradient, oscillatorPriceGradient } from "./calculations/gradientCalculations";
 
 export function calculateRatioChartComponents(ticker,options){
     const key = options.selected
@@ -132,6 +133,7 @@ export function calculatePriceChart(ticker,options){
     let MACD = []
     let goldenCross=[]
     let deathCross=[]
+    let oscillator=[]
 
     priceData.forEach((item,index) =>{
         let divAmount = 0
@@ -149,7 +151,7 @@ export function calculatePriceChart(ticker,options){
         MA12.unshift(item.MA12?item.MA12:null)
         MA26.unshift(item.MA26?item.MA26:null)
         MACD.unshift(item.MA26&&item.MA12? item.MA12-item.MA26:null )
-
+        oscillator.unshift(item.oscillator)
         if(item.MA50&&item.MA200&&priceData[index+1]){
             if(item.MA50>item.MA200 && priceData[index+1].MA50<priceData[index+1].MA200){
                  goldenCross.unshift(5)
@@ -169,7 +171,7 @@ export function calculatePriceChart(ticker,options){
         }
         
     })    
-
+    
     let total=0
     let cumulativeDividends = divs.map((item,index) => (total+=item))
     total=0
@@ -190,6 +192,7 @@ export function calculatePriceChart(ticker,options){
             borderColor:'blue',
             data:selected==='movingAverages'?MA50:MA12,
             percentageChange,
+            pointHoverRadius:0,
             percentageChangeWithDivs,
             options,  
             fill:false,
@@ -202,6 +205,7 @@ export function calculatePriceChart(ticker,options){
             pointBorderColor:'black',      
             borderWidth:selected==='movingAverages'?3:2,
             borderColor:'red',
+            pointHoverRadius:0,            
             data:selected==='movingAverages'?MA200:MA26,
             percentageChange,
             percentageChangeWithDivs,
@@ -218,6 +222,7 @@ export function calculatePriceChart(ticker,options){
             backgroundColor: bgColor,
             borderWidth:2,
             data: MACD,
+            pointHoverRadius:0,            
             percentageChange,
             percentageChangeWithDivs,
             options,  
@@ -225,17 +230,36 @@ export function calculatePriceChart(ticker,options){
         })     
     }
 
+    let oscillatorData=[]
+    let priceGradient=null
+    if(selected==='stochasticOscillator'){
+        priceGradient=oscillatorPriceGradient(ticker,oscillator)
+        oscillatorData.push({ 
+            pointRadius:0,       
+            borderColor:'black',   
+            fill:'red',   
+            pointHoverRadius:0,            
+            backgroundColor:stochasticOscillatorGradient(),           
+            borderWidth:1,
+            data: oscillator,
+            options,  
+            fill:true
+        })  
+    }
+
     dataSets.push({
         label: 'Share Price',
         backgroundColor: 'rgba(133, 133, 133,0.8)',
         pointRadius:0,
         pointHitRadius:5,
-        borderColor:'black',
-        borderWidth:1,
+        borderColor:priceGradient?priceGradient:'black',
+        borderWidth: selected==='stochasticOscillator'?5:1,
         data: data,    
         percentageChange,
         percentageChangeWithDivs,
         options,
+        oscillator,
+        MACD
     })
 
     if(selected==='priceChart'){
@@ -253,6 +277,7 @@ export function calculatePriceChart(ticker,options){
     }
 
     return {
+        oscillatorData,
         MACDData,
         datasets:dataSets,
         labels: labels
@@ -784,3 +809,4 @@ export function calculateStatTreeMap(chartComponents){
     })
     return array
 }
+

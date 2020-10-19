@@ -2,6 +2,7 @@ import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
 import { TickerData } from "./tickerData";
 import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart } from "./chart";
 import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions } from "./chartOptions";
+import annotation from "chartjs-plugin-annotation";
 
 export function Ticker(data,portfolioTicker){
     this.profile = data?data.profile:{
@@ -40,6 +41,54 @@ export function Ticker(data,portfolioTicker){
             responsive:true,
             maintainAspectRatio: false,  
         },
+        oscillatorData:{},
+        oscillatorDataOptions:{
+            responsive:true,
+            maintainAspectRatio: false,  
+            plugins: {
+                datalabels: {
+                    display: false,
+                }
+            },
+            annotation: {
+                drawTime: 'beforeDatasetsDraw',
+                annotations:[
+                {
+                    type: 'box',
+                    xScaleID: 'x-axis-0',
+                    yScaleID: 'y-axis-0',
+                    xMin: 0,
+                    xMax: 10000,
+                    yMin: -55,
+                    yMax: 60,
+                    backgroundColor: 'rgba(227, 227, 227, 1)',
+                    borderWidth: 1                    
+                },
+            ]
+            },
+            legend: {
+                display: false,
+                  labels: {
+                    display: false
+                  }
+            },
+            scales: {            
+                yAxes: [{  
+                    ticks: {
+                        maxTicksLimit:6,
+                        maxRotation: 0,
+                        minRotation: 0,
+                    },
+                }],
+                xAxes: [{  
+                    ticks: {
+                        maxTicksLimit:8,
+                        maxRotation: 0,
+                        minRotation: 0,
+                    },
+                }],
+            }
+        }
     }
 
     this.eventChart={
@@ -47,7 +96,7 @@ export function Ticker(data,portfolioTicker){
         options:{
             responsive:true,
             maintainAspectRatio: false,   
-        }
+        },
     }
 
     this.ratiosChart={
@@ -96,12 +145,15 @@ function handleInit(ticker){
 
 function handleSetMovingAverages(ticker){
     const { priceData } = ticker
-    
+
     priceData.forEach((item,index) =>{
         let total12=0
         let total26=0
         let total50=0
         let total200=0
+        let high14Days=-Infinity
+        let low14Days=Infinity
+
         for(let i=index;i<index+2;i++){
             if(!priceData[i]){
                 total12=null
@@ -109,6 +161,19 @@ function handleSetMovingAverages(ticker){
             }
             total12+=priceData[i].close
         }
+
+        for(let i=index;i<index+3;i++){
+            if(!priceData[i]){
+                break
+            }
+            if(high14Days<priceData[i].high){
+                high14Days = priceData[i].high
+            } 
+            if(low14Days>priceData[i].low){
+                low14Days = priceData[i].low
+            }   
+        }
+
         for(let i=index;i<index+4;i++){
             if(!priceData[i]){
                 total26=null
@@ -132,7 +197,8 @@ function handleSetMovingAverages(ticker){
         }
 
         if(total200===null) total50=null
-
+        
+        item.oscillator =-100+ (((item.close - low14Days)/(high14Days-low14Days)) * 100)*2
         item.MA12 = total12?total12/2:item.close
         item.MA26 = total26?total26/4:item.close
         item.MA50 = total50?total50/7.14:item.close
@@ -268,11 +334,12 @@ function calculateGetTickerData(ticker, key){
 }
 
 function handleUpdatePriceChart(ticker,options,chart){
-    const { MACDData, datasets, labels } = calculatePriceChart(ticker,options)
+    const { datasets, labels, MACDData, oscillatorData } = calculatePriceChart(ticker,options)
     ticker.priceChart.data = { datasets, labels }
     ticker.priceChart.options = priceChartOptions(ticker,options,chart) 
     ticker.priceChart.MACDData= { datasets:MACDData, labels }
     ticker.priceChart.MACDDataOptions = MACDDataOptions()
+    ticker.priceChart.oscillatorData = { datasets:oscillatorData, labels}
     return ticker
 }
 
@@ -366,6 +433,5 @@ function calculateUserReturnChart(ticker,options){
             }
         })
     })
-
     return data
 }

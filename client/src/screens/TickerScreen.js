@@ -229,9 +229,10 @@ function EventChart({ticker,setTicker,navigation}){
 function PriceChart({ ticker, setTicker ,navigation }){
 
     const priceChart=useRef()
+    const stochasticChart = useRef()
     const [options,setOptions]=useState({
         selected:'priceChart',
-        options:['priceChart','movingAverages','MACD'],
+        options:['priceChart','movingAverages','MACD','stochasticOscillator'],
         time:{
             timeValue:'15.years-years',
             timeStart:new Date(),
@@ -241,6 +242,7 @@ function PriceChart({ ticker, setTicker ,navigation }){
 
     useEffect(()=>{
         ticker.priceChart.chart = priceChart
+        ticker.stochasticChart = stochasticChart
         const updated = ticker.updatePriceChart(options)
         setTicker({...updated})
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,6 +279,13 @@ function PriceChart({ ticker, setTicker ,navigation }){
                         <Bar
                             data={ticker.priceChart.MACDData}
                             options={ticker.priceChart.MACDDataOptions}
+                        />                  
+                    }
+                    {options.selected==='stochasticOscillator' &&
+                        <Line
+                            id='stochasticChart'
+                            data={ticker.priceChart.oscillatorData}
+                            options={ticker.priceChart.oscillatorDataOptions}
                         />                  
                     }
                 </div>             
