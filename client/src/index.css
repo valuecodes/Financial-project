@@ -1593,6 +1593,7 @@ input[type=color]::-webkit-color-swatch-wrapper {
 .chartContainer{
   height: 40rem;
   background-color: rgb(194, 194, 194);
+  overflow: hidden;
 }
 
 .chartContainerSmall{

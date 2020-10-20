@@ -300,6 +300,7 @@ function calculateMyDivs(ticker){
 function calculateFilterByDate(ticker,key,options){
     const { time } = options
     if(!time.timeStart) return []
+    if(!ticker[key]) return[]
     if(key==='dividendData'){
         return ticker[key].filter(item => new Date(item.date).getFullYear()>time.timeStart.getFullYear())
     }else{
@@ -323,6 +324,9 @@ function calculateFilterFinancialRatio(ticker,statement,key,options){
 function calculateGetTickerData(ticker, key){
 
     let data = ticker[key]
+    if(key==='dividends'){
+        data=ticker.incomeStatement
+    }
 
     if(data.length>1){
         if(new Date(data[0].date)<new Date(data[1].date)){

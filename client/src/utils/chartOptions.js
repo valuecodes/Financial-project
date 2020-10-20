@@ -1,4 +1,5 @@
 import { formatMillions, formatCurrency } from "./utils";
+import annotation from "chartjs-plugin-annotation";
 
 export function MACDDataOptions(){
     return {
@@ -15,7 +16,6 @@ export function MACDDataOptions(){
             labels: {
                 fontSize:20,
             },
-
         },
     }
 
@@ -57,23 +57,15 @@ export function priceChartOptions(ticker,options){
             }
         },        
         scales: {
-            xAxes: [{
-                gridLines: {
-                    // color: "rgba(0, 0, 0, 0)",
-                },    
+            xAxes: [{  
                 ticks: {
                     maxTicksLimit: 8,
                     maxRotation: 0,
                     minRotation: 0,
                     min: 5
-                    // beginAtZero: false,
                 },
-                // barPercentage: 1.1
             }],
             yAxes: [{
-                gridLines: {
-                    // color: "rgba(0, 0, 0, 0)",
-                },
                 stacked: selected==='priceChart'?true:false,
                 ticks: {
                     maxTicksLimit: 20,
@@ -98,101 +90,18 @@ export function priceChartOptions(ticker,options){
                         if(selected==='MACD'&&i<2){
                             continue
                         }
-                        
-                        let tooltip = document.getElementById('chartjs-tooltip'+i);
-                        let tooltipLine =  document.getElementById('chartjs-tooltip-line'+i);
-                        if(!tooltip){
-                            tooltip = document.createElement('div');                 
-                            tooltip.id = 'chartjs-tooltip'+i;
-                            tooltip.innerHTML = '<table></table>';
-                            document.body.appendChild(tooltip)
-                        }
-    
-                        if(!tooltipLine){
-                            tooltipLine = document.createElement('div');                 
-                            tooltipLine.id = 'chartjs-tooltip-line'+i;
-                            tooltipLine.innerHTML = '<table></table>';
-                            document.body.appendChild(tooltipLine)
-                        }
-    
-                        if (tooltipModel.opacity === 0) {
-                            tooltip.style.opacity = 0;
-                            return;
-                        }
-    
-                        function getBody(bodyItem) {
-                            return bodyItem.lines;
-                        }       
-    
-                        // Set Text 
-                        if (tooltipModel.body) {
-                            let text = ''
-                            var bodyLines = tooltipModel.body.map(getBody);
-                            var tableRoot = tooltipLine.querySelector('table');
-                            tableRoot.textContent = bodyLines[i];
-                        }
-    
-                        var position = this._chart.canvas.getBoundingClientRect();
-                        tooltip.style.opacity = 1;
-                        tooltip.style.position = 'absolute';
-                        tooltip.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';
-                        tooltip.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y-6+ 'px';
-                        tooltip.style.pointerEvents = 'none';
-                        tooltip.style.width = '10px';
-                        tooltip.style.height = '10px';
-                        tooltip.style.borderRadius = '20px';
-                        tooltip.style.border = '1px solid black';
-                        tooltip.style.backgroundColor = 'white';
-                        
-    
-                        tooltipLine.style.opacity = 1;
-                        tooltipLine.style.position = 'absolute';
-                        tooltipLine.style.left = position.left + window.pageXOffset +tooltipModel.caretX +10+ 'px';
-                        tooltipLine.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y+(i===0?5:-22) + 'px';
-                        tooltipLine.style.backgroundColor='dimgray'
-                        tooltipLine.style.color='white'
-                        tooltipLine.style.fontSize='15px'
-                        tooltipLine.style.borderLeft='5px solid white'
-                        tooltipLine.style.padding = '2px';
-
-                        let datasetIndex=tooltipModel.dataPoints[i].datasetIndex
-                        let index=tooltipModel.dataPoints[i].index
-
-                        if(selected==='priceChart'){
-                            let value = 0;
-                            if(datasetIndex===1){
-                                value=datasets[datasetIndex].percentageChangeWithDivs[index]
-                            }
-                            if(datasetIndex===0){
-                                value=datasets[datasetIndex].percentageChange[index]
-                            }
-                            tooltipLine.style.borderLeft = value>=0?'5px solid lightgreen':'5px solid red'
-                        }
-                        if(selected==='stochasticOscillator'){
-                            let value = datasets[datasetIndex].oscillator[index]
-                            let color='white'
-                            if(value>=60)color='salmon'
-                            if(value<=-60)color='lightgreen'
-                            tooltipLine.style.borderLeft = '5px solid '+'gray'  
-                            tooltipLine.style.backgroundColor=color
-                            tooltipLine.style.color='black'
-                        }
+                        addTooltip(this,i,tooltipModel,i,selected,datasets)
+                        addTooltipText(this,i,tooltipModel,selected,datasets)
                     }                    
                 }else{
-                    for(var z=0;z<3;z++){
-                        if(document.getElementById('chartjs-tooltip'+z)){
-                            document.getElementById('chartjs-tooltip'+z).style.opacity=0;
-                        }
-                        if(document.getElementById('chartjs-tooltip-line'+z)){
-                            document.getElementById('chartjs-tooltip-line'+z).style.opacity=0;
-                        }
-                    }
+                    clearAllTooltips()
                 }
             },
             callbacks: {
                 label: function (tooltipItem, data) {
                     const { datasetIndex,index } = tooltipItem
                     let text=''
+                    console.log(data.datasets[datasetIndex])
                     text = data.datasets[datasetIndex].percentageChange[index]+'%'
                     if(selected==='stochasticOscillator'){
                         let value = (oscillator[index]+100)/2
@@ -207,6 +116,9 @@ export function priceChartOptions(ticker,options){
                     if(selected==='movingAverages'){
                         text = tooltipItem.value
                     }
+                    if(datasetIndex===1){
+                        text = data.datasets[datasetIndex].percentageChangeWithDivs[index]+'%'
+                    }
                     return text
                 }
             }
@@ -215,6 +127,8 @@ export function priceChartOptions(ticker,options){
 }
 
 export function financialChartOptions(options){
+
+    const { selected } = options
 
     return{    
         responsive:true,
@@ -237,7 +151,15 @@ export function financialChartOptions(options){
             intersect: false,
             callbacks: {
                 label: function (tooltipItem, data) {
-                    return formatMillions(tooltipItem.yLabel)+'M'
+                    const { datasetIndex, index } = tooltipItem
+                    let text = formatMillions(tooltipItem.yLabel)+'M'
+                    if(datasetIndex===2&&selected!=='cashFlow'){
+                        text = tooltipItem.yLabel.toFixed(1)
+                        if(selected!=='balanceSheet'){
+                            text+='%'
+                        }
+                    }
+                    return text
                 }
             }
         },
@@ -250,14 +172,32 @@ export function financialChartOptions(options){
                     minRotation: 0,
                 },
             }],
-            yAxes: [{  
-                ticks: {
-                    maxTicksLimit: 8,
-                    maxRotation: 0,
-                    minRotation: 0,
-                    suggestedMin: 0, 
+            yAxes: [
+                {  
+                    id: 'y-axis-1',
+                    ticks: {
+                        maxTicksLimit: 8,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        suggestedMin: 0, 
+                    },
                 },
-            }],
+                {                      
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    id: 'y-axis-2',
+                    ticks: {
+                        maxTicksLimit: 8,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        suggestedMin: 0, 
+                    },
+                    gridLines: {
+                        display:false
+                    }   
+                }
+            ],
         },
 
     }
@@ -316,11 +256,60 @@ export function eventChartOptions(){
                 },
             }
         },
-
     }
 } 
 
-export function ratioChartOptions(ratioChartRef,ratioPriceChartRef){
+function createRatioAnnotations(ratioData,options){
+    const { selected } = options
+    let annotations=[]
+    if(ratioData){
+        const data = ratioData.datasets[0].data
+        let ratioMin = Math.min(...data)
+        let ratioMax = Math.max(...data)
+        let ratioAverage = data.reduce((a,c)=> a+c,0) / data.length    
+        let averageTop=ratioMax-(ratioMax-ratioMin)/3
+        let averageBot=ratioMin+(ratioMax-ratioMin)/3
+        annotations.push({
+            type: 'box',
+            xScaleID: 'x-axis-0',
+            yScaleID: 'y-axis-0',
+            xMin: 0,
+            xMax: 2000,
+            yMin: averageTop,
+            yMax: ratioMax,
+            backgroundColor: selected!=='dividendYield'?'rgba(252, 3, 3,0.2)':'rgba(3, 252, 94,0.2)',
+            borderWidth: 1,
+        })
+        annotations.push({
+            type: 'box',
+            xScaleID: 'x-axis-0',
+            yScaleID: 'y-axis-0',
+            xMin: 0,
+            xMax: 2000,
+            yMin: averageBot,
+            yMax: averageTop,
+            backgroundColor: 'rgba(235, 252, 3,0.2)',
+            borderWidth: 1,
+        })
+        annotations.push({
+            type: 'box',
+            xScaleID: 'x-axis-0',
+            yScaleID: 'y-axis-0',
+            xMin: 0,
+            xMax: 2000,
+            yMin: ratioMin,
+            yMax: averageBot,
+            backgroundColor: selected!=='dividendYield'?'rgba(3, 252, 94,0.2)':'rgba(252, 3, 3,0.2)',
+            borderWidth: 1,
+        })
+    }    
+    return annotations
+}
+
+export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratioData=null){
+
+    let annotations = createRatioAnnotations(ratioData,options)
+
     return {    
         responsive:true,
         maintainAspectRatio: false,
@@ -328,6 +317,10 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef){
             datalabels: {
                 display: false,
             },
+        },
+        annotation: {
+            drawTime: 'beforeDatasetsDraw',
+            annotations:annotations
         },
         layout: {
             padding: {
@@ -574,7 +567,7 @@ export function portfolioChartOptions(){
                     let tooltipPoints = tooltipModel.dataPoints.length
                     for(var i=0;i<tooltipPoints;i++){
                         let tooltip = document.getElementById('chartjs-tooltip'+i);
-                        let tooltipLine =  document.getElementById('chartjs-tooltip-line'+i);
+                        let tooltipText =  document.getElementById('chartjs-tooltip-text'+i);
                         if(!tooltip){
                             tooltip = document.createElement('div');                 
                             tooltip.id = 'chartjs-tooltip'+i;
@@ -582,11 +575,11 @@ export function portfolioChartOptions(){
                             document.body.appendChild(tooltip)
                         }
 
-                        if(!tooltipLine){
-                            tooltipLine = document.createElement('div');                 
-                            tooltipLine.id = 'chartjs-tooltip-line'+i;
-                            tooltipLine.innerHTML = '<table></table>';
-                            document.body.appendChild(tooltipLine)
+                        if(!tooltipText){
+                            tooltipText = document.createElement('div');                 
+                            tooltipText.id = 'chartjs-tooltip-text'+i;
+                            tooltipText.innerHTML = '<table></table>';
+                            document.body.appendChild(tooltipText)
                         }
 
                         if (tooltipModel.opacity === 0) {
@@ -601,7 +594,7 @@ export function portfolioChartOptions(){
                         // Set Text 
                         if (tooltipModel.body) {
                             var bodyLines = tooltipModel.body.map(getBody);
-                            var tableRoot = tooltipLine.querySelector('table');
+                            var tableRoot = tooltipText.querySelector('table');
                             tableRoot.textContent = bodyLines[i];
                         }
 
@@ -617,23 +610,23 @@ export function portfolioChartOptions(){
                         tooltip.style.border = '2px solid black';
                         tooltip.style.backgroundColor = 'white';
 
-                        tooltipLine.style.opacity = 1;
-                        tooltipLine.style.position = 'absolute';
-                        tooltipLine.style.left = position.left + window.pageXOffset +tooltipModel.caretX +16+ 'px';
-                        tooltipLine.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y+(i===0?0:-32) + 'px';
-                        tooltipLine.style.backgroundColor='dimgray'
-                        tooltipLine.style.color='white'
-                        tooltipLine.style.padding='5px'
-                        tooltipLine.style.fontSize='16px'
-                        tooltipLine.style.borderRadius='5px'
+                        tooltipText.style.opacity = 1;
+                        tooltipText.style.position = 'absolute';
+                        tooltipText.style.left = position.left + window.pageXOffset +tooltipModel.caretX +16+ 'px';
+                        tooltipText.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y+(i===0?0:-32) + 'px';
+                        tooltipText.style.backgroundColor='dimgray'
+                        tooltipText.style.color='white'
+                        tooltipText.style.padding='5px'
+                        tooltipText.style.fontSize='16px'
+                        tooltipText.style.borderRadius='5px'
                     }                    
                 }else{
                     for(var q=0;q<2;q++){
                         if(document.getElementById('chartjs-tooltip'+q)){
                             document.getElementById('chartjs-tooltip'+q).style.opacity=0;
                         }
-                        if(document.getElementById('chartjs-tooltip-line'+q)){
-                            document.getElementById('chartjs-tooltip-line'+q).style.opacity=0;
+                        if(document.getElementById('chartjs-tooltip-text'+q)){
+                            document.getElementById('chartjs-tooltip-text'+q).style.opacity=0;
                         }
                     }
                 }
@@ -710,5 +703,102 @@ export function portfolioStatChartOptions(title){
                 color: '#fff',
             }
         }
+    }
+}
+
+function addTooltipText(chart,i,tooltipModel,selected,datasets){
+    let tooltipText = document.getElementById('chartjs-tooltip-text'+i);
+    if(!tooltipText){
+        tooltipText = document.createElement('div');                 
+        tooltipText.id = 'chartjs-tooltip-text'+i;
+        tooltipText.innerHTML = '<table></table>';
+        document.body.appendChild(tooltipText)
+    }
+    function getBody(bodyItem) {
+        return bodyItem.lines;
+    }       
+
+    // Set Text 
+    if (tooltipModel.body) {
+        let text = ''
+        var bodyLines = tooltipModel.body.map(getBody);
+        var tableRoot = tooltipText.querySelector('table');
+        tableRoot.textContent = bodyLines[i];
+    }
+    var position = chart._chart.canvas.getBoundingClientRect();
+
+    tooltipText.style.opacity = 1;
+    tooltipText.style.position = 'absolute';
+    tooltipText.style.left = position.left + window.pageXOffset +tooltipModel.caretX +10+ 'px';
+    tooltipText.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y+(i===0?5:-22) + 'px';
+    tooltipText.style.backgroundColor='dimgray'
+    tooltipText.style.color='white'
+    tooltipText.style.fontSize='15px'
+    tooltipText.style.borderLeft='5px solid white'
+    tooltipText.style.padding = '2px';  
+
+    let datasetIndex=tooltipModel.dataPoints[i].datasetIndex
+    let index=tooltipModel.dataPoints[i].index
+
+    if(selected==='priceChart'){
+        let value = 0;
+        if(datasetIndex===1){
+            value=datasets[datasetIndex].percentageChangeWithDivs[index]
+        }
+        if(datasetIndex===0){
+            value=datasets[datasetIndex].percentageChange[index]
+        }
+        tooltipText.style.borderLeft = value>=0?'5px solid lightgreen':'5px solid red'
+    }
+    if(selected==='stochasticOscillator'){
+        let value = datasets[datasetIndex].oscillator[index]
+        let color='white'
+        if(value>=60)color='salmon'
+        if(value<=-60)color='lightgreen'
+        tooltipText.style.borderLeft = '5px solid '+'gray'  
+        tooltipText.style.backgroundColor=color
+        tooltipText.style.color='black'
+    }
+}
+
+function addTooltip(chart,i,tooltipModel){
+    let tooltip = document.getElementById('chartjs-tooltip'+i);
+    if(!tooltip){
+        tooltip = document.createElement('div');                 
+        tooltip.id = 'chartjs-tooltip'+i;
+        tooltip.innerHTML = '<table></table>';
+        document.body.appendChild(tooltip)
+    }
+    if (tooltipModel.opacity === 0) {
+        tooltip.style.opacity = 0;
+        return;
+    }
+
+    var position = chart._chart.canvas.getBoundingClientRect();
+    tooltip.style.opacity = 1;
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';
+    tooltip.style.top = position.top + window.pageYOffset + tooltipModel.dataPoints[i].y-6+ 'px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.width = '10px';
+    tooltip.style.height = '10px';
+    tooltip.style.borderRadius = '20px';
+    tooltip.style.border = '1px solid black';
+    tooltip.style.backgroundColor = 'white';
+
+}
+
+function clearAllTooltips(){
+    let tooltipNames=[
+        'chartjs-tooltip-underline',
+        'chartjs-tooltip-text',
+        'chartjs-tooltip'
+    ]
+    for(var z=0;z<3;z++){
+        tooltipNames.forEach(item =>{
+            if(document.getElementById(item+z)){
+                document.getElementById(item+z).style.opacity=0;
+            }
+        })
     }
 }

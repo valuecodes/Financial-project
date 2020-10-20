@@ -10,14 +10,13 @@ import { stochasticOscillatorGradient, oscillatorPriceGradient } from "./calcula
 export function calculateRatioChartComponents(ticker,options){
     const key = options.selected
     let priceData = ticker.filterByDate('priceData',options)
-    
+
     let ratios = [];
     let ratioName=''
 
     switch(key){
         case 'pe':
             ratios = ticker.filterByDate('incomeStatement',options)
-            
             ratioName='eps'
             break
         case 'pb':
@@ -66,6 +65,7 @@ export function calculateRatioChartComponents(ticker,options){
 
     let financialData = ratios.map(item => item[ratioName])
     let financialLabels = ratios.map(item => item.date.split('T')[0])
+
     return { data, labels, tickerPriceData, financialData, financialLabels }
 }
 
@@ -540,24 +540,31 @@ function getInsiderTradeType(type){
 }
 
 export function calculateFinancialChartComponents(ticker,options){
+
     let selectedStatement = options.selected
     let financialData = ticker.filterByDate(selectedStatement,options)
-    
+    if(selectedStatement==='dividends'){
+        financialData = ticker.filterByDate('incomeStatement',options)
+    }
+    let dividends = ticker.dividendData
+
     let data1=[]
     let data2=[]
     let data3=[]
     let data4=[]
     let labels=[]
-
+    
     financialData.forEach(item =>{
         switch(selectedStatement){
             case 'incomeStatement':
                 data1.unshift(item.revenue)
-                data2.unshift(item.netIncome)
+                data2.unshift(item.netIncome)                
+                data3.unshift((item.netIncome/item.revenue)*100)
                 break
             case 'balanceSheet':
                 data1.unshift(item.currentAssets)
                 data2.unshift(item.currentLiabilities)
+                data3.unshift(item.currentAssets/item.currentLiabilities)
                 break
             case 'cashFlow':
                 data1.unshift(item.operatingCashFlow)
@@ -565,13 +572,17 @@ export function calculateFinancialChartComponents(ticker,options){
                 data3.unshift(item.financingCashFlow)
                 data4.unshift(item.operatingCashFlow+item.investingCashFlow+item.financingCashFlow)
                 break
-            default: return ''
+            case 'dividends':
+                let yearDivs = dividends.filter(div => new Date(div.date).getFullYear()===new Date(item.date).getFullYear())
+                    .reduce((a,c)=>a+c.dividend,0)
+                data1.unshift(item.eps)      
+                data2.unshift(yearDivs)   
+                data3.unshift((yearDivs/item.eps)*100)   
+            default: break
         }
         labels.unshift(item.date.substring(0, 7))
     })
-
     let fullFinancialData = ticker.getTickerData(selectedStatement)
-
     return { data1, data2, data3, data4, labels, financialData, fullFinancialData }
 }
 
@@ -600,13 +611,15 @@ export function calculateFinancialChart(chartComponents,options){
             bg1 = data1.map(item => 'rgba(70, 125, 189,0.8)')
             bg2 = data1.map(item => 'rgba(97, 194, 115,0.8)')
             label1='Revenue'            
-            label2='Net Income'            
+            label2='Net Income'    
+            label3='Profit Margin'              
             break
         case 'balanceSheet':
             bg1 = data1.map(item => 'rgba(97, 194, 115,0.8)')
             bg2 = data1.map(item => 'rgba(194, 128, 128,0.8)')
             label1='Current Assets'
             label2='Current Liabilities'
+            label3='Current Ratio'
             break
         case 'cashFlow':
             bg1 = data1.map(item => 'rgba(70, 125, 189,0.8)')
@@ -617,14 +630,21 @@ export function calculateFinancialChart(chartComponents,options){
             label3='Financing Cashflow'        
             label4='Free Cashflow'        
             break
-        default: return ''
+        case 'dividends':
+            bg1 = data1.map(item => 'rgba(70, 125, 189,0.8)')
+            bg2 = data1.map(item => 'rgba(194, 128, 128,0.8)')
+            label1='EPS'            
+            label2='Dividend'    
+            label3='Payout Ratio'    
+        default: break
     }
 
     let dataSets = [];
-
+    
     dataSets.push({
         label: label1,
         backgroundColor:bg1,
+        yAxisID: 'y-axis-1',
         pointRadius:0,
         pointHitRadius:5,
         borderColor:'black',
@@ -634,6 +654,7 @@ export function calculateFinancialChart(chartComponents,options){
     dataSets.push({
         label: label2,
         backgroundColor:bg2,
+        yAxisID: 'y-axis-1',
         pointRadius:0,
         pointHitRadius:5,
         borderColor:'black',
@@ -641,6 +662,35 @@ export function calculateFinancialChart(chartComponents,options){
         categoryPercentage:0.5
     })
 
+    if(
+        selectedStatement==='incomeStatement'||
+        selectedStatement==='dividends'||
+        selectedStatement==='balanceSheet'
+    ){
+        dataSets.push({
+            type:'line',
+            label: label3,
+            yAxisID: 'y-axis-2',
+            pointRadius:0,
+            pointHitRadius:5,
+            borderColor:'dimgray',
+            data: data3,    
+            categoryPercentage:0.5,
+            fill: false,
+            datalabels: {
+                display: true,
+                backgroundColor:'dimgray',
+                borderRadius:5,
+                color:'white',
+                padding:3,
+                formatter: function(value, context) {
+                    let text = value>=10?value.toFixed(0):value.toFixed(1)
+                    if(selectedStatement!=='balanceSheet') text+='%'
+                    return text
+                }
+            }
+        })            
+    }    
     if(selectedStatement==='cashFlow'){
         dataSets.push({
             label: label3,
@@ -658,7 +708,7 @@ export function calculateFinancialChart(chartComponents,options){
             type: 'line' 
         })
     }
-
+    console.log(dataSets,selectedStatement,data1,data2)
     return {
         datasets:dataSets,
         labels: labels

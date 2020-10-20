@@ -53,7 +53,6 @@ export function calculateChartBorderGradient(data,options){
 
     let ctx = chart.getContext("2d")
     // let height=Number(document.getElementById('ratioPriceChart').style.height.substring(0, document.getElementById('ratioPriceChart').style.height.length - 2))
-    
     var gradient = ctx.createLinearGradient(0, 0, 1200,0 )
      
     let max = Math.max(...data)

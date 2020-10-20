@@ -19,7 +19,7 @@ export default function TickerScreen(props) {
         options:['price','events','ratios','financials']
     })
     
-    const [ticker, setTicker] = useState(new Ticker())
+    const [ticker, setTicker] = useState(new Ticker(null))
     const tickerData = useSelector(state => state.tickerData)
     const { loading, tickerFullData, error } = tickerData
 
@@ -70,7 +70,7 @@ function Financials({ticker,setTicker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'incomeStatement',
-        options:['incomeStatement','balanceSheet','cashFlow'],
+        options:['incomeStatement','balanceSheet','cashFlow','dividends'],
         time:{
             timeValue:'15.years-years',
             timeStart:new Date(),
@@ -85,7 +85,7 @@ function Financials({ticker,setTicker,navigation}){
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     },[options])  
-
+    console.log(ticker)
     return(
         <div className='tickerFinancials'>
             <Options options={options} setOptions={setOptions}/>        
@@ -154,13 +154,14 @@ function TickerRatios({ticker,setTicker,navigation}){
         <div className='section'>
             <Options options={options} setOptions={setOptions}/>
             <div className='ratioCharts'>
-                <div className='ratioChartContainer'>                                 {navigation.selected.name==='ratios'&&
+                <div className='ratioChartContainer'>                                 
+                    {navigation.selected.name==='ratios'&&
                         <Line
                             id={'ratioChart'}
                             ref={ratioChartRef}
                             datasetKeyProvider={datasetKeyProvider}
                             data={ticker.ratiosChart.ratioChartData}
-                            options={ratioChartOptions(ratioChartRef,ratioPriceChartRef)}
+                            options={ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ticker.ratiosChart.ratioChartData)}
                         />
                     }  
                 </div>
@@ -170,7 +171,7 @@ function TickerRatios({ticker,setTicker,navigation}){
                         ref={ratioPriceChartRef}
                         datasetKeyProvider={datasetKeyProvider}
                         data={ticker.ratiosChart.priceChartData}
-                        options={ratioChartOptions(ratioChartRef,ratioPriceChartRef)}
+                        options={ratioChartOptions(ratioChartRef,ratioPriceChartRef,options)}
                     />                 
                 </div>
                 <div className='ratioChartContainer'>
