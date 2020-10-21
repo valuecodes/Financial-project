@@ -16,7 +16,7 @@ export default function TickerScreen(props) {
     const dispatch = useDispatch()
     const [navigation,setNavigation] = useState({
         selected:{name:'price',index:0},
-        options:['price','events','ratios','financials']
+        options:['price','events','ratios','financials','forecast']
     })
     
     const [ticker, setTicker] = useState(new Ticker(null))
@@ -59,10 +59,33 @@ export default function TickerScreen(props) {
                         <EventChart ticker={ticker} setTicker={setTicker} navigation={navigation}/>
                         <TickerRatios ticker={ticker} setTicker={setTicker} navigation={navigation}/>
                         <Financials ticker={ticker} setTicker={setTicker} navigation={navigation}/>   
+                        <Forecast ticker={ticker} setTicker={setTicker} navigation={navigation}/>
                     </div>
                 </div>
             }
         </div>
+    )
+}
+
+function Forecast({ticker,setTicker,navigation}){
+
+    useEffect(()=>{
+        let updated = ticker.updateForecastChart()
+        setTicker({...updated})
+    },[navigation])
+
+    return(
+        <div className='tickerForecast'>
+            <div className='chartContainer'>                                 
+                <Line
+                    // id={'ratioChart'}
+                    // ref={ratioChartRef}
+                    // datasetKeyProvider={datasetKeyProvider}
+                    data={ticker.forecastSection.chartData}
+                    options={ticker.forecastSection.chartOptions}
+                />
+            </div>
+        </div>        
     )
 }
 
@@ -85,7 +108,7 @@ function Financials({ticker,setTicker,navigation}){
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     },[options])  
-    console.log(ticker)
+
     return(
         <div className='tickerFinancials'>
             <Options options={options} setOptions={setOptions}/>        
@@ -219,6 +242,7 @@ function EventChart({ticker,setTicker,navigation}){
                             id={'canvas'}
                             data={ticker.eventChart.data}
                             options={ticker.eventChart.options}
+                            datasetKeyProvider={datasetKeyProvider}                            
                         />  
                     }
                 </div>
@@ -305,8 +329,14 @@ function TickerHeader({ticker,loading}){
                     <h1>{ticker.profile.ticker}</h1></li>
                     <li><h2>{ticker.profile.name}</h2></li>
                     <li><h2>{ticker.latestPrice('currency')}</h2></li>
-                    <li><h2>{ticker.profile.sector}</h2></li>
-                    <li><h2>{ticker.profile.industry}</h2></li>
+                    <li>
+                        <label>Sector</label>
+                        <h3>{ticker.profile.sector}</h3>
+                    </li>
+                    <li>                        
+                        <label>Industry</label>                        
+                        <h3>{ticker.profile.industry}</h3>  
+                    </li>
                 </ul>
             }
         </header>

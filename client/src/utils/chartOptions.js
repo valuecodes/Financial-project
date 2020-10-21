@@ -101,7 +101,6 @@ export function priceChartOptions(ticker,options){
                 label: function (tooltipItem, data) {
                     const { datasetIndex,index } = tooltipItem
                     let text=''
-                    console.log(data.datasets[datasetIndex])
                     text = data.datasets[datasetIndex].percentageChange[index]+'%'
                     if(selected==='stochasticOscillator'){
                         let value = (oscillator[index]+100)/2
@@ -435,7 +434,6 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
                             let position = chart.chartInstance.canvas.getBoundingClientRect()
                             if(chart.props){
                                 if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
-
                                     item.style.opacity = 1;
                                     item.style.position = 'absolute';
                                     item.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';

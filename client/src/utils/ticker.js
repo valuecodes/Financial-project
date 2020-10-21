@@ -1,6 +1,6 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
 import { TickerData } from "./tickerData";
-import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart } from "./chart";
+import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart, calculateForecastChartComponents } from "./chart";
 import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions } from "./chartOptions";
 import annotation from "chartjs-plugin-annotation";
 
@@ -114,6 +114,19 @@ export function Ticker(data,portfolioTicker){
         fullFinancialData:null
     }
 
+    this.forecastSection={
+        chartData:{},
+        chartOptions:{
+            responsive:true,
+            maintainAspectRatio: false,   
+            plugins: {
+                datalabels: {
+                    display: false,
+                }
+            },
+        },
+    }
+
     this.latestPrice = (format) => calculateLatestPrice(this,format)
     this.totalCount = (format) => calculateTotalCount(this,format)
     this.averageCost = (format) => calculateAverageCost(this,format)
@@ -131,6 +144,7 @@ export function Ticker(data,portfolioTicker){
     this.updateEventChart = (options) => handleUpdateEventChart(this,options)
     this.updateRatiosChart = (options) => handleUpdateRatiosChart(this,options)
     this.updateFinancialChart = (options) => handleUpdateFinancialChart(this,options)
+    this.updateForecastChart = () => handleUpdateForecastChart(this)
 
     this.userPriceChart = (options) => calculateUserPriceChart(this,options)
     this.userReturnChart = (options) => calculateUserReturnChart(this,options) 
@@ -297,9 +311,12 @@ function calculateMyDivs(ticker){
     return dividends.flat(2)
 }
 
-function calculateFilterByDate(ticker,key,options){
-    const { time } = options
-    if(!time.timeStart) return []
+function calculateFilterByDate(ticker,key,options={}){
+    let { time } = options
+    if(!time){
+        time = {}
+        time.timeStart = new Date(2000)
+    }
     if(!ticker[key]) return[]
     if(key==='dividendData'){
         return ticker[key].filter(item => new Date(item.date).getFullYear()>time.timeStart.getFullYear())
@@ -372,6 +389,15 @@ function handleUpdateFinancialChart(ticker,options){
     ticker.financialChart.fullFinancialData = financialChartComponents.fullFinancialData.length>0?financialChartComponents.fullFinancialData:null
     return ticker
 }
+
+function handleUpdateForecastChart(ticker){
+    let forecastChartComponents = calculateForecastChartComponents(ticker)
+    ticker.forecastSection.chartData = forecastChartComponents
+    return ticker
+}
+
+
+
 
 function calculateUserPriceChart(ticker,options){
     const { time } = options

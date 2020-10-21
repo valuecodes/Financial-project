@@ -708,7 +708,6 @@ export function calculateFinancialChart(chartComponents,options){
             type: 'line' 
         })
     }
-    console.log(dataSets,selectedStatement,data1,data2)
     return {
         datasets:dataSets,
         labels: labels
@@ -860,3 +859,98 @@ export function calculateStatTreeMap(chartComponents){
     return array
 }
 
+export function calculateForecastChartComponents(ticker){
+    let priceData = ticker.priceData
+        .filter(item => new Date(item.date).getFullYear()>new Date().getFullYear()-10).reverse() 
+    priceData = priceData.filter((item,index) => { return index%4===0})
+    let latestPrice = priceData[priceData.length-1]
+    
+    if(latestPrice){
+        let today = new Date()
+        for(var i=0;i<120;i++){
+            today.setMonth(today.getMonth()+1)
+            priceData.push({
+                date:today.toISOString(),
+                close:latestPrice.close
+            })
+        }
+    }
+
+    const { data:peData, financialData:epsData } = calculateRatioChartComponents(ticker,{selected:'pe'})
+
+    let latestPe = peData[peData.length-1]
+    let averagePE = peData.reduce((a,c)=> a+c,0)/peData.length
+    let peDiscount = averagePE/latestPe
+    let epsGrowth=0
+    let epsTotal = 0
+    for(var i=0;i<epsData.length-1;i++){
+        epsTotal+=(epsData[i+1]/epsData[i]) - 1
+    }
+    let epsGrowthRate = epsTotal/(epsData.length-1)
+
+    let data = priceData.map(item => item.close)
+    let labels = priceData.map(item => item.date.split('T')[0])
+
+    let price=[]
+    let bull=[]
+    let neutral=[]
+    let bear=[]
+
+    if(epsGrowthRate<0){
+        epsGrowthRate=0.05
+    }
+
+    let numberOfIterations=1
+    priceData.forEach((item,index) =>{
+        if(new Date(item.date)<new Date()){
+            price.push(item.close)
+            bull.push(item.close)
+            neutral.push(item.close)
+            bear.push(item.close)        
+        }else{
+            let discount = 1-((1-peDiscount)*numberOfIterations/120)
+            let bullInterest = (item.close*(1 + epsGrowthRate/12)**(numberOfIterations))*discount
+            bull.push(bullInterest)           
+            let neutralInterest = (item.close*(1 + (epsGrowthRate/2)/12)**(numberOfIterations))*discount
+            neutral.push(neutralInterest)           
+            let bearInterest = (item.close*(1 + (epsGrowthRate/4)/12)**(numberOfIterations))*discount
+            bear.push(bearInterest)         
+            numberOfIterations++ 
+            if(epsGrowthRate>0.1) epsGrowthRate*=0.995
+        }
+    })
+    let forecastData = {
+        datasets:[
+            {
+                label:'price',
+                data:price,
+                borderColor:'black',
+                fill:false
+            },
+            {
+                label:'bull',                
+                data:bull,
+                pointBackgroundColor:'green',
+                borderColor:'rgba(0,0,0,0)',
+                fill:false
+            },
+            {
+                label:'neutral',                
+                data:neutral,
+                pointBackgroundColor:'yellow',
+                borderColor:'rgba(0,0,0,0)',
+                fill:false
+            },
+            {
+                label:'bear',                
+                data:bear,
+                pointBackgroundColor:'red',
+                borderColor:'rgba(0,0,0,0)',
+                fill:false
+            }
+        ],
+        labels
+    }
+
+    return forecastData
+}

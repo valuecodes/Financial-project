@@ -1416,6 +1416,11 @@ input[type=color]::-webkit-color-swatch-wrapper {
   margin: 0 2rem;
 }
 
+.tickerScreenHeader ul li h2{
+  padding: 0;
+  margin: 0;
+}
+
 .ticker{
   margin: auto;
   background-color: rgb(207, 207, 207);
@@ -1622,6 +1627,11 @@ input[type=color]::-webkit-color-swatch-wrapper {
 .financialChartContainer{
   height: 30rem;
   padding: 3rem 0;
+}
+
+.tickerForecast{
+  background-color: rgb(211, 211, 211);
+  
 }
 
 table {
