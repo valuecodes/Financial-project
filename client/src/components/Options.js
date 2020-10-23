@@ -2,7 +2,13 @@ import React from 'react'
 import SetTimePeriod from './SetTimePeriod'
 import { camelCaseToString } from '../utils/utils';
 
-export default function Options({options,setOptions}){
+export default function Options(props){
+
+    const {
+        options,
+        setOptions,
+    } = props
+
     return (
         <div className='options'>
             <ul>
@@ -18,9 +24,7 @@ export default function Options({options,setOptions}){
                     </li>
                 )}
             </ul>
-            <ul className='timePeriods'>
-                <SetTimePeriod options={options} setOptions={setOptions}/>
-            </ul>
+            <SetTimePeriod options={options} setOptions={setOptions}/>
         </div>
     )
 }

@@ -56,7 +56,7 @@ export default function SetTimePeriod({options,setOptions,type='full', yearsFrom
     }
 
     return (
-        <>
+        <ul className='timePeriods'>
             {timePeriods.map(period =>
                 <li 
                     key={period}
@@ -67,6 +67,6 @@ export default function SetTimePeriod({options,setOptions,type='full', yearsFrom
                     onClick={()=>changeTimePeriod(period)}>{period.replace('.',' ').split('-')[0]}
                 </li>
             )}
-        </>
+        </ul>
     )
 }

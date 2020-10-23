@@ -800,3 +800,51 @@ function clearAllTooltips(){
         })
     }
 }
+
+export function calculateForecastChartOptions(forecastChart){
+
+    return{
+        plugins: {
+            datalabels: {
+                display: false,
+            }
+        },
+        scales:{
+            xAxes: [
+                {
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 20,
+                        maxRotation: 0,
+                        minRotation: 0,
+                    }                    
+                }
+            ],
+        }        
+    }
+}
+
+export function calculateForecastFinancialsOptions(){
+
+    return{
+        plugins: {
+            datalabels: {
+                display: false,
+            }
+        },
+        barValueSpacing: 1,
+        scales:{
+            barValueSpacing: 15,
+            xAxes: [
+                { 
+                    ticks: {
+                        display: false
+                    },   
+                    gridLines: {
+                        display:false
+                    }             
+                }
+            ]
+        }        
+    }
+}

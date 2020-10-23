@@ -1,7 +1,7 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
 import { TickerData } from "./tickerData";
 import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart, calculateForecastChartComponents } from "./chart";
-import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions } from "./chartOptions";
+import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions, calculateForecastChartOptions, calculateForecastFinancialsOptions } from "./chartOptions";
 import annotation from "chartjs-plugin-annotation";
 
 export function Ticker(data,portfolioTicker){
@@ -28,7 +28,7 @@ export function Ticker(data,portfolioTicker){
     this.dividendData = data?data.dividendData:[]
     this.priceData = data?data.priceData:[]
     this.transactions = portfolioTicker?portfolioTicker.transactions:[]
-    
+    this.analytics = {}
     this.priceChart={
         chart:null,
         data:{},
@@ -115,16 +115,16 @@ export function Ticker(data,portfolioTicker){
     }
 
     this.forecastSection={
-        chartData:{},
-        chartOptions:{
+        forecastChart:{},
+        forecastOptions:{
             responsive:true,
-            maintainAspectRatio: false,   
-            plugins: {
-                datalabels: {
-                    display: false,
-                }
-            },
+            maintainAspectRatio: false
         },
+        financialChart:{},
+        financialOptions:{
+            responsive:true,
+            maintainAspectRatio: false
+        }
     }
 
     this.latestPrice = (format) => calculateLatestPrice(this,format)
@@ -151,10 +151,72 @@ export function Ticker(data,portfolioTicker){
 
     this.init = () => handleInit(this)
     this.setMovingAverages = () => handleSetMovingAverages(this)
+    this.calculateAnalytics = () => handleCalculateAnalytics(this)
 }
 
 function handleInit(ticker){
     ticker.setMovingAverages()
+    ticker.calculateAnalytics()
+}
+
+function handleCalculateAnalytics(ticker){
+    let dividendData = ticker.dividendData
+    .reverse() 
+    let divData = [...dividendData]
+
+    const { data:peData, financialData:epsData, ratios } = calculateRatioChartComponents(ticker,{selected:'pe'})
+
+    let latestPE = peData[peData.length-1]
+    let averagePE = peData.reduce((a,c)=> a+c,0)/peData.length
+    let peDiscount = averagePE/latestPE
+    let epsGrowth=0
+    let epsTotal = 0
+    for(var i=0;i<epsData.length-1;i++){
+        epsTotal+=(epsData[i+1]/epsData[i]) - 1
+    }
+    let epsGrowthRate = epsTotal/(epsData.length-1)
+
+    let latestEps = ratios[ratios.length-1]
+    let lastFullFinancialYear=new Date().getFullYear()
+    let firstFullFinancialYear = new Date(ratios[0].date).getFullYear()
+    if(latestEps){
+        lastFullFinancialYear=new Date(latestEps.date).getFullYear()
+    }
+    let yearlyData={}
+
+    divData.forEach(item =>{
+        let year = new Date(item.date).getFullYear()
+        if(year<=lastFullFinancialYear){
+            if(yearlyData[year]){
+                yearlyData[year].div+=item.dividend
+            }else{
+                let eps = ratios.find(item => new Date(item.date).getFullYear()===year)
+                eps = eps?eps.eps:0
+                yearlyData[year]={
+                    div:item.dividend,
+                    eps:eps,
+                    date:year+'-11'
+                }
+            }
+        }
+    })
+
+    ticker.analytics={
+        latestPE:latestPE,
+        averagePE:averagePE,
+        futurePE:averagePE,
+        peDiscount:peDiscount,
+        epsGrowthRate:epsGrowthRate,
+        futureEpsGrowthRate:epsGrowthRate,
+        latestEps:latestEps,
+        yearlyData:yearlyData,
+        lastFullFinancialYear:lastFullFinancialYear,
+        firstFullFinancialYear:firstFullFinancialYear,
+        annualPriceReturn:0,
+        annualDivReturn:0,
+        annualTotalReturn:0,
+    }
+
 }
 
 function handleSetMovingAverages(ticker){
@@ -391,8 +453,11 @@ function handleUpdateFinancialChart(ticker,options){
 }
 
 function handleUpdateForecastChart(ticker){
-    let forecastChartComponents = calculateForecastChartComponents(ticker)
-    ticker.forecastSection.chartData = forecastChartComponents
+    let {forecastChart,financialChart} = calculateForecastChartComponents(ticker)
+    ticker.forecastSection.forecastChart = forecastChart
+    ticker.forecastSection.financialChart = financialChart
+    ticker.forecastSection.forecastOptions = calculateForecastChartOptions(forecastChart)
+    ticker.forecastSection.financialOptions = calculateForecastFinancialsOptions(financialChart)
     return ticker
 }
 

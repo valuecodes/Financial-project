@@ -1,7 +1,7 @@
 import React,{ useEffect,useState, useRef } from 'react'
 import { useDispatch,useSelector } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
-import { camelCaseToString, datasetKeyProvider } from '../utils/utils';
+import { camelCaseToString, datasetKeyProvider, formatPercentage, roundToTwoDecimal } from '../utils/utils';
 import { Line, Bar } from 'react-chartjs-2';
 import { Ticker } from '../utils/ticker';
 import { 
@@ -15,7 +15,7 @@ export default function TickerScreen(props) {
 
     const dispatch = useDispatch()
     const [navigation,setNavigation] = useState({
-        selected:{name:'price',index:0},
+        selected:{name:'forecast',index:4},
         options:['price','events','ratios','financials','forecast']
     })
     
@@ -68,23 +68,104 @@ export default function TickerScreen(props) {
 }
 
 function Forecast({ticker,setTicker,navigation}){
+    
+    const [options,setOptions]=useState({
+        selected:'incomeStatement',
+        options:['incomeStatement','balanceSheet','cashFlow','dividends'],
+        time:{
+            timeValue:'15.years-years',
+            timeStart:new Date(),
+            timeEnd:new Date(),            
+        },
+    })
 
     useEffect(()=>{
         let updated = ticker.updateForecastChart()
         setTicker({...updated})
     },[navigation])
 
+    const modifyFutureGrowth = (e,type) => {
+        let { value } = e.target
+        ticker.analytics[type] = value
+        let updated = ticker.updateForecastChart()
+        setTicker({...updated})
+    }
+
+    const { 
+        firstFullFinancialYear, 
+        lastFullFinancialYear, 
+        epsGrowthRate,
+        futureEpsGrowthRate,
+        averagePE,
+        latestPE,
+        futurePE,
+        annualPriceReturn,
+        annualDivReturn,
+        annualTotalReturn,
+    } = ticker.analytics
+
     return(
-        <div className='tickerForecast'>
-            <div className='chartContainer'>                                 
-                <Line
-                    // id={'ratioChart'}
-                    // ref={ratioChartRef}
-                    // datasetKeyProvider={datasetKeyProvider}
-                    data={ticker.forecastSection.chartData}
-                    options={ticker.forecastSection.chartOptions}
-                />
-            </div>
+        <div className='tickerForecast'>   
+            <ul className='forecastOptions'>
+                <li>
+                    <label>Annual Eps Growth Rate {firstFullFinancialYear}-{lastFullFinancialYear}</label>
+                    <p>{roundToTwoDecimal(epsGrowthRate*100)}%</p> 
+                </li>
+                <li>
+                    <label>Average PE {firstFullFinancialYear}-{lastFullFinancialYear}</label>
+                    <p>{roundToTwoDecimal(averagePE)}</p> 
+                </li>
+                <li>
+                    <label>Current PE</label>
+                    <p>{roundToTwoDecimal(latestPE)}</p> 
+                </li>
+                <li className='futureEpsGrowth'>
+                    <label>Future annual eps growth rate</label>
+                    <input
+                        onChange={(e)=>modifyFutureGrowth(e,'futureEpsGrowthRate')} 
+                        min={-0.05}
+                        max={0.3}
+                        step={0.01}
+                        value={futureEpsGrowthRate}
+                        type='range'
+                    />
+                    <p>{roundToTwoDecimal(futureEpsGrowthRate*100)}%</p>
+                </li>
+                <li className='futureEpsGrowth'>
+                    <label>Period ending PE </label>
+                    <input
+                        onChange={(e)=>modifyFutureGrowth(e,'futurePE')} 
+                        min={0}
+                        max={60}
+                        step={1}
+                        value={futurePE}
+                        type='range'
+                    />
+                    <p>{roundToTwoDecimal(futurePE)}</p>
+                </li>
+            </ul>  
+            <div className='forecastChartContainer'>
+                <div className='chartContainer'>                                 
+                    <Line
+                        data={ticker.forecastSection.forecastChart}
+                        options={ticker.forecastSection.forecastOptions}
+                    />
+                </div>
+                <div>
+                    <p>Annual Price Return</p>
+                    <h3>{roundToTwoDecimal(annualPriceReturn*100)}%</h3>
+                    <p>Annual Div return</p>
+                    <h3>{roundToTwoDecimal(annualDivReturn*100)}%</h3>
+                    <p>Annual Total return</p>
+                    <h3>{roundToTwoDecimal(annualTotalReturn*100)}%</h3>
+                </div>
+                <div className='chartContainerSmall'>
+                    <Line
+                        data={ticker.forecastSection.financialChart}
+                        options={ticker.forecastSection.financialOptions}
+                    />
+                </div>            
+            </div>            
         </div>        
     )
 }

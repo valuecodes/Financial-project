@@ -1631,7 +1631,43 @@ input[type=color]::-webkit-color-swatch-wrapper {
 
 .tickerForecast{
   background-color: rgb(211, 211, 211);
-  
+}
+
+.forecastOptions{
+  display: flex;
+  align-items: center;
+}
+
+.forecastOptions li{
+  height: 4rem;
+  margin: 1rem;
+  background-color: rgb(236, 236, 236);
+  padding: 0.5rem;
+}
+
+.forecastOptions li p{
+  font-weight: 900;
+  text-align: end;
+}
+
+.forecastOptions li label{
+  display: block;
+}
+
+.futureEpsGrowth{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.futureEpsGrowth label{
+  grid-column: 1/3;
+}
+.futureEpsGrowth input{
+  background-color: rgba(255, 255, 255, 0);
+}
+
+.forecastChartContainer{
+  display: grid;
+  grid-template-columns: 1fr 20rem;
 }
 
 table {
