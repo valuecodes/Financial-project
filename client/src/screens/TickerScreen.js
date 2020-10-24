@@ -55,7 +55,7 @@ export default function TickerScreen(props) {
                         style={{right:navigation.selected.index*100+'%'}}
                         className='sections'
                     >    
-                        <PriceChart ticker={ticker} setTicker={setTicker} navigation={navigation}/>    
+                        <PriceChart ticker={ticker} setTicker={setTicker} navigation={navigation}/> 
                         <EventChart ticker={ticker} setTicker={setTicker} navigation={navigation}/>
                         <TickerRatios ticker={ticker} setTicker={setTicker} navigation={navigation}/>
                         <Financials ticker={ticker} setTicker={setTicker} navigation={navigation}/>   
@@ -92,13 +92,17 @@ function Forecast({ticker,setTicker,navigation}){
     }
 
     const { 
+        latestPrice=0,
+        startingPrice=0,
+        endingPrice,
+        forecastedDividends,
         firstFullFinancialYear, 
         lastFullFinancialYear, 
         epsGrowthRate,
-        futureEpsGrowthRate,
+        futureEpsGrowthRate=0,
         averagePE,
         latestPE,
-        futurePE,
+        futurePE=0,
         annualPriceReturn,
         annualDivReturn,
         annualTotalReturn,
@@ -106,65 +110,96 @@ function Forecast({ticker,setTicker,navigation}){
 
     return(
         <div className='tickerForecast'>   
-            <ul className='forecastOptions'>
-                <li>
-                    <label>Annual Eps Growth Rate {firstFullFinancialYear}-{lastFullFinancialYear}</label>
-                    <p>{roundToTwoDecimal(epsGrowthRate*100)}%</p> 
-                </li>
-                <li>
-                    <label>Average PE {firstFullFinancialYear}-{lastFullFinancialYear}</label>
-                    <p>{roundToTwoDecimal(averagePE)}</p> 
-                </li>
-                <li>
-                    <label>Current PE</label>
-                    <p>{roundToTwoDecimal(latestPE)}</p> 
-                </li>
-                <li className='futureEpsGrowth'>
-                    <label>Future annual eps growth rate</label>
-                    <input
-                        onChange={(e)=>modifyFutureGrowth(e,'futureEpsGrowthRate')} 
-                        min={-0.05}
-                        max={0.3}
-                        step={0.01}
-                        value={futureEpsGrowthRate}
-                        type='range'
-                    />
-                    <p>{roundToTwoDecimal(futureEpsGrowthRate*100)}%</p>
-                </li>
-                <li className='futureEpsGrowth'>
-                    <label>Period ending PE </label>
-                    <input
-                        onChange={(e)=>modifyFutureGrowth(e,'futurePE')} 
-                        min={0}
-                        max={60}
-                        step={1}
-                        value={futurePE}
-                        type='range'
-                    />
-                    <p>{roundToTwoDecimal(futurePE)}</p>
-                </li>
-            </ul>  
-            <div className='forecastChartContainer'>
+            <div className='forecastChartContainer'>                
+                <div className='forecastHeader'>
+                    <h3>Annual return forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                    <h2 className='bold'>{roundToTwoDecimal(annualTotalReturn*100)}%</h2>  
+                </div>
                 <div className='chartContainer'>                                 
                     <Line
                         data={ticker.forecastSection.forecastChart}
                         options={ticker.forecastSection.forecastOptions}
                     />
-                </div>
-                <div>
-                    <p>Annual Price Return</p>
-                    <h3>{roundToTwoDecimal(annualPriceReturn*100)}%</h3>
-                    <p>Annual Div return</p>
-                    <h3>{roundToTwoDecimal(annualDivReturn*100)}%</h3>
-                    <p>Annual Total return</p>
-                    <h3>{roundToTwoDecimal(annualTotalReturn*100)}%</h3>
-                </div>
+                </div>                
+                <ul className='forecastSideList mainForecast'>
+                    <li className='annualReturns'>
+                        <h2>Annual return </h2>
+                        <h3>Forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <p>Price</p>
+                        <h4 className='bold'>{roundToTwoDecimal(annualPriceReturn*100)}%</h4>
+                        <p>Dividends</p>
+                        <h4 className='bold'>{roundToTwoDecimal(annualDivReturn*100)}%</h4>
+                        <p>Total</p>
+                        <h4 className='bold total'>{roundToTwoDecimal(annualTotalReturn*100)}%</h4>  
+                    </li>                    
+                    <li className='startingPrice'>
+                        <h2>Ticker Price </h2>
+                        <label>Current price</label>
+                        <h4>{latestPrice}$</h4>
+                        <h3>Forecast starting Price </h3>
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'startingPrice')} 
+                            min={latestPrice-(latestPrice/2)}
+                            max={latestPrice+(latestPrice/2)}
+                            value={startingPrice}
+                            step={latestPrice<10?0.1:1}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(startingPrice)}$</h4>  
+                    </li>
+                    <li>
+                        <h2>PE-Ratio</h2>
+                        <label>{firstFullFinancialYear}-{lastFullFinancialYear} average</label>
+                        <h4>{roundToTwoDecimal(averagePE)}</h4>
+                        <label>Current PE</label>
+                        <h4>{roundToTwoDecimal(latestPE)}</h4>  
+                        <h3>PE forecast in {lastFullFinancialYear+11} </h3>
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'futurePE')} 
+                            min={0}
+                            max={60}
+                            step={1}
+                            value={futurePE}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(futurePE)}</h4> 
+                    </li>
+                </ul>
                 <div className='chartContainerSmall'>
                     <Line
                         data={ticker.forecastSection.financialChart}
                         options={ticker.forecastSection.financialOptions}
                     />
-                </div>            
+                </div>
+                <ul className='forecastSideList'>
+                    <li>
+                        <h2>EPS </h2>
+                        <label>Annual growth {firstFullFinancialYear}-{lastFullFinancialYear}</label>
+                        <h4>{roundToTwoDecimal(epsGrowthRate*100)}%</h4> 
+                        <h3>Annual Growth forecast </h3>
+                        <h3>{lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'futureEpsGrowthRate')} 
+                            min={-0.05}
+                            max={0.3}
+                            step={0.01}
+                            value={futureEpsGrowthRate}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(futureEpsGrowthRate*100)}%</h4>    
+                    </li>
+                </ul>
+                <div>
+                <div className='forecastPresentation'>
+                    <h2>1000 dollars invested</h2>
+                    <label>Price Gain:</label>
+                    <h4>{roundToTwoDecimal(((1000/startingPrice)*endingPrice)-1000)}$</h4>
+                    <label>Dividends: </label>                        
+                    <h4>{roundToTwoDecimal((1000/startingPrice)*forecastedDividends)}$</h4>
+                    <label>Total Return: </label>                                                
+                    <h4>{roundToTwoDecimal((1000/startingPrice)*(endingPrice+forecastedDividends)-1000)}$</h4>                          
+                </div>   
+                </div>
             </div>            
         </div>        
     )

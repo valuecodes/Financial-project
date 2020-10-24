@@ -802,11 +802,48 @@ function clearAllTooltips(){
 }
 
 export function calculateForecastChartOptions(forecastChart){
-
+    const priceData = forecastChart.datasets.find(item => item.label==='price').data
+    const priceForecast = forecastChart.datasets.find(item => item.label==='priceForecast').data
+    let startingX = priceData.length;
+    let endingX = priceForecast.length-1
+    let startingPrice = priceForecast[priceData.length]
+    let endingPrice = priceForecast[priceForecast.length-1]
+    let percentageChange = ((endingPrice-startingPrice)/startingPrice)*100
     return{
         plugins: {
             datalabels: {
-                display: false,
+                display: true,
+                borderRadius:20,
+                color:'white',
+                align:'top',
+                backgroundColor:function(context) {
+                    const { datasetIndex, dataIndex } = context
+                    if(datasetIndex===1&&dataIndex===startingX){
+                        return 'dimgray'
+                    }
+                    if(datasetIndex===1&&dataIndex===endingX){
+                        return 'dimgray'
+                    }
+                    return  '';
+                },
+                formatter: function(value, context) {
+                    const { datasetIndex, dataIndex } = context
+                    if(datasetIndex===1&&dataIndex===startingX){
+                        return value.toFixed(2)+'$'
+                    }
+                    if(datasetIndex===1&&dataIndex===endingX){
+                        return `${value.toFixed(2)}$ (${percentageChange.toFixed(1)}%)`
+                    }
+                    return  '';
+                }
+            }
+        },
+        layout: {
+            padding: {
+                left: 0,
+                right: 50,
+                top: 0,
+                bottom:0 
             }
         },
         scales:{

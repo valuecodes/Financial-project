@@ -869,36 +869,39 @@ export function calculateForecastChartComponents(ticker){
         .reverse() 
 
     priceData = priceData.filter((item,index) => { return index%4===0})
-    let latestPrice = priceData[priceData.length-1]?priceData[priceData.length-1].close:0
-    
-    if(latestPrice){
-        let today = new Date()
-        for(var i=0;i<120;i++){
-            today.setMonth(today.getMonth()+1)
-            priceData.push({
-                date:today.toISOString(),
-                close:latestPrice
-            })
-        }
-    }
 
     let { 
+        startingPrice,
         epsGrowthRate, 
         latestPE,
         yearlyData,
         futureEpsGrowthRate,
         lastFullFinancialYear,
-        latestEps,
+        latestEps={eps:0},
         futurePE 
-    } = ticker.analytics
+    } = ticker.analytics   
 
+    let today = new Date()
+    for(var i=0;i<120;i++){
+        today.setMonth(today.getMonth()+1)
+        priceData.push({
+            date:today.toISOString(),
+            close:startingPrice
+        })
+    }
+    
     yearlyData = {...yearlyData}
+    latestPE = startingPrice/latestEps.eps
+    
     const peDiscount = futurePE/latestPE
 
     for(var i=lastFullFinancialYear+1;i<lastFullFinancialYear+11;i++){
         yearlyData[i]={
             div: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].div:0,
-            eps: latestEps?latestEps.eps:0,
+            revenue: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].revenue:0,
+            grossProfit: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].grossProfit:0,
+            netIncome: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].netIncome:0,
+            eps: latestEps.eps,
             date:i+'-11'
         }
     }
@@ -908,11 +911,15 @@ export function calculateForecastChartComponents(ticker){
 
     let price=[]
     let priceForecast=[]
-    let dividends=[]
     let dividendForecast=[]
-    let eps=[]
-    let dividendsColor=[]
-    let epsColor=[]
+
+    let financialData={
+        eps:{data:[],colors:[],color:'rgba(13, 191, 85,0.9)',hidden:false},
+        div:{data:[],colors:[],color:'rgba(247, 136, 25,0.9)',hidden:false},
+        revenue:{data:[],colors:[],color:'rgba(13,135,212,0.9)',hidden:true},
+        grossProfit:{data:[],colors:[],color:'rgba(234,237,28,0.9)',hidden:true},
+        netIncome:{data:[],colors:[],color:'rgba(12,199,15,0.9)',hidden:true},
+    }
 
     if(epsGrowthRate<0){
         epsGrowthRate=0.05
@@ -920,30 +927,27 @@ export function calculateForecastChartComponents(ticker){
 
     let numberOfIterations=1
     let totalDividends=0
+    let forecastedDividends=0
+
     priceData.forEach((item,index) =>{
-        
+
+        let future = new Date(item.date)<new Date()
         let year = new Date(item.date).getFullYear()
-        
-        if(new Date(item.date)<new Date()){
-            
+        let yearlyDataFound = false;
+
+        if(future){
             price.push(item.close)
             priceForecast.push(item.close)   
             dividendForecast.push(item.close)
             if(yearlyData[year]){
                 if(yearlyData[year].date===item.date.substring(0,7)){
-                    dividends.push(yearlyData[year].div)
-                    eps.push(yearlyData[year].eps)
+                    Object.keys(financialData).forEach(item =>{
+                        financialData[item].data.push(yearlyData[year][item])
+                    })
+                    yearlyDataFound = true
                     delete yearlyData[year]
-                }else{
-                    eps.push(0)                    
-                    dividends.push(0)
-                }                
-            }else{
-                eps.push(0)                                    
-                dividends.push(0)
+                }              
             }
-            dividendsColor.push('green')
-            epsColor.push('blue')
         }else{
             let discount = 1-((1-peDiscount)*numberOfIterations/120)
             let interest = (item.close*(1 + futureEpsGrowthRate/12)**(numberOfIterations))*discount
@@ -951,34 +955,47 @@ export function calculateForecastChartComponents(ticker){
             numberOfIterations++ 
             if(yearlyData[year]){
                 if(yearlyData[year].date===item.date.substring(0,7)){
-                    let calculatedEps = yearlyData[year].eps * (1 + (futureEpsGrowthRate)/12)**(numberOfIterations)
-                    eps.push(calculatedEps)
-                    let calculatedDividend = yearlyData[year].div * (1 + (futureEpsGrowthRate)/12)**(numberOfIterations)
-                    dividends.push(calculatedDividend)
-                    totalDividends+=calculatedDividend
+                    Object.keys(financialData).forEach(item =>{
+                        let calculatedValue = yearlyData[year][item] * (1 + (futureEpsGrowthRate)/12)**(numberOfIterations)
+                        if(item==='div'){
+                            totalDividends+=calculatedValue
+                            forecastedDividends+=calculatedValue                            
+                        }
+                        financialData[item].data.push(calculatedValue)
+                    })
+                    yearlyDataFound = true                    
                     delete yearlyData[year]
-                }else{
-                    eps.push(0)                    
-                    dividends.push(0)
-                }                
-            }else{
-                eps.push(0)                                    
-                dividends.push(0)
+                }              
             }
             dividendForecast.push(interest+totalDividends)
-            dividendsColor.push('rgba(0, 255, 55,0.7)')
-            epsColor.push('rgba(0, 140, 255,0.7)')
-        }  
+        }    
+
+        Object.keys(financialData).forEach(item =>{
+            let color = financialData[item].color
+            if(!future){
+                color = color.split('.')[0]+'.3)'
+            }
+            financialData[item].colors.push(color)
+            if(!yearlyDataFound){
+                financialData[item].data.push(0)                
+            }
+        })
+
     })
 
     let futurePrice = priceForecast[priceForecast.length-1]
     let futureTotalPrice = dividendForecast[dividendForecast.length-1]
-    let annualPriceReturn = ((futurePrice/latestPrice)**(1/10))-1
-    let annualTotalReturn = ((futureTotalPrice/latestPrice)**(1/10))-1
-    ticker.analytics.annualPriceReturn = annualPriceReturn
-    ticker.analytics.annualDivReturn = annualTotalReturn - annualPriceReturn
-    ticker.analytics.annualTotalReturn = annualTotalReturn
+    let annualPriceReturn = ((futurePrice/startingPrice)**(1/10))-1
+    let annualTotalReturn = ((futureTotalPrice/startingPrice)**(1/10))-1
 
+    ticker.analytics = {
+        ...ticker.analytics,
+        annualPriceReturn,
+        annualDivReturn: annualTotalReturn - annualPriceReturn,
+        annualTotalReturn,
+        endingPrice: futurePrice,
+        forecastedDividends
+    }
 
     let forecastChart = {
         datasets:[
@@ -986,48 +1003,51 @@ export function calculateForecastChartComponents(ticker){
                 label:'price',
                 data:price,
                 borderColor:'black',
+                pointRadius:0,
                 fill:false,
             },
             {
                 label:'priceForecast',                
                 data:priceForecast,
-                pointBackgroundColor:'green',
-                borderColor:'rgba(0,0,0,0)',
+                pointBackgroundColor:'rgba(0,0,0,0)',
+                pointRadius:0,
+                lineColor:'green',                
+                borderColor:'green',
                 fill:false,               
             },
             {
                 label:'dividendForecast',                
                 data:dividendForecast,
                 pointBorderRadius:0,
+                pointRadius:0,
                 lineColor:'yellow',
-                pointBackgroundColor:'yellow',
-                borderColor:'rgba(0,0,0,0)',
+                pointBackgroundColor:'rgba(0,0,0,0)',
+                borderColor:'yellow',
                 fill:false,               
             },
         ],
         labels 
     }
 
+    let datasets =[] 
+    
+    Object.keys(financialData).forEach(dataName =>{
+        datasets.push({
+            label:dataName,
+            type:'bar',
+            data:financialData[dataName].data,
+            backgroundColor:financialData[dataName].colors,
+            barPercentage: 0.5,
+            barThickness: 10,    
+            borderWidth:2,
+            borderColor:financialData[dataName].colors[financialData[dataName].colors.length-1],
+            hidden:financialData[dataName].hidden   
+        })
+    })
+    
     let financialChart={
         categoryPercentage:5,
-        datasets:[
-            {
-                label:'dividends',
-                type:'bar',
-                data:dividends,
-                backgroundColor:dividendsColor,
-                barPercentage: 0.5,
-                barThickness: 10,                 
-            },
-            {
-                label:'eps',
-                type:'bar',
-                data:eps,
-                backgroundColor:epsColor,
-                barPercentage: 0.5,
-                barThickness: 10, 
-            }
-        ],
+        datasets:datasets,
         labels
     }
 

@@ -1,8 +1,6 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal } from "./utils";
-import { TickerData } from "./tickerData";
 import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart, calculateForecastChartComponents } from "./chart";
 import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions, calculateForecastChartOptions, calculateForecastFinancialsOptions } from "./chartOptions";
-import annotation from "chartjs-plugin-annotation";
 
 export function Ticker(data,portfolioTicker){
     this.profile = data?data.profile:{
@@ -182,33 +180,50 @@ function handleCalculateAnalytics(ticker){
     if(latestEps){
         lastFullFinancialYear=new Date(latestEps.date).getFullYear()
     }
-    let yearlyData={}
 
+    let yearlyData={}
     divData.forEach(item =>{
         let year = new Date(item.date).getFullYear()
         if(year<=lastFullFinancialYear){
             if(yearlyData[year]){
                 yearlyData[year].div+=item.dividend
             }else{
-                let eps = ratios.find(item => new Date(item.date).getFullYear()===year)
-                eps = eps?eps.eps:0
+                let yearData = ratios.find(item => new Date(item.date).getFullYear()===year)
                 yearlyData[year]={
                     div:item.dividend,
-                    eps:eps,
+                    ...yearData,
                     date:year+'-11'
                 }
             }
         }
     })
 
+    for(let i= firstFullFinancialYear;i<=lastFullFinancialYear;i++){
+        let year = i
+        if(!yearlyData[year]){
+            let yearData = ratios.find(item => new Date(item.date).getFullYear()===year)
+            yearlyData[year]={
+                div:0,
+                ...yearData,
+                date:year+'-11'
+            }
+        }
+    }
+
+    let startingPrice = roundToTwoDecimal(ticker.priceData[0].close)
+
     ticker.analytics={
+        latestPrice:startingPrice,
+        startingPrice:startingPrice,
+        endingPrice:0,
+        forecastedDividends:0,
         latestPE:latestPE,
         averagePE:averagePE,
         futurePE:averagePE,
         peDiscount:peDiscount,
         epsGrowthRate:epsGrowthRate,
-        futureEpsGrowthRate:epsGrowthRate,
         latestEps:latestEps,
+        futureEpsGrowthRate:epsGrowthRate,
         yearlyData:yearlyData,
         lastFullFinancialYear:lastFullFinancialYear,
         firstFullFinancialYear:firstFullFinancialYear,
@@ -460,9 +475,6 @@ function handleUpdateForecastChart(ticker){
     ticker.forecastSection.financialOptions = calculateForecastFinancialsOptions(financialChart)
     return ticker
 }
-
-
-
 
 function calculateUserPriceChart(ticker,options){
     const { time } = options
