@@ -15,7 +15,7 @@ export default function TickerScreen(props) {
 
     const dispatch = useDispatch()
     const [navigation,setNavigation] = useState({
-        selected:{name:'forecast',index:4},
+        selected:{name:'price',index:0},
         options:['price','events','ratios','financials','forecast']
     })
     
@@ -84,37 +84,45 @@ function Forecast({ticker,setTicker,navigation}){
         setTicker({...updated})
     },[navigation])
 
-    const modifyFutureGrowth = (e,type) => {
+    const modifyFutureGrowth = (e,type,name) => {
         let { value } = e.target
-        ticker.analytics[type] = value
+        ticker.analytics[type][name] = value
         let updated = ticker.updateForecastChart()
         setTicker({...updated})
     }
 
-    const { 
-        latestPrice=0,
-        startingPrice=0,
-        endingPrice,
-        forecastedDividends,
+    const handleReset=()=>{
+        ticker.init()
+        const updated = ticker.updateForecastChart()
+        setTicker({...updated})
+    }
+
+    const { price, annualReturn, financials } = ticker.analytics
+    
+    const {
         firstFullFinancialYear, 
         lastFullFinancialYear, 
         epsGrowthRate,
         futureEpsGrowthRate=0,
-        averagePE,
-        latestPE,
-        futurePE=0,
-        annualPriceReturn,
-        annualDivReturn,
-        annualTotalReturn,
-    } = ticker.analytics
+        freeCashFlow={},
+        dcfDiscountRate=0,
+        perpetuityGrowth=0,
+        startingFreeCashFlow=0,
+    } = financials
 
     return(
         <div className='tickerForecast'>   
             <div className='forecastChartContainer'>                
-                <div className='forecastHeader'>
-                    <h3>Annual return forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
-                    <h2 className='bold'>{roundToTwoDecimal(annualTotalReturn*100)}%</h2>  
-                </div>
+                <ul className='forecastHeader'>
+                    <li>
+                        <h3>Annual return forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <h2 className='bold'>{roundToTwoDecimal(annualReturn.total*100)}%</h2> 
+                    </li>
+                    <li>
+                        <h3>Intrinsic value per share</h3>
+                        <h2 className='bold'>{roundToTwoDecimal(ticker.forecastSection.dcfTable.intrinsicValue)}$</h2>
+                    </li>
+                </ul>
                 <div className='chartContainer'>                                 
                     <Line
                         data={ticker.forecastSection.forecastChart}
@@ -126,43 +134,46 @@ function Forecast({ticker,setTicker,navigation}){
                         <h2>Annual return </h2>
                         <h3>Forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
                         <p>Price</p>
-                        <h4 className='bold'>{roundToTwoDecimal(annualPriceReturn*100)}%</h4>
+                        <h4 className='bold'>{roundToTwoDecimal(annualReturn.price*100)}%</h4>
                         <p>Dividends</p>
-                        <h4 className='bold'>{roundToTwoDecimal(annualDivReturn*100)}%</h4>
+                        <h4 className='bold'>{roundToTwoDecimal(annualReturn.div*100)}%</h4>
                         <p>Total</p>
-                        <h4 className='bold total'>{roundToTwoDecimal(annualTotalReturn*100)}%</h4>  
-                    </li>                    
+                        <h4 className='bold total'>{roundToTwoDecimal(annualReturn.total*100)}%</h4> 
+                    </li>    
+                    <li>
+                        <button onClick={handleReset} className='forecastReset button'>Reset Forecast Settings</button>
+                    </li>                
                     <li className='startingPrice'>
                         <h2>Ticker Price </h2>
                         <label>Current price</label>
-                        <h4>{latestPrice}$</h4>
+                        <h4>{price.latest}$</h4>
                         <h3>Forecast starting Price </h3>
                         <input
-                            onChange={(e)=>modifyFutureGrowth(e,'startingPrice')} 
-                            min={latestPrice-(latestPrice/2)}
-                            max={latestPrice+(latestPrice/2)}
-                            value={startingPrice}
-                            step={latestPrice<10?0.1:1}
+                            onChange={(e)=>modifyFutureGrowth(e,'price','starting')} 
+                            min={price.latest-(price.latest/2)}
+                            max={price.latest+(price.latest/2)}
+                            value={price.starting}
+                            step={price.latest<20?0.1:1}
                             type='range'
                         />
-                        <h4 className='bold'>{roundToTwoDecimal(startingPrice)}$</h4>  
+                        <h4 className='bold'>{roundToTwoDecimal(price.starting)}$</h4>  
                     </li>
                     <li>
                         <h2>PE-Ratio</h2>
                         <label>{firstFullFinancialYear}-{lastFullFinancialYear} average</label>
-                        <h4>{roundToTwoDecimal(averagePE)}</h4>
+                        <h4>{roundToTwoDecimal(price.averagePE)}</h4>
                         <label>Current PE</label>
-                        <h4>{roundToTwoDecimal(latestPE)}</h4>  
+                        <h4>{roundToTwoDecimal(price.latestPE)}</h4>  
                         <h3>PE forecast in {lastFullFinancialYear+11} </h3>
                         <input
-                            onChange={(e)=>modifyFutureGrowth(e,'futurePE')} 
+                            onChange={(e)=>modifyFutureGrowth(e,'price','futurePE')} 
                             min={0}
                             max={60}
                             step={1}
-                            value={futurePE}
+                            value={price.futurePE}
                             type='range'
                         />
-                        <h4 className='bold'>{roundToTwoDecimal(futurePE)}</h4> 
+                        <h4 className='bold'>{roundToTwoDecimal(price.futurePE)}</h4> 
                     </li>
                 </ul>
                 <div className='chartContainerSmall'>
@@ -179,7 +190,7 @@ function Forecast({ticker,setTicker,navigation}){
                         <h3>Annual Growth forecast </h3>
                         <h3>{lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
                         <input
-                            onChange={(e)=>modifyFutureGrowth(e,'futureEpsGrowthRate')} 
+                            onChange={(e)=>modifyFutureGrowth(e,'financials','futureEpsGrowthRate')} 
                             min={-0.05}
                             max={0.3}
                             step={0.01}
@@ -189,17 +200,106 @@ function Forecast({ticker,setTicker,navigation}){
                         <h4 className='bold'>{roundToTwoDecimal(futureEpsGrowthRate*100)}%</h4>    
                     </li>
                 </ul>
-                <div>
-                <div className='forecastPresentation'>
-                    <h2>1000 dollars invested</h2>
-                    <label>Price Gain:</label>
-                    <h4>{roundToTwoDecimal(((1000/startingPrice)*endingPrice)-1000)}$</h4>
-                    <label>Dividends: </label>                        
-                    <h4>{roundToTwoDecimal((1000/startingPrice)*forecastedDividends)}$</h4>
-                    <label>Total Return: </label>                                                
-                    <h4>{roundToTwoDecimal((1000/startingPrice)*(endingPrice+forecastedDividends)-1000)}$</h4>                          
-                </div>   
+                <div className='chartContainerSmall'>
+                    <Line
+                        data={ticker.forecastSection.freeCashFlowChart}
+                        options={ticker.forecastSection.freeCashFlowOptions}
+                    />
                 </div>
+                <ul className='forecastSideList dcfCalculator'>
+                    <li>
+                        <h2>DCF </h2>
+                        <label className='fullWidth'>Free Cash Flow average</label>
+                        <label>{firstFullFinancialYear}-{lastFullFinancialYear}</label>
+                        <h4>{roundToTwoDecimal(freeCashFlow.average)}M</h4> 
+                        <h3>Starting Free Cash Flow </h3>                        
+                        <input
+                            className=''
+                            onChange={(e)=>modifyFutureGrowth(e,'financials','startingFreeCashFlow')} 
+                            min={0}
+                            max={freeCashFlow.latest*2}
+                            value={startingFreeCashFlow}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(startingFreeCashFlow).toFixed(0)}M</h4>
+                        <h3>Annual Growth forecast </h3>                        
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'financials','futureEpsGrowthRate')} 
+                            min={-0.05}
+                            max={0.3}
+                            step={0.01}
+                            value={futureEpsGrowthRate}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(futureEpsGrowthRate*100)}%</h4>
+                        <h3>Discount Rate </h3>                        
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'financials','dcfDiscountRate')} 
+                            min={0}
+                            max={0.2}
+                            step={0.01}
+                            value={dcfDiscountRate}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(dcfDiscountRate*100)}%</h4>    
+                        <h3>Perpetuity Growth </h3>                        
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'financials','perpetuityGrowth')} 
+                            min={0}
+                            max={0.1}
+                            step={0.01}
+                            value={perpetuityGrowth}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(perpetuityGrowth*100)}%</h4>    
+                        <h3>Intrinsic value per share </h3>
+                        <label>{roundToTwoDecimal(dcfDiscountRate*100)}% Discount Rate</label>
+                        <h4 className='bold'>{roundToTwoDecimal(ticker.forecastSection.dcfTable.intrinsicValue)}</h4>
+                        <h3>Current return</h3>
+                        <label>Share price {price.starting}</label>
+                        <h4 className='bold'>{roundToTwoDecimal(ticker.forecastSection.dcfTable.annualReturn)}%</h4>  
+                    </li>
+                </ul>
+                <table className='table dcfTable'>
+                    <thead>
+                        <tr>
+                            {ticker.forecastSection.dcfTable.years.map((item,index) =>
+                                <th key={index}>{item||0}</th>
+                            )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {ticker.forecastSection.dcfTable.FCF.map((item,index) =>
+                                <td key={index}>{item||0}</td>
+                            )}                            
+                        </tr>
+                        <tr>
+                            {ticker.forecastSection.dcfTable.DF.map((item,index) =>
+                                <td key={index}>{item||0}</td>
+                            )}                            
+                        </tr>
+                        <tr>
+                            {ticker.forecastSection.dcfTable.DFCF.map((item,index) =>
+                                <td key={index}>{item||0}</td>
+                            )}                            
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>
+                                <p>Sum of DFCF</p>
+                                <h3>${ticker.forecastSection.dcfTable.totalDFCF}</h3>      
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>Discontinued perpetuity cash flow (DPCF)</p>
+                                <h3>${ticker.forecastSection.dcfTable.terminal}</h3>                
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>     
             </div>            
         </div>        
     )

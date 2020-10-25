@@ -5,7 +5,7 @@ import {
     getRatioName
 } from "./chartUtils";
 import { Chart } from 'react-chartjs-2'
-import { randomColor, roundToTwoDecimal } from "./utils";
+import { randomColor, roundToTwoDecimal, camelCaseToString } from "./utils";
 import { stochasticOscillatorGradient, oscillatorPriceGradient } from "./calculations/gradientCalculations";
 
 Chart.defaults.global.datasets.bar.categoryPercentage = 0.95;
@@ -573,7 +573,7 @@ export function calculateFinancialChartComponents(ticker,options){
                 data1.unshift(item.operatingCashFlow)
                 data2.unshift(item.investingCashFlow)
                 data3.unshift(item.financingCashFlow)
-                data4.unshift(item.operatingCashFlow+item.investingCashFlow+item.financingCashFlow)
+                data4.unshift(item.operatingCashFlow-item.capEx)
                 break
             case 'dividends':
                 let yearDivs = dividends.filter(div => new Date(div.date).getFullYear()===new Date(item.date).getFullYear())
@@ -870,37 +870,37 @@ export function calculateForecastChartComponents(ticker){
 
     priceData = priceData.filter((item,index) => { return index%4===0})
 
-    let { 
-        startingPrice,
+    let { price, financials, yearlyData } = ticker.analytics   
+
+    let {
         epsGrowthRate, 
-        latestPE,
-        yearlyData,
         futureEpsGrowthRate,
         lastFullFinancialYear,
         latestEps={eps:0},
-        futurePE 
-    } = ticker.analytics   
+        freeCashFlow,
+        startingFreeCashFlow
+    } = financials
 
     let today = new Date()
     for(var i=0;i<120;i++){
         today.setMonth(today.getMonth()+1)
         priceData.push({
             date:today.toISOString(),
-            close:startingPrice
+            close:price.starting
         })
     }
     
     yearlyData = {...yearlyData}
-    latestPE = startingPrice/latestEps.eps
-    
-    const peDiscount = futurePE/latestPE
+    price.latestPE = price.starting/latestEps.eps
+    const peDiscount = price.futurePE/price.latestPE
 
     for(var i=lastFullFinancialYear+1;i<lastFullFinancialYear+11;i++){
         yearlyData[i]={
-            div: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].div:0,
-            revenue: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].revenue:0,
-            grossProfit: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].grossProfit:0,
-            netIncome: yearlyData[lastFullFinancialYear]?yearlyData[lastFullFinancialYear].netIncome:0,
+            div: yearlyData[lastFullFinancialYear].div,
+            revenue: yearlyData[lastFullFinancialYear].revenue,
+            grossProfit: yearlyData[lastFullFinancialYear].grossProfit,
+            netIncome: yearlyData[lastFullFinancialYear].netIncome,
+            freeCashFlow: startingFreeCashFlow,
             eps: latestEps.eps,
             date:i+'-11'
         }
@@ -909,16 +909,17 @@ export function calculateForecastChartComponents(ticker){
     let data = priceData.map(item => item.close)
     let labels = priceData.map(item => new Date(item.date).getFullYear())
 
-    let price=[]
+    let pricePast=[]
     let priceForecast=[]
     let dividendForecast=[]
 
     let financialData={
         eps:{data:[],colors:[],color:'rgba(13, 191, 85,0.9)',hidden:false},
-        div:{data:[],colors:[],color:'rgba(247, 136, 25,0.9)',hidden:false},
+        div:{data:[],colors:[],color:'rgba(201, 85, 85,0.9)',hidden:false},
         revenue:{data:[],colors:[],color:'rgba(13,135,212,0.9)',hidden:true},
-        grossProfit:{data:[],colors:[],color:'rgba(234,237,28,0.9)',hidden:true},
+        grossProfit:{data:[],colors:[],color:'rgba(159, 166, 85,0.9)',hidden:true},
         netIncome:{data:[],colors:[],color:'rgba(12,199,15,0.9)',hidden:true},
+        freeCashFlow:{data:[],colors:[],color:'rgba(99, 168, 144,0.9)',hidden:true},
     }
 
     if(epsGrowthRate<0){
@@ -928,6 +929,7 @@ export function calculateForecastChartComponents(ticker){
     let numberOfIterations=1
     let totalDividends=0
     let forecastedDividends=0
+    
 
     priceData.forEach((item,index) =>{
 
@@ -936,7 +938,7 @@ export function calculateForecastChartComponents(ticker){
         let yearlyDataFound = false;
 
         if(future){
-            price.push(item.close)
+            pricePast.push(item.close)
             priceForecast.push(item.close)   
             dividendForecast.push(item.close)
             if(yearlyData[year]){
@@ -980,34 +982,41 @@ export function calculateForecastChartComponents(ticker){
                 financialData[item].data.push(0)                
             }
         })
-
     })
+
+    let dcfTable = calculateDCF(ticker,financials, yearlyData )
 
     let futurePrice = priceForecast[priceForecast.length-1]
     let futureTotalPrice = dividendForecast[dividendForecast.length-1]
-    let annualPriceReturn = ((futurePrice/startingPrice)**(1/10))-1
-    let annualTotalReturn = ((futureTotalPrice/startingPrice)**(1/10))-1
+    let annualPriceReturn = ((futurePrice/price.starting)**(1/10))-1
+    let annualTotalReturn = ((futureTotalPrice/price.starting)**(1/10))-1
+
+    price.ending = futurePrice
+    price.forecastedDividends = forecastedDividends
+
+    let annualReturn={
+        price: annualPriceReturn,
+        div: annualTotalReturn - annualPriceReturn,
+        total: annualTotalReturn
+    }
 
     ticker.analytics = {
         ...ticker.analytics,
-        annualPriceReturn,
-        annualDivReturn: annualTotalReturn - annualPriceReturn,
-        annualTotalReturn,
-        endingPrice: futurePrice,
-        forecastedDividends
+        price,
+        annualReturn,
     }
 
     let forecastChart = {
         datasets:[
             {
-                label:'price',
-                data:price,
+                label:'Price',
+                data:pricePast,
                 borderColor:'black',
                 pointRadius:0,
                 fill:false,
             },
             {
-                label:'priceForecast',                
+                label:'Price Forecast',                
                 data:priceForecast,
                 pointBackgroundColor:'rgba(0,0,0,0)',
                 pointRadius:0,
@@ -1016,7 +1025,7 @@ export function calculateForecastChartComponents(ticker){
                 fill:false,               
             },
             {
-                label:'dividendForecast',                
+                label:'Dividend Forecast',                
                 data:dividendForecast,
                 pointBorderRadius:0,
                 pointRadius:0,
@@ -1033,7 +1042,7 @@ export function calculateForecastChartComponents(ticker){
     
     Object.keys(financialData).forEach(dataName =>{
         datasets.push({
-            label:dataName,
+            label:camelCaseToString(dataName),
             type:'bar',
             data:financialData[dataName].data,
             backgroundColor:financialData[dataName].colors,
@@ -1044,12 +1053,124 @@ export function calculateForecastChartComponents(ticker){
             hidden:financialData[dataName].hidden   
         })
     })
-    
+
     let financialChart={
         categoryPercentage:5,
         datasets:datasets,
         labels
     }
 
-    return {forecastChart,financialChart}
+    let freeCashFlowChart = {
+        categoryPercentage:5,
+        datasets:[
+            {
+                label:'Free Cash Flow',
+                type:'bar',
+                data:financialData.freeCashFlow.data,
+                backgroundColor:financialData.freeCashFlow.colors,
+                barPercentage: 0.5,
+                barThickness: 10,    
+                borderWidth:2,
+            }
+        ],
+        labels
+    }
+
+    return {forecastChart,financialChart,freeCashFlowChart,dcfTable}
+}
+
+function calculateDCF(ticker,financials, yearlyData ){
+
+    let cashFlow = financials.startingFreeCashFlow
+    let shortTerm = 10
+    let discountRate = Number(financials.dcfDiscountRate);
+    let discountRateGrowth = 1.1;
+    let growthRate = Number(financials.futureEpsGrowthRate)+1
+    let perpetuity = Number(financials.perpetuityGrowth);
+    let shareCount = financials.shareCount;
+    let sharePrice = ticker.analytics.price.starting;
+    let cash=cashFlow;
+    let total=0;
+    let oneYear=0;
+
+    let years=['Year']
+    let FCF=['FCF'];
+    let DF=['DF'];
+    let DFvalue=1;
+    let DFCF=['DFCF'];
+    let totalDFCF=0
+
+    for(var i=1;i<=shortTerm;i++){
+        years.push(i)
+        oneYear=cash/Math.pow((1+discountRate),i);
+        cash=cash*growthRate;
+        FCF.push(Math.round(cash*100)/100);
+        DFvalue=DFvalue*discountRateGrowth;
+        DF.push((Math.round(DFvalue*100)/100));
+        oneYear*=growthRate;
+        DFCF.push(Math.round(oneYear*100)/100);
+        total+=oneYear;
+        totalDFCF+=Math.round(oneYear*100)/100
+    }
+
+    let terminal=(oneYear*growthRate)*(1+perpetuity)/((discountRate+(0.01-(perpetuity/10)))-perpetuity);
+    
+    total+=terminal;
+    total=Math.round(total * 100) / 100;
+
+    let  intrinsicValue = total / shareCount
+
+    let annualReturn = calculateAnnual(); 
+
+    let dfcData ={
+        years,
+        FCF,
+        DF,
+        DFCF,
+        total,
+        terminal:terminal.toFixed(0),
+        intrinsicValue,
+        annualReturn,
+        totalDFCF:totalDFCF.toFixed(0)
+    }    
+
+    return dfcData
+    function calculateAnnual(){
+        let xa;
+        let xb;
+        var step = 0.0001;
+        for (var i = 0; i < 50; i++) {
+            xa = xb = i / 100;
+            var counter = 0;
+            do {
+                xa = xb;
+                xb = iterate(xa);
+                counter++;
+            } while ((Math.abs(xb - xa) > step) && (counter < 30) && (Math.abs(xb - xa) < 1));
+                if ((Math.abs(xb - xa) <= step)) {
+                    console.log('breaK')
+                    break;
+                }
+                }
+            if ((Math.abs(xb - xa) <= step)) {
+                var ndr = xb * 100;
+                ndr=Math.round(ndr*100)/100;
+                return ndr
+            } 
+    }
+    
+    function iterate(x) {
+        var freecashflow = cashFlow;
+        var gAfter10 = Number(perpetuity/100);
+        var growth10 = growthRate;
+        var percent101 = 1 + x;
+        var years = Number(shortTerm) + 1;
+        var exponent = Math.pow(growth10, years);
+        var f0 = freecashflow * exponent * (1 + gAfter10) / (x - gAfter10) / Math.pow(percent101, years) +
+        freecashflow * (1 - Math.pow(growth10 / percent101, years)) / (1 - growth10 / percent101) - freecashflow - sharePrice * shareCount;
+        var fder = -freecashflow * (1 + gAfter10) * exponent * (1 / Math.pow(percent101, years) / Math.pow(-gAfter10 + x, 2) + years * Math.pow(x + 1, -1 - years) / (-gAfter10 + x)) +
+        freecashflow * (years * exponent * Math.pow(percent101, -1 - years) / (1 - growth10 / percent101) - growth10 * (1 - exponent / Math.pow(percent101, years)) / Math.pow((1 - growth10 / percent101) * percent101, 2));
+        var result = x - f0 / fder;
+        return result;
+    }
 }

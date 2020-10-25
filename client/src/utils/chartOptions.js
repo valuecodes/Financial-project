@@ -802,8 +802,8 @@ function clearAllTooltips(){
 }
 
 export function calculateForecastChartOptions(forecastChart){
-    const priceData = forecastChart.datasets.find(item => item.label==='price').data
-    const priceForecast = forecastChart.datasets.find(item => item.label==='priceForecast').data
+    const priceData = forecastChart.datasets.find(item => item.label==='Price').data
+    const priceForecast = forecastChart.datasets.find(item => item.label==='Price Forecast').data
     let startingX = priceData.length;
     let endingX = priceForecast.length-1
     let startingPrice = priceForecast[priceData.length]

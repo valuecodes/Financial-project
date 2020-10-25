@@ -10,7 +10,7 @@ import OptionsBar from '../components/OptionsBar'
 import DropdownListFilter from '../components/DropdownListFilter'
 import { getTickerRatiosData } from '../actions/tickerActions';
 
-export default function ScatterScreen() {
+export default function ScatterScreen({props}) {
 
     const dispatch = useDispatch()
     const tickerListData = useSelector(state => state.tickerListData)
@@ -20,7 +20,7 @@ export default function ScatterScreen() {
     const tickerRatios = useSelector(state => state.tickerRatios)
     const { tickerRatiosData } = tickerRatios
 
-    const [scatterPlot, setScatterPlot] = useState({...new ScatterPlot(tickers||[])})
+    const [scatterPlot, setScatterPlot] = useState({...new ScatterPlot(tickers||[]).init()})
         const [navigation,setNavigation] = useState({
         selected:{name:'scatter',index:0},
         options:['scatter','historicalScatter']
@@ -29,8 +29,8 @@ export default function ScatterScreen() {
     useEffect(()=>{
         if(tickers){
             let newScatter = new ScatterPlot(tickers,tickerRatiosData,selectedPortfolio)
-            newScatter.init()
-            setScatterPlot({...newScatter})                
+            let updated = newScatter.init()
+            setScatterPlot({...updated})                
         }
     },[tickers,tickerRatiosData,selectedPortfolio])
     
