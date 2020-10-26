@@ -920,6 +920,10 @@ input[type=checkbox] {
   padding: 0 0.2rem;
 }
 
+.inputInfoRatio input{
+  width: 5rem;
+}
+
 .tickerLatestPrice{
   display: grid;
   grid-template-rows: 3rem 1fr;

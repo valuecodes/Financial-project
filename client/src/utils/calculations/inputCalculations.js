@@ -325,6 +325,7 @@ export function calculateYahooPrice(data){
     let priceData=[]
     for(var i=data.length-1;i>0;i--){
         let row=data[i].split(',')
+        if(row[1]==='null') continue
         if(new Date(row[0]).getFullYear()>=2000){
             priceData.push({
                 date:new Date(row[0]),
@@ -531,20 +532,26 @@ export function getKey(array,data){
         array.splice(1,2)
     }
     let key = array[1].split('\t')[0]
+    
     if(array[2]==='CURRENT PRICE') key = 'companyInfo'
     if(checkInsider(data)) key = 'insider'
     if(array[0]==='Date,Open,High,Low,Close,Adj Close,Volume') key = 'yahooPrice'
     if(key==='Transaction Date') key='insiderMarketBeat'
     if(array[0]==="Date,Dividends") key='dividends'
-    if(key==='Annual Data | Millions of US $ except per share data') key = 'macroTrendsAnnual'
+    if(key==='Annual Data | Millions of US $ except per share data'){
+        return 'macroTrendsAnnual'
+    } 
+    
     let reuterKey = checkReuters(array)
     if(reuterKey){
         key=reuterKey
     } 
+
     return key
 }
 
 export function checkReuters(array){
+
     if(array[14]){
         let incomeKeys=['Revenue','Total Premiums Earned','Interest Income, Bank']
         let balanceKeys=['Cash','Cash & Due from Banks','Cash & Equivalents']

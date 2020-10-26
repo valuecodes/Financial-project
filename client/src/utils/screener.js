@@ -86,11 +86,21 @@ function calculateScreenTickers(screener){
     let sortedTickers = []
     let sortOrder = screener.sortOrder.value
     let min = screener.sortOrder.min
+
     switch(sortOrder){
         case 'Tickers':
             sortedTickers = screenedTickers.sort((a,b)=>
                 min?a.ticker-b.ticker:b.ticker-a.ticker  
             )
+            break
+        case 'brand':
+            sortedTickers = screenedTickers.sort((a,b)=>{
+                let aMin = a.ratios.brand?a.ratios.brand:min?501:0
+                let bMin = b.ratios.brand?b.ratios.brand:min?501:0
+                return min?
+                    aMin-bMin:
+                    bMin-aMin                  
+            })
             break
         default: screenedTickers.sort((a,b)=>
             min?a.ratios[sortOrder]-b.ratios[sortOrder]:
@@ -138,7 +148,6 @@ function initScreener(screener){
         const ratios = Object.keys(tickers[0].ratios)
             .filter(item => item!=='date')
         ratios.unshift('Tickers')   
-        
         screener.ratios = ratios
         screener.inputs = inputs
     }
@@ -247,6 +256,14 @@ const ratioOptions={
         ticks:1,
         decimals:2,
         textSign:'%',
+        active:false
+    },
+    brand:{
+        scaleFrom:0,
+        scaleTo:500,
+        ticks:1,
+        decimals:0,
+        textSign:null,
         active:false
     },
 }

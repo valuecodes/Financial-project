@@ -63,6 +63,8 @@ export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
         peg:null,
         roe:null,
         roa:null,
+        brand:null,
+        esg:null
     }
     this.quarterData = tickerQuarter?tickerQuarter.quarterData:[]
     this.yearlyData = tickerRatios?tickerRatios.yearlyData: []
@@ -150,6 +152,9 @@ function handleAddUpdateMessage(tickerData,dataName,actions={new:1,found:0}){
 
 function handleAddTickerSlimData(tickerData,tickerSlim){
     tickerData.ratios = tickerSlim.ratios
+    if(!tickerSlim.ratios.brand){
+        tickerSlim.ratios.brand = null
+    }
     tickerData.latestPrice = tickerSlim.latestPrice
 }
 
@@ -291,7 +296,7 @@ function calculateGetFinancialNum(tickerData,key,year=null){
     }
     let keyStatements = tickerData.valueStatements
     let statement = keyStatements[key]
-    console.log(statement,keyStatements,key)
+
     if(statement){
         year = null
         let statementYear
@@ -350,10 +355,10 @@ function calculateTickerRatios(tickerData){
 function calculateUpdate(tickerData){
     if(tickerData.balanceSheet[0]){
         if(!tickerData.balanceSheet[0].bookValuePerShare){
-            // tickerData.updateFinancialValue('bookValue')
+            tickerData.updateFinancialValue('bookValue')
         }
     }
-    // tickerData.ratios = tickerData.tickerRatios()
+    tickerData.ratios = tickerData.tickerRatios()
     return tickerData
 }
 
@@ -369,6 +374,7 @@ function calculateUpdateFinancialValue(tickerData,value){
             break
         default:
     }
+    return tickerData
 }
 
 function handleGetClosestPriceFromDate(tickerData,date){
@@ -465,7 +471,6 @@ function setAddData(tickerData,data){
         default: 
     }
     tickerData.update()
-    console.log(tickerData)
     return tickerData
 }
 
@@ -532,6 +537,8 @@ function handleAddMacroTrendsAnnual(tickerData,array){
             break
         }
     }
+    array = array.map(item => item.split(',')?item.split(',')[0]:item)
+ 
     let newData=[]
     tickerData.profile.financialDataCurrency='USD'  
     switch(key){

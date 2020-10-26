@@ -19,7 +19,7 @@ export default function AddDataScreen() {
     const [selectedKey, setSelectedKey] = useState(null)
     const [navigation,setNavigation] = useState({
         selected:{name:'ticker',index:0},
-        options:['overview','ticker']
+        options:['overview','ticker','other']
     })
 
     const { tickerListData, tickerData, tickerSave } = useSelector(state => state)
@@ -57,7 +57,7 @@ export default function AddDataScreen() {
     function selectTicker(id) {
         dispatch(getTickerData(id))
     }
-    console.log(companyInfo)
+
     return (
         <div className='inputPage'>
             <div>     
@@ -103,7 +103,29 @@ export default function AddDataScreen() {
                 {navigation.selected.name==='overview'&&
                     <Overview tickerList={tickerList} setTickerList={setTickerList} exhangeRate={exhangeRate}/>
                 }
+                {navigation.selected.name==='other'&&
+                    <Other/>
+                }
             </div>
+        </div>
+    )
+}
+
+function Other(){
+
+    const handleData=(value)=>{
+        console.log(value.split('\n'))
+    }
+
+    return(
+        <div>
+                <textarea 
+                    className='financeInput' 
+                    type='text' 
+                    onChange={e => handleData(e.target.value)}
+                    // ref={inputRef}
+                    placeholder={'Copy paste text here...'}
+                />
         </div>
     )
 }
@@ -183,12 +205,13 @@ function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker })
     })
     const [tickerSort, setTickerSort]=useState({
         selected:'UpdatedAt',
-        values:['All','UpdatedAt'],
+        values:['All','UpdatedAt','brand'],
     })
 
     const inputRef=useRef()
 
     useEffect(()=>{
+        
         if(tickerList){
 
             const { selected } = tickerSort
@@ -197,7 +220,6 @@ function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker })
 
             switch(selected){
                 case 'UpdatedAt':
-                    console.log(tickerList.tickers)
                     tickerList.tickers.forEach(ticker =>{
                         if(ticker.country){
                             ready.push(ticker)
@@ -206,9 +228,18 @@ function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker })
                         }
                     })                    
                     break
+                case 'brand':
+                    tickerList.tickers.forEach(ticker =>{
+                        if(ticker.ratios.brand===undefined){
+                            notReady.push(ticker)
+                        }else{
+                            ready.push(ticker)
+                        }
+                    })  
+                    break
                 default: ready = tickerList
             }
-
+            console.log(ready,notReady,selected)
             setTickerListSort({ready,notReady})
         }
     },[tickerList,tickerSort])
@@ -344,8 +375,8 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         }
     }
 
-    const deleteAll=()=>{
-        companyInfo.priceData=[]
+    const deleteAll=(key)=>{
+        companyInfo[key]=[]
         setCompanyInfo({...companyInfo})
     }
 
@@ -365,7 +396,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                         >
                             Add row
                         </button>
-                        <button onClick={deleteAll}>Delete All</button>
+                        <button onClick={()=>deleteAll(selectedKey)}>Delete All</button>
                         </>
                     }
                     </th>
@@ -435,9 +466,8 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
             tickerUpdateRatios.success = false
         }
     },[updateRatiosSuccess,updatedRatioData])
-
+    
     let keys = Object.keys(companyInfo.profile).filter(item => item!=='_id')
-    let ratios = Object.keys(companyInfo.ratios)
     const dispatch = useDispatch()
 
     const processData = async () => {
@@ -488,6 +518,12 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
         setCompanyInfo({...updated})
     }
 
+    const modifyRatio = (e,ratio) => {
+        const { value } = e.target
+        companyInfo.ratios[ratio] = Number(value)
+        setCompanyInfo({...companyInfo})
+    }
+    console.log(companyInfo.ratios)
     return(
         <div className='inputInfoHeader'>
             <div className='inputInfoProfile'>
@@ -523,12 +559,23 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
                         >Update</button>                                               
                     </div>
                     <div className='selectedRatios'>
-                        {['pe','pb','divYield','payoutRatio','currentRatio','profitMargin','roe','marketCap'].map(ratio=>
+                        {['pe','pb','divYield','payoutRatio','profitMargin','marketCap'].map(ratio=>
                             <div key={ratio} className='inputInfoRatio'>
                                 <p className='itemLabel'>{camelCaseToString(ratio)}</p>
                                 <p>{companyInfo.ratios[ratio]|| ''}</p>
                             </div>
-                        )}                        
+                        )}     
+                        {['brand','esg'].map(ratio=>
+                            <div key={ratio} className='inputInfoRatio'>
+                                <p className='itemLabel'>{camelCaseToString(ratio)} {companyInfo.ratios[ratio]===null?'+500':''}</p>
+                                <input
+                                    className='ratioInput'
+                                    type='number'
+                                    onChange={(e)=>modifyRatio(e,ratio)}
+                                    value={companyInfo.ratios[ratio]|| ''}
+                                />
+                            </div>
+                        )}                   
                     </div>
                 </div>
                 <div className='tickerLatestPrice'>

@@ -21,6 +21,7 @@ const ratioSchema = {
     peg:{type:Number},
     roe:{type:Number},
     roa:{type:Number},
+    brand:{type:Number},
     _id : false 
 }
 
