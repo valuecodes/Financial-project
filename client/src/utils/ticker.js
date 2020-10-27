@@ -263,7 +263,6 @@ function handleCalculateAnalytics(ticker){
 
     Object.keys(yearlyData).forEach(item =>{
         let freeCashFlowValue = yearlyData[item].freeCashFlow
-        console.log(freeCashFlowValue)
         if(freeCashFlowValue){
             numberOfCashflowYears++
             totalFreeCashFlow+=freeCashFlowValue
@@ -274,7 +273,7 @@ function handleCalculateAnalytics(ticker){
             }
         }
     })
-    console.log(totalFreeCashFlow,numberOfCashflowYears)
+
     let averageFreeCashFlow = totalFreeCashFlow / numberOfCashflowYears
     freeCashFlow.average = averageFreeCashFlow
     let startingPrice = roundToTwoDecimal(ticker.priceData[0].close)

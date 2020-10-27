@@ -8,7 +8,6 @@ import { TickerData } from '../utils/tickerData';
 import { updateTickerRatios } from '../actions/tickerActions';
 import SectionNav from '../components/SectionNav'
 import { TickerList } from '../utils/tickerList';
-import Table from '../components/Table'
 import { calculateLatestPrice } from '../utils/calculations/inputCalculations';
 
 export default function AddDataScreen() {
@@ -239,7 +238,6 @@ function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker })
                     break
                 default: ready = tickerList
             }
-            console.log(ready,notReady,selected)
             setTickerListSort({ready,notReady})
         }
     },[tickerList,tickerSort])
