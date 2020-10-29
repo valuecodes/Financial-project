@@ -24,7 +24,7 @@ export function MACDDataOptions(){
 export function priceChartOptions(ticker,options){
     const { selected } = options
     
-    const {data,oscillator,MACD} = ticker.priceChart.data.datasets[0]
+    const {data,oscillator} = ticker.priceChart.data.datasets[0]
     const datasets = ticker.priceChart.data.datasets
 
     let min = Math.min(...data)
@@ -150,7 +150,7 @@ export function financialChartOptions(options){
             intersect: false,
             callbacks: {
                 label: function (tooltipItem, data) {
-                    const { datasetIndex, index } = tooltipItem
+                    const { datasetIndex } = tooltipItem
                     let text = formatMillions(tooltipItem.yLabel)+'M'
                     if(datasetIndex===2&&selected!=='cashFlow'){
                         text = tooltipItem.yLabel.toFixed(1)
@@ -265,7 +265,6 @@ function createRatioAnnotations(ratioData,options){
         const data = ratioData.datasets[0].data
         let ratioMin = Math.min(...data)
         let ratioMax = Math.max(...data)
-        let ratioAverage = data.reduce((a,c)=> a+c,0) / data.length    
         let averageTop=ratioMax-(ratioMax-ratioMin)/3
         let averageBot=ratioMin+(ratioMax-ratioMin)/3
         annotations.push({
@@ -718,7 +717,6 @@ function addTooltipText(chart,i,tooltipModel,selected,datasets){
 
     // Set Text 
     if (tooltipModel.body) {
-        let text = ''
         var bodyLines = tooltipModel.body.map(getBody);
         var tableRoot = tooltipText.querySelector('table');
         tableRoot.textContent = bodyLines[i];
@@ -792,10 +790,10 @@ function clearAllTooltips(){
         'chartjs-tooltip-text',
         'chartjs-tooltip'
     ]
-    for(var z=0;z<3;z++){
+    for(var a=0;a<3;a++){
         tooltipNames.forEach(item =>{
-            if(document.getElementById(item+z)){
-                document.getElementById(item+z).style.opacity=0;
+            if(document.getElementById(item+a)){
+                document.getElementById(item+a).style.opacity=0;
             }
         })
     }
@@ -870,6 +868,14 @@ export function calculateForecastFinancialsOptions(){
             }
         },
         barValueSpacing: 1,
+        layout: {
+            padding: {
+                left: 0,
+                right: 25,
+                top: 0,
+                bottom:0 
+            }
+        },
         scales:{
             barValueSpacing: 15,
             xAxes: [
@@ -879,8 +885,29 @@ export function calculateForecastFinancialsOptions(){
                     },   
                     gridLines: {
                         display:false
-                    }             
+                    },
+                    offset: true,             
                 }
+            ],
+            yAxes: [
+                {  
+                    id: 'y-axis-1',
+                },
+                {  
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    id: 'y-axis-2',
+                    ticks: {
+                        maxTicksLimit: 8,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        suggestedMin: 0, 
+                    },
+                    gridLines: {
+                        display:false
+                    }  
+                },
             ]
         }        
     }

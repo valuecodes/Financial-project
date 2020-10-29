@@ -27,19 +27,16 @@ export function Ticker(data,portfolioTicker){
     this.priceData = data?data.priceData:[]
     this.transactions = portfolioTicker?portfolioTicker.transactions:[]
     this.analytics = {
-        price:{
-            ending:0,
-            latest:0,
-            starting:0,
-            futurePE:0
+        forecastOutputs:{
+            priceReturn:0,
+            divReturn:0,
+            totalReturn:0,
+            endingPrice:0,
+            forecastedDividends:0
         },
-        annualReturn:{
-            price:0,
-            div:0,
-            total:0
-        },
-        financials:{},
-        yearlyData:{}
+        forecastInputs:{},
+        yearlyData:{},
+        financialInputs:{}
     }
     this.priceChart={
         chart:null,
@@ -137,6 +134,11 @@ export function Ticker(data,portfolioTicker){
             responsive:true,
             maintainAspectRatio: false
         },
+        epsChart:{},
+        epsOptions:{
+            responsive:true,
+            maintainAspectRatio: false
+        },
         freeCashFlowChart:{},
         freeCashFlowOptions:{
             responsive:true,
@@ -190,18 +192,8 @@ function handleCalculateAnalytics(ticker){
     .reverse() 
     let divData = [...dividendData]
 
-    const { data:peData, financialData:epsData, ratios } = calculateRatioChartComponents(ticker,{selected:'pe'})
+    const { data:peData, ratios } = calculateRatioChartComponents(ticker,{selected:'pe'})
     const cashFlow = ticker.cashFlow
-
-    let latestPE = peData[peData.length-1]
-    let averagePE = peData.reduce((a,c)=> a+c,0)/peData.length
-    let peDiscount = averagePE/latestPE
-    let epsGrowth=0
-    let epsTotal = 0
-    for(var i=0;i<epsData.length-1;i++){
-        epsTotal+=(epsData[i+1]/epsData[i]) - 1
-    }
-    let epsGrowthRate = epsTotal/(epsData.length-1)
 
     let latestEps = ratios[ratios.length-1]
     let lastFullFinancialYear=new Date().getFullYear()
@@ -225,11 +217,15 @@ function handleCalculateAnalytics(ticker){
                 if(cashflowData){ 
                     freeCashFlow = cashflowData.operatingCashFlow+cashflowData.capEx
                 }
-                
+                let netProfitMargin = null
+                if(yearData){
+                    netProfitMargin = yearData.netIncome/yearData.revenue
+                }
                 yearlyData[year]={
                     div:item.dividend,
                     ...yearData,
                     ...cashflowData,
+                    netProfitMargin,
                     freeCashFlow,
                     date:year+'-11'
                 }
@@ -246,72 +242,95 @@ function handleCalculateAnalytics(ticker){
             if(cashflowData){
                 freeCashFlow = cashflowData.operatingCashFlow+cashflowData.capEx
             }  
-               
+            let netProfitMargin = null
+            if(yearData){
+                netProfitMargin = yearData.netIncome/yearData.revenue
+            }
             yearlyData[year]={
                 div:0,
                 ...yearData,
-                ...cashflowData,      
+                ...cashflowData,    
+                netProfitMargin,                  
                 freeCashFlow,                          
                 date:year+'-11'
             }
         }
     }
 
-    let numberOfCashflowYears = 0
-    let totalFreeCashFlow = 0
-    let freeCashFlow = {}
 
-    Object.keys(yearlyData).forEach(item =>{
-        let freeCashFlowValue = yearlyData[item].freeCashFlow
-        if(freeCashFlowValue){
-            numberOfCashflowYears++
-            totalFreeCashFlow+=freeCashFlowValue
-            freeCashFlow = {
-                latest: freeCashFlowValue.toFixed(),
-                average:0,
-                date: item.date
+    let financialInputs= {
+        freeCashFlow:{},
+        netProfitMargin:{},
+        eps:{},
+        revenue:{},
+        netIncome:{},
+        grossProfit:{}
+    }
+
+    Object.keys(yearlyData).forEach((item,index) =>{
+        Object.keys(financialInputs).forEach(name =>{
+            let value = yearlyData[item][name]
+            if(value){
+                let nextYear = yearlyData[Number(item)+1]            
+                let growth = 0
+                if(nextYear){
+                    growth = (yearlyData[Number(item)+1][name] / value)-1
+                }
+                let count = financialInputs[name].count||0
+                let total = financialInputs[name].total||0
+                let growthTotal = financialInputs[name].growthTotal||0
+                count++
+                total+=value
+                growthTotal+=growth
+                let average = total/count
+                let averageGrowth = growthTotal/(count-1)
+                financialInputs[name]={
+                    latest: value,
+                    date: yearlyData[item].date,
+                    count:count,
+                    total:total,
+                    average: average,
+                    growthTotal:growthTotal,
+                    averageGrowth:averageGrowth
+                }
             }
-        }
+        })
     })
 
-    let averageFreeCashFlow = totalFreeCashFlow / numberOfCashflowYears
-    freeCashFlow.average = averageFreeCashFlow
+    let latestPE = peData[peData.length-1]
+    let averagePE = peData.reduce((a,c)=> a+c,0)/peData.length
+    let peDiscount = averagePE/latestPE    
     let startingPrice = roundToTwoDecimal(ticker.priceData[0].close)
 
-    let price={
-        latest:startingPrice,
-        starting:startingPrice,
-        ending:0,
-        latestPE:latestPE,
-        averagePE:averagePE,
-        futurePE:averagePE,
-        peDiscount:peDiscount,
-        forecastedDividends:0,
-    }
-
-    let annualReturn={
-        price:0,
-        div:0,
-        total:0
-    }
-
-    let financials={
-        latestEps,
-        epsGrowthRate,
-        freeCashFlow,
-        futureEpsGrowthRate:epsGrowthRate,
+    financialInputs={
+        ...financialInputs,
+        price:{
+            latest:startingPrice
+        },
+        pe:{
+            latest:latestPE,
+            average:averagePE,
+            discount:peDiscount
+        },        
         lastFullFinancialYear,
         firstFullFinancialYear,
+    }
+
+    let forecastInputs={
+        startingPrice:startingPrice,
+        endingPE:averagePE,
+        futureGrowthRate:financialInputs.eps.averageGrowth,
+        endingProfibility:financialInputs.netProfitMargin.average,
         shareCount,
         dcfDiscountRate:0.1,
         perpetuityGrowth:0.03,
-        startingFreeCashFlow:averageFreeCashFlow
+        startingFreeCashFlow:financialInputs.freeCashFlow.average
     }
 
     ticker.analytics={
-        price,
-        annualReturn,
-        financials,
+        ...ticker.analytics,
+        financialInputs,
+        forecastInputs,
         yearlyData
     }
 
@@ -551,13 +570,18 @@ function handleUpdateFinancialChart(ticker,options){
 }
 
 function handleUpdateForecastChart(ticker){
-    let {forecastChart, financialChart, freeCashFlowChart, dcfTable} = calculateForecastChartComponents(ticker)
+
+    let {forecastChart, financialCharts, dcfTable} = calculateForecastChartComponents(ticker)
+    const { financialChart, epsChart, freeCashFlowChart } = financialCharts
+
     ticker.forecastSection={
         forecastChart,
         financialChart,
+        epsChart,
         freeCashFlowChart,
         forecastOptions: calculateForecastChartOptions(forecastChart),
         financialOptions: calculateForecastFinancialsOptions(financialChart),
+        epsOptions:calculateForecastFinancialsOptions(financialChart),
         freeCashFlowOptions: calculateForecastFinancialsOptions(financialChart),
         dcfTable
     }
