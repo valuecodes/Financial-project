@@ -53,6 +53,8 @@ export function formatCurrency(value,sign=false){
 }
 
 export function formatMillions(value,sign=false){
+    if(isNaN(value)) return ''
+    if(!value) return ''
     let text = value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
     if(sign){
         if(value>0) text = '+'+text

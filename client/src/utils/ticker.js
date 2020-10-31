@@ -324,17 +324,27 @@ function handleCalculateAnalytics(ticker){
         },        
         lastFullFinancialYear,
         firstFullFinancialYear,
+        startingFinancialYear:lastFullFinancialYear,
     }
+    
+    let averageGrowth = 
+        (financialInputs.eps.averageGrowth+
+        financialInputs.revenue.averageGrowth+
+        financialInputs.netIncome.averageGrowth)/3
+    
+    if(averageGrowth>0.3) averageGrowth=0.3
 
     let forecastInputs={
         startingPrice:startingPrice,
         endingPE:averagePE,
-        futureGrowthRate:financialInputs.eps.averageGrowth,
+        futureGrowthRate:averageGrowth,
         endingProfitability:financialInputs.netProfitMargin.average,
+        endingPayoutRatio:financialInputs.payoutRatio.latest,
         shareCount,
         dcfDiscountRate:0.1,
         perpetuityGrowth:0.03,
-        startingFreeCashFlow:financialInputs.freeCashFlow.average
+        startingFreeCashFlow:financialInputs.freeCashFlow.average,
+        forecastStartingDate:new Date().toISOString().split('T')[0]
     }
 
     ticker.analytics={
@@ -589,7 +599,7 @@ function handleUpdateForecastChart(ticker){
         financialChart,
         epsChart,
         freeCashFlowChart,
-        forecastOptions: calculateForecastChartOptions(forecastChart),
+        forecastOptions: calculateForecastChartOptions(forecastChart,ticker),
         financialOptions: calculateForecastFinancialsOptions(financialChart),
         epsOptions:calculateForecastFinancialsOptions(financialChart),
         freeCashFlowOptions: calculateForecastFinancialsOptions(financialChart),

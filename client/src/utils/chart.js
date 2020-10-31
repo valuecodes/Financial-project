@@ -869,7 +869,7 @@ export function calculateForecastChartComponents(ticker){
         .filter(item => new Date(item.date).getFullYear()>new Date().getFullYear()-15)
         .reverse() 
 
-    priceData = priceData.filter((item,index) => { return index%4===0})
+    priceData = [...priceData.filter((item,index) => { return index%4===0})]
 
     let { forecastInputs, yearlyData, financialInputs } = ticker.analytics   
 
@@ -883,34 +883,38 @@ export function calculateForecastChartComponents(ticker){
     let {
         pe={latest:0},
         lastFullFinancialYear,
+        startingFinancialYear,
     } = financialInputs
 
     let {
         startingPrice,
         endingPE,
-        epsGrowthRate, 
         futureGrowthRate,
         endingProfitability,
+        endingPayoutRatio,
         shareCount,
-        startingFreeCashFlow
+        startingFreeCashFlow,
+        forecastStartingDate
     } = forecastInputs
-    
-    // priceData = priceData.filter(item => new Date(item.date)<new Date(2020,1))
+
+    let futurePriceData = priceData.filter(item => new Date(item.date)>new Date(forecastStartingDate))
+
+    priceData = priceData.filter(item => new Date(item.date)<=new Date(forecastStartingDate))
 
     let latestPriceDate = new Date()
-    let futurePriceData = new Date()
-
+    let futurePriceDate = new Date()
+    
     if(priceData.length>0){
         latestPriceDate = new Date(priceData[priceData.length-1].date)
-        futurePriceData = new Date(priceData[priceData.length-1].date)
-        // startingPrice = priceData[priceData.length-1].close
+        futurePriceDate = new Date(priceData[priceData.length-1].date)
     }
 
     for(let a=0;a<120;a++){
-        futurePriceData.setMonth(futurePriceData.getMonth()+1)
+        futurePriceDate.setMonth(futurePriceDate.getMonth()+1)
         priceData.push({
-            date:futurePriceData.toISOString(),
-            close:startingPrice
+            date:futurePriceDate.toISOString(),
+            close:startingPrice,
+            futurePrice:futurePriceData[a]?futurePriceData[a].close:null
         })
     }
 
@@ -918,26 +922,28 @@ export function calculateForecastChartComponents(ticker){
     pe.latest = startingPrice/eps.latest
     let peDiscount = endingPE/pe.latest
     
-    for(var i=lastFullFinancialYear+1;i<lastFullFinancialYear+11;i++){
-        yearlyData[i]={
-            div: yearlyData[lastFullFinancialYear].div,
-            revenue: yearlyData[lastFullFinancialYear].revenue,
-            grossProfit: yearlyData[lastFullFinancialYear].grossProfit,
-            netIncome: yearlyData[lastFullFinancialYear].netIncome,
-            freeCashFlow: startingFreeCashFlow,
-            eps: eps.latest,
-            netProfitMargin:yearlyData[lastFullFinancialYear].netProfitMargin,
-            payoutRatio:yearlyData[lastFullFinancialYear].payoutRatio,
-            date:i+'-12'
+    for(var i=startingFinancialYear+1;i<startingFinancialYear+11;i++){
+        if(!yearlyData[i]){
+            yearlyData[i]={
+                div: yearlyData[lastFullFinancialYear].div,
+                revenue: yearlyData[lastFullFinancialYear].revenue,
+                grossProfit: yearlyData[lastFullFinancialYear].grossProfit,
+                netIncome: yearlyData[lastFullFinancialYear].netIncome,
+                freeCashFlow: startingFreeCashFlow,
+                eps: eps.latest,
+                netProfitMargin:yearlyData[lastFullFinancialYear].netProfitMargin,
+                payoutRatio:yearlyData[lastFullFinancialYear].payoutRatio,
+                date:i+'-12'
+            }            
         }
     }
-
+    
     let futureMonths = priceData.filter(item => 
-        new Date(item.date)<new Date(lastFullFinancialYear+11,0)&&
+        new Date(item.date)<new Date(startingFinancialYear+11,0)&&
         new Date(item.date)>new Date(latestPriceDate)
     ).length
 
-    priceData = priceData.filter(item => new Date(item.date)<new Date(lastFullFinancialYear+11,0))
+    priceData = priceData.filter(item => new Date(item.date)<new Date(startingFinancialYear+11,0))
     
     let labels = priceData.map(item => new Date(item.date).getFullYear())
     let pricePast=[]
@@ -971,34 +977,32 @@ export function calculateForecastChartComponents(ticker){
         },
     }
 
-    if(epsGrowthRate<0){
-        epsGrowthRate=0
-    }
-
     let numberOfIterations = 0
     let futureYearNumber = 1
     let totalDividends=0
     let financialLabels = []
     let profitabilityChange = (Number(endingProfitability)-netProfitMargin.latest)
 
-    let lastEps = eps.latest
-    let latestEPS = eps.latest
+    let lastEps = yearlyData[startingFinancialYear]?yearlyData[startingFinancialYear].eps:eps.latest
+    let latestEPS = yearlyData[startingFinancialYear]?yearlyData[startingFinancialYear].eps:eps.latest
     let latestPrice = 0
     let monthCount = 0
     let priceDiscount = 0
+    let actualPrice = []
 
     priceData.forEach((item,index) =>{
 
         let future = new Date(item.date)>new Date(latestPriceDate)
         let year = new Date(item.date).getFullYear()
 
+        actualPrice.push(item.futurePrice)
         if(!future){
             pricePast.push(item.close)
             priceForecast.push(item.close)    
             dividendForecast.push(item.close)            
         }
         
-        if(year<=lastFullFinancialYear){
+        if(year<=startingFinancialYear){
             if(yearlyData[year]){
                 if(yearlyData[year].date===item.date.substring(0,7)){
                     Object.keys(financialData).forEach(item =>{
@@ -1009,7 +1013,7 @@ export function calculateForecastChartComponents(ticker){
                         }                              
                     })
                     financialLabels.push(year)   
-                    if(year!==lastFullFinancialYear){
+                    if(year!==startingFinancialYear){
                         delete yearlyData[year]
                     }
                 }              
@@ -1019,38 +1023,61 @@ export function calculateForecastChartComponents(ticker){
                 if(new Date(item.date).getMonth()===0){
                     let fYear = year-1
                     Object.keys(financialData).forEach(item =>{
-                        let calculatedValue = yearlyData[fYear][item] * (1 + (futureGrowthRate))**(futureYearNumber)
+                        let growthRate = futureGrowthRate
+                        if(year<lastFullFinancialYear){
+                            growthRate=0 
+                        } 
+                        
+                        let calculatedValue = yearlyData[fYear][item] * (1 + (growthRate))**(futureYearNumber)
                         let profitability = netProfitMargin.latest + ((profitabilityChange/10)*futureYearNumber)
-                        let color = financialData[item].color
-                        color = color.split('.')[0]+'.3)'
-                        financialData[item].colors.push(color)
                         if(item==='netProfitMargin'){
                             calculatedValue = profitability
                         }
+
+                        let color = financialData[item].color
+                        color = color.split('.')[0]+'.3)'
+                        financialData[item].colors.push(color)  
                         if(item==='revenue'){
+                            
                             shareCount = netIncome.latest/eps.latest
                             let newEps = (calculatedValue*profitability)/shareCount
-                            financialData.eps.data.push(newEps)
-                            financialData.netIncome.data.push(calculatedValue*profitability)  
-                            lastEps = latestEPS
-                            latestEPS = newEps                          
+                            let newNetIncome = calculatedValue*profitability
                             let newDiv = 0
-                            if(payoutRatio.latest){
-                                newDiv = newEps*payoutRatio.latest                                
+                            let newPayoutRatio=null
+
+                            if(year<=lastFullFinancialYear){    
+                                newEps = yearlyData[year].eps
+                                newNetIncome = yearlyData[year].netIncome
+                                calculatedValue=yearlyData[year].revenue
+                                newDiv = yearlyData[year].div
+                                newPayoutRatio = yearlyData[year].payoutRatio
                             }
+
+                            financialData.eps.data.push(newEps)
+                            financialData.netIncome.data.push(newNetIncome)  
+                            lastEps = latestEPS
+                            latestEPS = newEps
+
+                            if(payoutRatio.latest&&year>lastFullFinancialYear){
+                                newPayoutRatio=(payoutRatio.latest+ (endingPayoutRatio-payoutRatio.latest)/10*futureYearNumber)
+                                newDiv = newEps*newPayoutRatio                              
+                            }
+                            
                             totalDividends+=newDiv 
                             financialData.div.data.push(newDiv)  
-                            financialData.payoutRatio.data.push(payoutRatio.latest)  
-                            console.log('test')
+                            financialData.payoutRatio.data.push(newPayoutRatio)  
                         }
                         if(item!=='netIncome'&&item!=='eps'&&item!=='div'&&item!=='payoutRatio'){
                             financialData[item].data.push(calculatedValue)
-                        }
+                        }                            
+                        
                     })
-
                     financialLabels.push(year)               
                     delete yearlyData[fYear]
-                    futureYearNumber++;
+                    if(year>=lastFullFinancialYear){
+                        futureYearNumber++;
+                    }
+                    
                     monthCount=1                    
                 }           
             }
@@ -1062,6 +1089,7 @@ export function calculateForecastChartComponents(ticker){
                 let epsDiscount = ((latestEPS-lastEps)/12)*(monthCount)
                 let futurePrice = (lastEps+epsDiscount)*(pe.latest*discount)
                 futurePrice = futurePrice + priceDiscount - ((priceDiscount/futureMonths)*numberOfIterations)
+
                 if(numberOfIterations===1){                 
                     peDiscount = endingPE/(futurePrice/lastEps)
                     priceDiscount=startingPrice-futurePrice
@@ -1081,12 +1109,19 @@ export function calculateForecastChartComponents(ticker){
     let futureTotalPrice = dividendForecast[dividendForecast.length-1]
     let annualPriceReturn = ((endingPrice/startingPrice)**(1/10))-1
     let annualTotalReturn = ((futureTotalPrice/startingPrice)**(1/10))-1
+    let pricePercentageChange = ((endingPrice-startingPrice)/startingPrice)*100
+    let totalPercentageChange = ((futureTotalPrice-startingPrice)/startingPrice)*100
 
     let forecastOutputs={
         priceReturn: annualPriceReturn,
         divReturn: annualTotalReturn - annualPriceReturn,
         totalReturn: annualTotalReturn,
-        endingPrice
+        startingPrice,
+        startingIndex:pricePast.length,
+        endingPrice,
+        endingIndex:priceForecast.length-1,
+        pricePercentageChange,
+        totalPercentageChange
     }
 
     ticker.analytics = {
@@ -1120,8 +1155,16 @@ export function calculateForecastChartComponents(ticker){
                 pointRadius:0,
                 borderWidth:2,                            
                 pointBackgroundColor:'rgba(0,0,0,0)',
-                borderColor:'rgba(236, 252, 0, 0.95)',
+                borderColor:'rgba(238, 255, 0, 0.95)',
                 fill:false,               
+            },            
+            {
+                label:'Actual Price',
+                data:actualPrice,
+                borderColor:'rgba(110, 110, 110,1)',
+                pointRadius:0,
+                borderWidth:1,            
+                fill:false,
             },
         ],
         labels 
@@ -1145,7 +1188,7 @@ export function calculateForecastChartComponents(ticker){
         }
     }
 
-    let lastFullFinancialYearIndex = financialLabels.findIndex(item => item === lastFullFinancialYear)
+    let lastFullFinancialYearIndex = financialLabels.findIndex(item => item === startingFinancialYear)
 
     Object.keys(financialData).forEach(dataName =>{
         let chartName = financialData[dataName].chart
@@ -1163,7 +1206,7 @@ export function calculateForecastChartComponents(ticker){
             hidden:financialData[dataName].hidden,
             order:financialData[dataName].order?financialData[dataName].order:2,
             format:financialData[dataName].format,
-            lastFullFinancialYearIndex
+            lastFullFinancialYearIndex,
         })
     })
 

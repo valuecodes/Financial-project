@@ -799,14 +799,17 @@ function clearAllTooltips(){
     }
 }
 
-export function calculateForecastChartOptions(forecastChart){
-    const priceData = forecastChart.datasets.find(item => item.label==='Price').data
-    const priceForecast = forecastChart.datasets.find(item => item.label==='Price Forecast').data
-    let startingX = priceData.length;
-    let endingX = priceForecast.length-1
-    let startingPrice = priceForecast[priceData.length]
-    let endingPrice = priceForecast[priceForecast.length-1]
-    let percentageChange = ((endingPrice-startingPrice)/startingPrice)*100
+export function calculateForecastChartOptions(forecastChart,ticker){
+
+    const {   
+        pricePercentageChange,
+        totalPercentageChange,
+        startingPrice,
+        startingIndex,
+        endingPrice,
+        endingIndex
+    } = ticker.analytics.forecastOutputs
+
     return{
         plugins: {
             datalabels: {
@@ -824,14 +827,14 @@ export function calculateForecastChartOptions(forecastChart){
                 },
                 formatter: function(value, context) {
                     const { datasetIndex, dataIndex } = context
-                    if(datasetIndex===1&&dataIndex===startingX){
+                    if(datasetIndex===1&&dataIndex===startingIndex){
                         return value.toFixed(2)+'$'
                     }
-                    if(datasetIndex===1&&dataIndex===endingX){
-                        return `${value.toFixed(2)}$ (${percentageChange.toFixed(1)}%)`
+                    if(datasetIndex===1&&dataIndex===endingIndex){
+                        return `${value.toFixed(2)}$ (${pricePercentageChange.toFixed(1)}%)`
                     }
-                    if(datasetIndex===2&&dataIndex===endingX){
-                        return `${value.toFixed(2)}$ (${percentageChange.toFixed(1)}%)`
+                    if(datasetIndex===2&&dataIndex===endingIndex){
+                        return `${value.toFixed(2)}$ (${totalPercentageChange.toFixed(1)}%)`
                     }
                     return  null;
                 }

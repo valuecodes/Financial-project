@@ -377,7 +377,7 @@ function calculateUpdateFinancialValue(tickerData,value){
     return tickerData
 }
 
-function handleGetClosestPriceFromDate(tickerData,date){
+export function handleGetClosestPriceFromDate(tickerData,date){
     const { priceData } = tickerData
     let price = priceData.find(item => (new Date(item.date).getTime()-new Date(date).getTime()<804800000))
     if(!price){

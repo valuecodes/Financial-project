@@ -10,6 +10,7 @@ import {
 } from '../utils/chartOptions'
 import SectionNav from '../components/SectionNav';
 import Options from '../components/Options'
+import { handleGetClosestPriceFromDate } from '../utils/tickerData';
 
 export default function TickerScreen(props) {
 
@@ -68,7 +69,36 @@ export default function TickerScreen(props) {
 }
 
 function Forecast({ticker,setTicker,navigation}){
-    
+
+   const {  financialInputs, forecastInputs, forecastOutputs } = ticker.analytics
+
+    const {
+        freeCashFlow={latest:0,average:0},
+        netProfitMargin={latest:0,average:0},
+        revenue={averageGrowth:0},
+        netIncome={averageGrowth:0},
+        eps={averageGrowth:0},
+        grossProfit={averageGrowth:0},
+        price={latest:0},
+        pe={latest:0,average:0},        
+        payoutRatio={latest:0,average:0},        
+        firstFullFinancialYear, 
+        lastFullFinancialYear,
+        startingFinancialYear 
+    } = financialInputs
+
+    const {
+        startingPrice=0,
+        endingPE=0,
+        futureGrowthRate=0,
+        endingProfitability=0,
+        endingPayoutRatio=0,
+        dcfDiscountRate=0,
+        perpetuityGrowth=0,
+        startingFreeCashFlow=0,
+        forecastStartingDate='2020-01-01',
+    } = forecastInputs    
+
     useEffect(()=>{
         let updated = ticker.updateForecastChart()
         setTicker({...updated})
@@ -87,45 +117,27 @@ function Forecast({ticker,setTicker,navigation}){
         setTicker({...updated})
     }
 
-    const {  financialInputs, forecastInputs, forecastOutputs } = ticker.analytics
+    const handleForecastStartingPrice=(e)=>{
+        const { value } = e.target
+        ticker.analytics.forecastInputs.forecastStartingDate = value
+        ticker.analytics.forecastInputs.startingPrice = handleGetClosestPriceFromDate(ticker,value)
+        let startingFinancialYear = new Date(value).getFullYear()<lastFullFinancialYear?new Date(value).getFullYear():lastFullFinancialYear
+        ticker.analytics.financialInputs.startingFinancialYear = startingFinancialYear
+        const updated = ticker.updateForecastChart()
+        setTicker({...updated})
+    }
 
-    const {
-        freeCashFlow={latest:0,average:0},
-        netProfitMargin={latest:0,average:0},
-        revenue={averageGrowth:0},
-        netIncome={averageGrowth:0},
-        eps={averageGrowth:0},
-        grossProfit={averageGrowth:0},
-        price={latest:0},
-        pe={latest:0,average:0},        
-        firstFullFinancialYear, 
-        lastFullFinancialYear, 
-    } = financialInputs
-
-    const {
-        startingPrice=0,
-        endingPE=0,
-        futureGrowthRate=0,
-        endingProfitability=0,
-        dcfDiscountRate=0,
-        perpetuityGrowth=0,
-        startingFreeCashFlow=0,
-    } = forecastInputs
-    console.log(ticker)
     return(
         <div className='tickerForecast'>   
             <div className='forecastChartContainer'>                
                 <ul className='forecastHeader'>
                     <li>
-                        <h3>Annual return forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <h3>Annual return forecast {startingFinancialYear+1}-{startingFinancialYear+11}</h3>
                         <h2 className='bold'>{roundToTwoDecimal(forecastOutputs.totalReturn*100)}%</h2> 
                     </li>
                     <li>
                         <h3>Intrinsic value per share</h3>
                         <h2 className='bold'>{roundToTwoDecimal(ticker.forecastSection.dcfTable.intrinsicValue)}$</h2>
-                    </li>
-                    <li>
-                        test
                     </li>
                 </ul>
                 <div className='chartContainer'>                                 
@@ -137,7 +149,7 @@ function Forecast({ticker,setTicker,navigation}){
                 <ul className='forecastSideList mainForecast'>
                     <li className='annualReturns'>
                         <h2>Annual return </h2>
-                        <h3>Forecast {lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <h3>Forecast {startingFinancialYear+1}-{startingFinancialYear+11}</h3>
                         <p>Price</p>
                         <h4 className='bold'>{roundToTwoDecimal(forecastOutputs.priceReturn*100)}%</h4>
                         <p>Dividends</p>
@@ -145,8 +157,15 @@ function Forecast({ticker,setTicker,navigation}){
                         <p>Total</p>
                         <h4 className='bold total'>{roundToTwoDecimal(forecastOutputs.totalReturn*100)}%</h4> 
                     </li>    
-                    <li>
+                    <li className='forecastOptions'>
                         <button onClick={handleReset} className='forecastReset button'>Reset Forecast Settings</button>
+                        <h3>Historical forecast </h3>
+                        <label>Starting Date</label>
+                        <input 
+                            onChange={e => handleForecastStartingPrice(e)}
+                            value={forecastStartingDate}
+                            type='date'
+                        />
                     </li>                
                     <li className='startingPrice'>
                         <h2>Ticker Price </h2>
@@ -169,7 +188,7 @@ function Forecast({ticker,setTicker,navigation}){
                         <h4>{roundToTwoDecimal(pe.average)}</h4>
                         <label>Current PE</label>
                         <h4>{roundToTwoDecimal(pe.latest)}</h4>  
-                        <h3>PE forecast in {lastFullFinancialYear+11} </h3>
+                        <h3>PE forecast in {startingFinancialYear+11} </h3>
                         <input
                             onChange={(e)=>modifyFutureGrowth(e,'forecastInputs','endingPE')} 
                             min={0}
@@ -202,7 +221,7 @@ function Forecast({ticker,setTicker,navigation}){
                         <label>Free Cash Flow</label>
                         <h4>{roundToTwoDecimal(freeCashFlow.averageGrowth*100)}%</h4> 
                         <h3>Annual Growth forecast </h3>
-                        <h3>{lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <h3>{startingFinancialYear+1}-{startingFinancialYear+11}</h3>
                         <input
                             onChange={(e)=>modifyFutureGrowth(e,'forecastInputs','futureGrowthRate')} 
                             min={-0.05}
@@ -214,11 +233,11 @@ function Forecast({ticker,setTicker,navigation}){
                         <h4 className='bold'>{roundToTwoDecimal(futureGrowthRate*100)}%</h4> 
                     </li>
                     <li>
-                        <h2>Profibility </h2>
+                        <h2>Profitability </h2>
                         <label>Annual net profit margin {firstFullFinancialYear}-{lastFullFinancialYear}</label>
                         <h4>{roundToTwoDecimal(netProfitMargin.average*100)}%</h4> 
-                        <h3>Profibility forecast 2030 </h3>
-                        <h3>{lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
+                        <h3>Profitability forecast </h3>
+                        <h3>{startingFinancialYear+1}-{startingFinancialYear+11}</h3>
                         <input
                             onChange={(e)=>modifyFutureGrowth(e,'forecastInputs','endingProfitability')} 
                             min={-0.1}
@@ -228,6 +247,22 @@ function Forecast({ticker,setTicker,navigation}){
                             type='range'
                         />
                         <h4 className='bold'>{roundToTwoDecimal(endingProfitability*100)}%</h4> 
+                    </li>
+                    <li>
+                        <h2>Payout Ratio </h2>
+                        <label>Payout Ratio average {firstFullFinancialYear}-{lastFullFinancialYear}</label>
+                        <h4>{roundToTwoDecimal(payoutRatio.average*100)}%</h4> 
+                        <h3>PayoutRatio forecast </h3>
+                        <h3>{startingFinancialYear+1}-{startingFinancialYear+11}</h3>
+                        <input
+                            onChange={(e)=>modifyFutureGrowth(e,'forecastInputs','endingPayoutRatio')} 
+                            min={0}
+                            max={1.1}
+                            step={0.1}
+                            value={endingPayoutRatio}
+                            type='range'
+                        />
+                        <h4 className='bold'>{roundToTwoDecimal(endingPayoutRatio*100)}%</h4> 
                     </li>
                 </ul>                
                 <div className='chartContainerSmall'>
