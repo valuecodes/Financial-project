@@ -106,7 +106,7 @@ function Forecast({ticker,setTicker,navigation}){
         startingPrice=0,
         endingPE=0,
         futureGrowthRate=0,
-        endingProfibility=0,
+        endingProfitability=0,
         dcfDiscountRate=0,
         perpetuityGrowth=0,
         startingFreeCashFlow=0,
@@ -217,14 +217,14 @@ function Forecast({ticker,setTicker,navigation}){
                         <h3>Profibility forecast 2030 </h3>
                         <h3>{lastFullFinancialYear+1}-{lastFullFinancialYear+11}</h3>
                         <input
-                            onChange={(e)=>modifyFutureGrowth(e,'forecastInputs','endingProfibility')} 
+                            onChange={(e)=>modifyFutureGrowth(e,'forecastInputs','endingProfitability')} 
                             min={-0.1}
                             max={0.6}
                             step={0.01}
-                            value={endingProfibility}
+                            value={endingProfitability}
                             type='range'
                         />
-                        <h4 className='bold'>{roundToTwoDecimal(endingProfibility*100)}%</h4> 
+                        <h4 className='bold'>{roundToTwoDecimal(endingProfitability*100)}%</h4> 
                     </li>
                 </ul>                
                 <div className='chartContainerSmall'>

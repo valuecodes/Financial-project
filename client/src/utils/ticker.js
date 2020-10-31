@@ -189,18 +189,18 @@ function handleInit(ticker){
 function handleCalculateAnalytics(ticker){
 
     let dividendData = ticker.dividendData
-    .reverse() 
+        .reverse() 
     let divData = [...dividendData]
 
     const { data:peData, ratios } = calculateRatioChartComponents(ticker,{selected:'pe'})
     const cashFlow = ticker.cashFlow
 
     let latestEps = ratios[ratios.length-1]
-    let lastFullFinancialYear=new Date().getFullYear()
+    let lastFullFinancialYear = new Date().getFullYear()
     let firstFullFinancialYear = new Date(ratios[0].date).getFullYear()
-    let shareCount =0
+    let shareCount = 0
     if(latestEps){
-        lastFullFinancialYear=new Date(latestEps.date).getFullYear()
+        lastFullFinancialYear = new Date(latestEps.date).getFullYear()
         shareCount = latestEps.sharesOutstanding
     }
 
@@ -218,13 +218,16 @@ function handleCalculateAnalytics(ticker){
                     freeCashFlow = cashflowData.operatingCashFlow+cashflowData.capEx
                 }
                 let netProfitMargin = null
+                let netIncome=0
                 if(yearData){
                     netProfitMargin = yearData.netIncome/yearData.revenue
+                    netIncome = yearData.netIncome?yearData.netIncome: yearData.eps*yearData.sharesOutstanding
                 }
                 yearlyData[year]={
                     div:item.dividend,
                     ...yearData,
                     ...cashflowData,
+                    netIncome:netIncome,
                     netProfitMargin,
                     freeCashFlow,
                     date:year+'-11'
@@ -233,8 +236,11 @@ function handleCalculateAnalytics(ticker){
         }
     })
 
-    for(let i= firstFullFinancialYear;i<=lastFullFinancialYear;i++){
+    for(let i = firstFullFinancialYear;i<=lastFullFinancialYear;i++){
         let year = i
+        if(yearlyData[year]){
+           yearlyData[year].payoutRatio = yearlyData[year].div/yearlyData[year].eps
+        }
         if(!yearlyData[year]){
             let yearData = ratios.find(item => new Date(item.date).getFullYear()===year)
             let cashflowData = cashFlow.find(item => new Date(item.date).getFullYear()===year)     
@@ -243,13 +249,16 @@ function handleCalculateAnalytics(ticker){
                 freeCashFlow = cashflowData.operatingCashFlow+cashflowData.capEx
             }  
             let netProfitMargin = null
+            let netIncome=0            
             if(yearData){
                 netProfitMargin = yearData.netIncome/yearData.revenue
+                netIncome = yearData.netIncome                
             }
             yearlyData[year]={
                 div:0,
                 ...yearData,
-                ...cashflowData,    
+                ...cashflowData,
+                netIncome:netIncome,
                 netProfitMargin,                  
                 freeCashFlow,                          
                 date:year+'-11'
@@ -257,14 +266,15 @@ function handleCalculateAnalytics(ticker){
         }
     }
 
-
     let financialInputs= {
         freeCashFlow:{},
         netProfitMargin:{},
         eps:{},
         revenue:{},
         netIncome:{},
-        grossProfit:{}
+        grossProfit:{},
+        payoutRatio:{},
+        div:{}
     }
 
     Object.keys(yearlyData).forEach((item,index) =>{
@@ -320,7 +330,7 @@ function handleCalculateAnalytics(ticker){
         startingPrice:startingPrice,
         endingPE:averagePE,
         futureGrowthRate:financialInputs.eps.averageGrowth,
-        endingProfibility:financialInputs.netProfitMargin.average,
+        endingProfitability:financialInputs.netProfitMargin.average,
         shareCount,
         dcfDiscountRate:0.1,
         perpetuityGrowth:0.03,

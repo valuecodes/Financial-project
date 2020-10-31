@@ -814,15 +814,13 @@ export function calculateForecastChartOptions(forecastChart){
                 borderRadius:20,
                 color:'white',
                 align:'top',
+                borderWidth:1,
+                borderColor:'dimgray',
                 backgroundColor:function(context) {
-                    const { datasetIndex, dataIndex } = context
-                    if(datasetIndex===1&&dataIndex===startingX){
-                        return 'dimgray'
-                    }
-                    if(datasetIndex===1&&dataIndex===endingX){
-                        return 'dimgray'
-                    }
-                    return  '';
+                    return context.dataset.borderColor.split('.')[0]+'.5)'
+                },
+                color:function(context) {
+                    return context.datasetIndex===1?'white':'black'
                 },
                 formatter: function(value, context) {
                     const { datasetIndex, dataIndex } = context
@@ -832,7 +830,10 @@ export function calculateForecastChartOptions(forecastChart){
                     if(datasetIndex===1&&dataIndex===endingX){
                         return `${value.toFixed(2)}$ (${percentageChange.toFixed(1)}%)`
                     }
-                    return  '';
+                    if(datasetIndex===2&&dataIndex===endingX){
+                        return `${value.toFixed(2)}$ (${percentageChange.toFixed(1)}%)`
+                    }
+                    return  null;
                 }
             }
         },
@@ -859,12 +860,43 @@ export function calculateForecastChartOptions(forecastChart){
     }
 }
 
-export function calculateForecastFinancialsOptions(){
+export function calculateForecastFinancialsOptions(financialChart){
 
     return{
+        responsive:true,
+        maintainAspectRatio: false,
         plugins: {
             datalabels: {
-                display: false,
+                display: true,
+                borderRadius:20,
+                color:'white',
+                align:'center',
+                borderWidth:1,
+                borderColor:'dimgray',
+                font:{
+                    size:11
+                },
+                backgroundColor:function(context) {
+                    return context.dataset.borderColor.split('.')[0]+'.5)'
+                },
+                formatter: function(value, context) {
+                    const { datasetIndex, dataIndex,dataset } = context
+                    if(dataIndex===dataset.data.length-1||dataIndex===dataset.lastFullFinancialYearIndex){  
+                        let number = value
+                        let format = context.dataset.format
+                        switch(format){
+                            case '%':
+                                number = (number*100).toFixed(1)+'%'
+                                break
+                            case 'M':
+                                number = formatMillions(number)+' M'
+                                break
+                            default: number = number.toFixed(2)
+                        }                   
+                        return  number
+                    }
+                    return  null;
+                }
             }
         },
         barValueSpacing: 1,
@@ -873,7 +905,8 @@ export function calculateForecastFinancialsOptions(){
                 left: 0,
                 right: 25,
                 top: 0,
-                bottom:0 
+                bottom:0,
+                
             }
         },
         scales:{
@@ -892,6 +925,12 @@ export function calculateForecastFinancialsOptions(){
             yAxes: [
                 {  
                     id: 'y-axis-1',
+                    ticks: {
+                        maxTicksLimit: 8,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        suggestedMin: 0, 
+                    },
                 },
                 {  
                     type: 'linear',
