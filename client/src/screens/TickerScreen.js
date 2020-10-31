@@ -111,7 +111,7 @@ function Forecast({ticker,setTicker,navigation}){
         perpetuityGrowth=0,
         startingFreeCashFlow=0,
     } = forecastInputs
-
+    console.log(ticker)
     return(
         <div className='tickerForecast'>   
             <div className='forecastChartContainer'>                
@@ -123,6 +123,9 @@ function Forecast({ticker,setTicker,navigation}){
                     <li>
                         <h3>Intrinsic value per share</h3>
                         <h2 className='bold'>{roundToTwoDecimal(ticker.forecastSection.dcfTable.intrinsicValue)}$</h2>
+                    </li>
+                    <li>
+                        test
                     </li>
                 </ul>
                 <div className='chartContainer'>                                 
