@@ -14,8 +14,9 @@ export function calculateRatioChartComponents(ticker,options){
     const key = options.selected
     let priceData = ticker.filterByDate('priceData',options)
 
-    let ratios = [];
-    let ratioName=''
+    let ratios = []
+    let ratios2 = []
+    let ratioName = ''
 
     switch(key){
         case 'pe':
@@ -30,6 +31,11 @@ export function calculateRatioChartComponents(ticker,options){
             ratios = ticker.filterByDate('dividendData',options)
             ratioName='dividend'
             break
+        case 'ev/ebit':
+            ratios = ticker.filterByDate('balanceSheet',options)
+            ratios2 = ticker.filterByDate('incomeStatement',options)
+            ratioName = 'totalDebt'
+            break
         default: return ''
     }
 
@@ -38,25 +44,38 @@ export function calculateRatioChartComponents(ticker,options){
     let tickerPriceData=[]
 
     priceData.forEach(price =>{
-        let ratio=ratios.find(item => new Date(item.date).getFullYear()<=new 
-        Date(price.date).getFullYear())
+        let ratio=ratios.find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
         if(ratio){
             switch(key){
                 case 'pe':
                 case 'pb':
                     if(ratio[ratioName]){
-                        data.unshift(Number((price.close/ratio[ratioName]).toFixed(1)) )                        
+                        data.unshift(Number((price.close/ratio[ratioName]).toFixed(1)))         
                     }
+                    tickerPriceData.unshift(price.close)
                     break
                 case 'dividendYield':
                     let yearDivs = ratios.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
                     let totalDiv = yearDivs.reduce((a,b)=>a+b.dividend,0)
                     data.unshift(Number(((totalDiv/price.close)*100).toFixed(1)))
+                    tickerPriceData.unshift(price.close)
+                    break
+                case 'ev/ebit':
+                    let ratio2 = ratios2.find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
+                    let shareCount = ratio2.netIncome/ratio2.eps
+                    let marketCap = shareCount*price.close
+                    let debt = ratio.totalDebt?ratio.totalDebt:ratio.longTermDebt
+                    if(!ratio.totalDebt){
+                        ratioName='longTermDebt'
+                    }
+                    let ev = marketCap+ratio.totalDebt-ratio.cash
+                    let ebit = ratio2.operatingIncome
+                    data.unshift(ev/ebit)
+                    tickerPriceData.unshift(marketCap)
                     break
                 default: return ''
             }
             labels.unshift(price.date.substring(0, 7))
-            tickerPriceData.unshift(price.close)
         }
     })
     
@@ -69,7 +88,7 @@ export function calculateRatioChartComponents(ticker,options){
     let financialData = ratios.map(item => item[ratioName])
     let financialLabels = ratios.map(item => item.date.split('T')[0])
 
-    return { data, labels, tickerPriceData, financialData, financialLabels, ratios }
+    return { data, labels, tickerPriceData, financialData, financialLabels, ratios,ratioName:key }
 }
 
 export function calculateRatioFinacialChart(ratioChartComponents,options){
@@ -96,19 +115,37 @@ export function calculateRatioFinacialChart(ratioChartComponents,options){
 
 export function calculateRatioPriceChart(ratioChart,ratioChartComponents,options){
 
-    const { tickerPriceData,labels } = ratioChartComponents
+    const { data,tickerPriceData,labels,ratioName } = ratioChartComponents
 
     let ratioData = ratioChart.datasets[0].data
     let gradient = calculateChartBorderGradient(ratioData,options)
+
+    let ratioMin = Math.min(...data)
+    let ratioMax = Math.max(...data)
+    let averageTop=ratioMax-(ratioMax-ratioMin)/3
+    let averageBot=ratioMin+(ratioMax-ratioMin)/3
+
+    let reversed = false
+    if(ratioName==='dividendYield') reversed=true
+    let pointColors=[]
+    data.forEach(value =>{    
+        if(value<averageBot){
+            pointColors.push(reversed?'rgba(252, 3, 3,0.7)':'rgba(21, 209, 90,0.9)')             
+        }else if(value>averageTop){
+            pointColors.push(reversed?'rgba(21, 209, 90,0.9)':'rgba(252, 3, 3,0.7)')             
+        }else{
+            pointColors.push('rgba(235, 252, 3,0.4)')
+        }
+    })
 
     let dataSets=[]
 
     dataSets.push({
         label: 'Stock Price',
-        pointRadius:0,
+        pointRadius:data.length<200?4:2,
         pointHitRadius:0,
-        borderColor:gradient,
-        borderWidth:5,
+        pointBackgroundColor:pointColors,
+        borderWidth:1,
         data: tickerPriceData,    
     })
 
@@ -792,6 +829,7 @@ export function calculateRatioChart(ratioChartComponents,options){
         label: ratioName,
         pointRadius:0,
         pointHitRadius:0,
+        borderWidth:1,
         borderColor:'black',
         data: data,    
     })
@@ -877,7 +915,12 @@ export function calculateForecastChartComponents(ticker){
         eps={latest:0},
         netIncome={latest:0},
         netProfitMargin={latest:0},
-        payoutRatio={average:0,latest:0} 
+        payoutRatio={average:0,latest:0}, 
+        debt={latest:0,averageGrowth:0},
+        cash={latest:0},
+        ebit={latest:0},
+        ebitMargin={latest:0},
+        evEbit={latest:0},
     } = financialInputs
 
     let {
@@ -931,13 +974,16 @@ export function calculateForecastChartComponents(ticker){
                 netIncome: yearlyData[lastFullFinancialYear].netIncome,
                 freeCashFlow: startingFreeCashFlow,
                 eps: eps.latest,
+                debt: debt.latest,
+                ebit: ebit.latest,
+                evEbit: evEbit.latest,
                 netProfitMargin:yearlyData[lastFullFinancialYear].netProfitMargin,
                 payoutRatio:yearlyData[lastFullFinancialYear].payoutRatio,
                 date:i+'-12'
             }            
         }
     }
-    
+
     let futureMonths = priceData.filter(item => 
         new Date(item.date)<new Date(startingFinancialYear+11,0)&&
         new Date(item.date)>new Date(latestPriceDate)
@@ -952,29 +998,41 @@ export function calculateForecastChartComponents(ticker){
 
     let financialData={
         eps:{
-            data:[],colors:[],color:'rgba(13, 191, 85,0.9)',hidden:false,chart:'epsChart',yAxisID: 'y-axis-1',format:''
+            data:[],colors:[],color:'rgba(13, 191, 85,0.9)',hidden:false,chart:'epsChart',yAxisID: 'bar',format:''
         },
         div:{
-            data:[],colors:[],color:'rgba(201, 85, 85,0.9)',hidden:false,chart:'epsChart',yAxisID: 'y-axis-1',format:''
+            data:[],colors:[],color:'rgba(201, 85, 85,0.9)',hidden:false,chart:'epsChart',yAxisID: 'bar',format:''
         },
         payoutRatio:{
-            data:[],colors:[],color:'rgba(56, 56, 56,0.9)',hidden:false,chart:'epsChart',yAxisID: 'y-axis-2',order:1,format:'%'
+            data:[],colors:[],color:'rgba(56, 56, 56,0.9)',hidden:false,chart:'epsChart',yAxisID: 'line',order:1,format:'%'
         },
         revenue:{
-            data:[],colors:[],color:'rgba(13,135,212,0.9)',hidden:false,chart:'financialChart',yAxisID: 'y-axis-1',format:'M'
+            data:[],colors:[],color:'rgba(13,135,212,0.9)',hidden:false,chart:'financialChart',yAxisID: 'bar',format:'M'
         },
         grossProfit:{
-            data:[],colors:[],color:'rgba(159, 166, 85,0.9)',hidden:true,chart:'financialChart',yAxisID: 'y-axis-1',format:'M'
+            data:[],colors:[],color:'rgba(159, 166, 85,0.9)',hidden:true,chart:'financialChart',yAxisID: 'bar',format:'M'
         },
         netIncome:{
-            data:[],colors:[],color:'rgba(12,199,15,0.9)',hidden:false,chart:'financialChart',yAxisID: 'y-axis-1',format:'M'
+            data:[],colors:[],color:'rgba(12,199,15,0.9)',hidden:false,chart:'financialChart',yAxisID: 'bar',format:'M'
         },
         netProfitMargin:{
-            data:[],colors:[],color:'rgba(56, 56, 56,0.9)',hidden:false,chart:'financialChart',yAxisID: 'y-axis-2',order:1,format:'%'
+            data:[],colors:[],color:'rgba(56, 56, 56,0.9)',hidden:false,chart:'financialChart',yAxisID: 'line',order:1,format:'%'
         },
         freeCashFlow:{
-            data:[],colors:[],color:'rgba(99, 168, 144,0.9)',hidden:false,chart:'freeCashFlowChart',yAxisID: 'y-axis-1',format:'M'
+            data:[],colors:[],color:'rgba(99, 168, 144,0.9)',hidden:false,chart:'freeCashFlowChart',yAxisID: 'bar',format:'M'
+        },        
+        marketCap:{
+            data:[],colors:[],color:'rgba(13,135,212,0.9)',hidden:false,chart:'evChart',yAxisID: 'bar',format:'M'
+        },        
+        debt:{
+            data:[],colors:[],color:'rgba(201, 85, 85,0.9)',hidden:false,chart:'evChart',yAxisID: 'bar',format:'M'
+        },        
+        ebit:{
+            data:[],colors:[],color:'rgba(13, 191, 85,0.9)',hidden:false,chart:'evChart',yAxisID: 'bar',format:'M'
         },
+        evEbit:{
+            data:[],colors:[],color:'rgba(56, 56, 56,0.9)',hidden:false,chart:'evChart',yAxisID: 'line',format:'',order:1
+        },        
     }
 
     let numberOfIterations = 0
@@ -985,7 +1043,11 @@ export function calculateForecastChartComponents(ticker){
 
     let lastEps = yearlyData[startingFinancialYear]?yearlyData[startingFinancialYear].eps:eps.latest
     let latestEPS = yearlyData[startingFinancialYear]?yearlyData[startingFinancialYear].eps:eps.latest
-    let latestPrice = 0
+    let latestCash = cash.latest
+    let latestEbit = ebit.latest
+    let latestPrice = startingPrice
+    let latestDebt = debt.latest
+    let latestRevenue = 0
     let monthCount = 0
     let priceDiscount = 0
     let actualPrice = []
@@ -1023,13 +1085,29 @@ export function calculateForecastChartComponents(ticker){
                 if(new Date(item.date).getMonth()===0){
                     let fYear = year-1
                     Object.keys(financialData).forEach(item =>{
+
                         let growthRate = futureGrowthRate
                         if(year<lastFullFinancialYear){
                             growthRate=0 
                         } 
-                        
+
                         let calculatedValue = yearlyData[fYear][item] * (1 + (growthRate))**(futureYearNumber)
+                        if(futureYearNumber===1&&item==='freeCashFlow'){
+                            calculatedValue=startingFreeCashFlow
+                        }
                         let profitability = netProfitMargin.latest + ((profitabilityChange/10)*futureYearNumber)
+                        shareCount = netIncome.latest/eps.latest
+                        let marketCap = latestPrice*shareCount
+
+                        if(item==='debt'){
+                            latestCash = latestCash+(latestCash*growthRate)
+                            latestEbit = latestRevenue*(ebitMargin.latest+((profitabilityChange/10)*futureYearNumber))
+                            let ev = marketCap+latestDebt+latestCash
+                            financialData.evEbit.data.push(ev/latestEbit)
+                            financialData.debt.data.push(latestDebt)
+                            financialData.ebit.data.push(latestEbit)
+                        }
+
                         if(item==='netProfitMargin'){
                             calculatedValue = profitability
                         }
@@ -1037,9 +1115,8 @@ export function calculateForecastChartComponents(ticker){
                         let color = financialData[item].color
                         color = color.split('.')[0]+'.3)'
                         financialData[item].colors.push(color)  
+
                         if(item==='revenue'){
-                            
-                            shareCount = netIncome.latest/eps.latest
                             let newEps = (calculatedValue*profitability)/shareCount
                             let newNetIncome = calculatedValue*profitability
                             let newDiv = 0
@@ -1052,22 +1129,24 @@ export function calculateForecastChartComponents(ticker){
                                 newDiv = yearlyData[year].div
                                 newPayoutRatio = yearlyData[year].payoutRatio
                             }
-
+                            
+                            financialData.marketCap.data.push(marketCap)
                             financialData.eps.data.push(newEps)
-                            financialData.netIncome.data.push(newNetIncome)  
+                            financialData.netIncome.data.push(newNetIncome)
                             lastEps = latestEPS
                             latestEPS = newEps
+                            latestRevenue = calculatedValue
 
-                            if(payoutRatio.latest&&year>lastFullFinancialYear){
+                            if(year>lastFullFinancialYear){
                                 newPayoutRatio=(payoutRatio.latest+ (endingPayoutRatio-payoutRatio.latest)/10*futureYearNumber)
                                 newDiv = newEps*newPayoutRatio                              
                             }
-                            
+
                             totalDividends+=newDiv 
                             financialData.div.data.push(newDiv)  
                             financialData.payoutRatio.data.push(newPayoutRatio)  
                         }
-                        if(item!=='netIncome'&&item!=='eps'&&item!=='div'&&item!=='payoutRatio'){
+                        if(item!=='netIncome'&&item!=='eps'&&item!=='div'&&item!=='payoutRatio'&&item!=='marketCap'&&item!=='evEbit'&&item!=='debt'&&item!=='ebit'){
                             financialData[item].data.push(calculatedValue)
                         }                            
                         
@@ -1185,6 +1264,11 @@ export function calculateForecastChartComponents(ticker){
             categoryPercentage:5,
             datasets:[],
             labels:financialLabels
+        },
+        evChart:{
+            categoryPercentage:5,
+            datasets:[],
+            labels:financialLabels
         }
     }
 
@@ -1194,22 +1278,25 @@ export function calculateForecastChartComponents(ticker){
         let chartName = financialData[dataName].chart
         financialCharts[chartName].datasets.push({
             label:camelCaseToString(dataName),
-            type:financialData[dataName].yAxisID==='y-axis-2'?'line':'bar',
+            type:financialData[dataName].yAxisID==='line'?'line':'bar',
             data:financialData[dataName].data,
             backgroundColor:financialData[dataName].colors,
             barPercentage: 0.5,
             barThickness: 10,    
             borderWidth:2,
             yAxisID:financialData[dataName].yAxisID,
+            xAxisID:financialData[dataName].xAxisID,
             borderColor:financialData[dataName].colors[financialData[dataName].colors.length-1],
             fill:false,
             hidden:financialData[dataName].hidden,
             order:financialData[dataName].order?financialData[dataName].order:2,
             format:financialData[dataName].format,
             lastFullFinancialYearIndex,
+            stacked:financialData[dataName].stacked?true:false,
+            stack:financialData[dataName].stack
         })
     })
-
+    console.log(financialCharts)
     console.log('EPS: '+latestEPS)
     console.log('PRICE: '+latestPrice)
     console.log('PE: '+latestPrice/latestEPS)

@@ -78,7 +78,8 @@ function Forecast({ticker,setTicker,navigation}){
         revenue={averageGrowth:0},
         netIncome={averageGrowth:0},
         eps={averageGrowth:0},
-        grossProfit={averageGrowth:0},
+        div={averageGrowth:0},
+        debt={averageGrowth:0},
         price={latest:0},
         pe={latest:0,average:0},        
         payoutRatio={latest:0,average:0},        
@@ -216,8 +217,10 @@ function Forecast({ticker,setTicker,navigation}){
                         <h4>{roundToTwoDecimal(netIncome.averageGrowth*100)}%</h4> 
                         <label>EPS</label>
                         <h4>{roundToTwoDecimal(eps.averageGrowth*100)}%</h4> 
-                        <label>Gross Profit</label>
-                        <h4>{roundToTwoDecimal(grossProfit.averageGrowth*100)}%</h4> 
+                        <label>Dividends</label>
+                        <h4>{roundToTwoDecimal(div.averageGrowth*100)}%</h4> 
+                        <label>Debt</label>
+                        <h4>{roundToTwoDecimal(debt.averageGrowth*100)}%</h4> 
                         <label>Free Cash Flow</label>
                         <h4>{roundToTwoDecimal(freeCashFlow.averageGrowth*100)}%</h4> 
                         <h3>Annual Growth forecast </h3>
@@ -269,6 +272,12 @@ function Forecast({ticker,setTicker,navigation}){
                     <Line
                         data={ticker.forecastSection.epsChart}
                         options={ticker.forecastSection.epsOptions}
+                    />
+                </div>
+                <div className='chartContainerSmall'>
+                    <Line
+                        data={ticker.forecastSection.evChart}
+                        options={ticker.forecastSection.evOptions}
                     />
                 </div>
                 <div className='chartContainerSmall'>
@@ -444,7 +453,7 @@ function TickerRatios({ticker,setTicker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'pe',
-        options:['pe','pb','dividendYield'],
+        options:['pe','pb','dividendYield','ev/ebit'],
         time:{
             timeValue:'15.years-years',
             timeStart:new Date(),

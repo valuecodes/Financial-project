@@ -85,6 +85,8 @@ export function calculateChartBorderGradient(data,options){
             return 'Historical PB-ratio'
         case 'dividendYield':
             return 'Historical Dividend Yield'
+        case 'ev/ebit':
+            return 'Historical EV / Ebit'
         default: return ''
     }
 }
@@ -97,6 +99,8 @@ export function getFinancialKeyName(key){
             return 'Book value per share'
         case 'dividendYield':
             return 'Dividend history'
+        case 'ev/ebit':
+            return 'Total debt'
         default: return ''
     }
 }

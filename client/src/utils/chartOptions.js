@@ -261,6 +261,7 @@ export function eventChartOptions(){
 function createRatioAnnotations(ratioData,options){
     const { selected } = options
     let annotations=[]
+
     if(ratioData){
         const data = ratioData.datasets[0].data
         let ratioMin = Math.min(...data)
@@ -424,6 +425,8 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
                                     return 'P/B '+text
                                 case 'Historical Dividend Yield':
                                     return text+'%'
+                                case 'Historical EV / Ebit':
+                                    return 'EV / EBIT '+ text
                                 default: return ''
                             }
                         }
@@ -447,8 +450,6 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
                             }
       
                         }
-
-                        
 
                     }                    
                 }else{
@@ -916,6 +917,7 @@ export function calculateForecastFinancialsOptions(financialChart){
             barValueSpacing: 15,
             xAxes: [
                 { 
+                    id:'normal',
                     ticks: {
                         display: false
                     },   
@@ -923,11 +925,33 @@ export function calculateForecastFinancialsOptions(financialChart){
                         display:false
                     },
                     offset: true,             
-                }
+                },
+                { 
+                    id:'stacked',
+                    stacked:true,
+                    ticks: {
+                        display: false
+                    },   
+                    gridLines: {
+                        display:false
+                    },
+                    stack:'Stack 1'           
+                },
+                { 
+                    id:'stacked2',
+                    stacked:true,
+                    ticks: {
+                        display: false
+                    },   
+                    gridLines: {
+                        display:false
+                    },
+                    stack:'Stack 2'           
+                },
             ],
             yAxes: [
                 {  
-                    id: 'y-axis-1',
+                    id: 'bar',
                     ticks: {
                         maxTicksLimit: 8,
                         maxRotation: 0,
@@ -936,10 +960,22 @@ export function calculateForecastFinancialsOptions(financialChart){
                     },
                 },
                 {  
+                    id: 'barStacked',
+                    display: false,                    
+                    stacked:true,
+                    ticks: {
+                        maxTicksLimit: 8,
+                        suggestedMin: 0, 
+                    },
+                    gridLines: {
+                        display:false
+                    }  
+                },
+                {  
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    id: 'y-axis-2',
+                    id: 'line',
                     ticks: {
                         maxTicksLimit: 8,
                         maxRotation: 0,
