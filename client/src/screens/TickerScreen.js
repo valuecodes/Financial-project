@@ -6,7 +6,8 @@ import { Line, Bar } from 'react-chartjs-2';
 import { Ticker } from '../utils/ticker';
 import { 
     ratioChartOptions, 
-    barChartOptions 
+    barChartOptions, 
+    ratioChartPriceOptions
 } from '../utils/chartOptions'
 import SectionNav from '../components/SectionNav';
 import Options from '../components/Options'
@@ -473,14 +474,14 @@ function TickerRatios({ticker,setTicker,navigation}){
         <div className='section'>
             <Options options={options} setOptions={setOptions}/>
             <div className='ratioCharts'>
-                <div className='ratioChartContainer'>                                 
+                <div className='ratioChartContainer'>                                
                     {navigation.selected.name==='ratios'&&
                         <Line
                             id={'ratioChart'}
                             ref={ratioChartRef}
                             datasetKeyProvider={datasetKeyProvider}
-                            data={ticker.ratiosChart.ratioChartData}
-                            options={ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ticker.ratiosChart.ratioChartData)}
+                            data={ticker.ratiosChart.ratioChart}
+                            options={ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ticker.ratiosChart.ratioChart)}
                         />
                     }  
                 </div>
@@ -489,15 +490,15 @@ function TickerRatios({ticker,setTicker,navigation}){
                         id={'ratioPriceChart'}
                         ref={ratioPriceChartRef}
                         datasetKeyProvider={datasetKeyProvider}
-                        data={ticker.ratiosChart.priceChartData}
-                        options={ratioChartOptions(ratioChartRef,ratioPriceChartRef,options)}
+                        data={ticker.ratiosChart.priceChart}
+                        options={ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options)}
                     />                 
                 </div>
                 <div className='ratioChartContainer'>
                     {navigation.selected.name==='ratios'&&
                         <Bar
                             datasetKeyProvider={datasetKeyProvider}
-                            data={ticker.ratiosChart.financialChartData}
+                            data={ticker.ratiosChart.financialChart}
                             options={barChartOptions()}
                         />                 
                     }

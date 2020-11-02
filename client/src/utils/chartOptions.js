@@ -261,11 +261,12 @@ export function eventChartOptions(){
 function createRatioAnnotations(ratioData,options){
     const { selected } = options
     let annotations=[]
-
+    let ratioMin=0
+    let ratioMax=0
     if(ratioData){
         const data = ratioData.datasets[0].data
-        let ratioMin = Math.min(...data)
-        let ratioMax = Math.max(...data)
+        ratioMin = Math.min(...data)
+        ratioMax = Math.max(...data)
         let averageTop=ratioMax-(ratioMax-ratioMin)/3
         let averageBot=ratioMin+(ratioMax-ratioMin)/3
         annotations.push({
@@ -302,13 +303,12 @@ function createRatioAnnotations(ratioData,options){
             borderWidth: 1,
         })
     }    
-    return annotations
+    return {annotations,ratioMin,ratioMax}
 }
 
 export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratioData=null){
 
-    let annotations = createRatioAnnotations(ratioData,options)
-
+    let {annotations,ratioMax,ratioMin} = createRatioAnnotations(ratioData,options)
     return {    
         responsive:true,
         maintainAspectRatio: false,
@@ -473,6 +473,177 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
                     minRotation: 0
                 },
             }],
+             yAxes:[{
+                ticks:{
+                    min:ratioMin,
+                    max:ratioMax                  
+                }
+            }]
+        },
+    }
+}
+export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,ratioData=null){
+
+    return {    
+        responsive:true,
+        maintainAspectRatio: false,
+        plugins: {
+            datalabels: {
+                display: false,
+            },
+        },
+        layout: {
+            padding: {
+               left     : 0,
+               right    : 0,
+               top      : 0,
+               bottom   : 0
+            }
+          },
+        fontSize:20,
+        legend: {
+            align:'start',
+            padding:20,
+            labels: {
+                fontSize: 20,
+                padding:20,
+                fontColor:'white',
+                boxWidth: 0,
+            }
+        },
+        tooltips: {
+            mode: 'index',
+            intersect: false,
+            titleFontColor:'rgba(0,0,0,0)',
+            enabled:false,
+            custom: function(tooltipModel) {
+
+                let ratioChart = ratioChartRef.current
+                let ratioPrice = ratioPriceChartRef.current
+                
+                let toolTipItems=[
+                    {id:'tooltipRatio',type:'point',chart:ratioChart,chartIndex:0},
+                    {id:'toolTipPrice',type:'point',chart:ratioPrice,chartIndex:1},
+                    {id:'tooltipRatioLabel',type:'label',chart:ratioChart,chartIndex:0},
+                    {id:'toolTipPricelabel',type:'label',chart:ratioPrice,chartIndex:1},
+                ]
+
+                if(tooltipModel.dataPoints){
+
+                    let tooltipPoints = tooltipModel.dataPoints.length
+                    let index = tooltipModel.dataPoints[0].index
+
+                    for(var i=0;i<tooltipPoints;i++){
+                        toolTipItems.forEach((item,index) =>{
+                            let tooltipItem = document.getElementById(item.id);
+                            if(!tooltipItem){
+                                tooltipItem = createTooltipItem(item) 
+                            }                            
+                            switch(item.type){
+                                case 'point':
+                                    setTooltipPoint(tooltipItem,item.chart,item.chartIndex)
+                                    break
+                                case 'label':
+                                    setToolTipLabel(tooltipItem,item.chart,item.chartIndex)
+                                    break
+                                default:
+                            }
+                        })
+
+                        function createTooltipItem(item){
+                            let tooltipItem = document.createElement('div');                 
+                            tooltipItem.id = item.id;
+                            tooltipItem.innerHTML = '<table></table>';
+                            document.body.appendChild(tooltipItem) 
+                            return tooltipItem
+                        }
+
+                        function setToolTipLabel(item,chart,chartIndex){  
+
+                            if (tooltipModel.body) {
+                                let text =chart.props.data.datasets[0].data[index].toFixed(1)
+                                var tableRoot = item.querySelector('table');
+                                if(chartIndex===0){
+                                    text = formatRatio(text,chart.props.data.datasets[0].label)
+                                }else{
+                                    text = text + '$'
+                                }
+                                tableRoot.textContent = text;
+                            }      
+
+                            let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
+                            let position = chart.chartInstance.canvas.getBoundingClientRect()
+
+                            if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
+                                item.style.opacity = 1;
+                                item.style.position = 'absolute';
+                                item.style.left = position.left + window.pageXOffset +tooltipModel.caretX+15  + 'px';
+                                item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
+                                item.style.backgroundColor='dimgray'
+                                item.style.color='white'
+                                item.style.fontSize='15px'
+                                item.style.borderRadius='25%'                                
+                                item.style.padding='5px'                                  
+                            }
+
+                        }
+
+                        function formatRatio(text,ratio){
+                            switch(ratio){
+                                case 'Historical PE-ratio':
+                                    return 'P/E '+text
+                                case 'Historical PB-ratio':
+                                    return 'P/B '+text
+                                case 'Historical Dividend Yield':
+                                    return text+'%'
+                                case 'Historical EV / Ebit':
+                                    return 'EV / EBIT '+ text
+                                default: return ''
+                            }
+                        }
+
+                        function setTooltipPoint(item,chart){                    
+                            let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
+                            let position = chart.chartInstance.canvas.getBoundingClientRect()
+                            if(chart.props){
+                                if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
+                                    item.style.opacity = 1;
+                                    item.style.position = 'absolute';
+                                    item.style.left = position.left + window.pageXOffset +tooltipModel.caretX-6  + 'px';
+                                    item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
+                                    item.style.pointerEvents = 'none';
+                                    item.style.width = '10px';
+                                    item.style.height = '10px';
+                                    item.style.borderRadius = '20px';
+                                    item.style.border = '2px solid black';
+                                    item.style.backgroundColor = 'white';                                   
+                                }                                   
+                            }
+      
+                        }
+
+                    }                    
+                }else{
+                    toolTipItems.forEach(item =>{
+                        if(document.getElementById(item.id)){
+                            document.getElementById(item.id).style.opacity=0;
+                        }     
+                    })
+                }
+            },
+            callbacks: {
+                label: function (tooltipItem, data) {
+                    return tooltipItem.yLabel.toFixed(1)+'$'
+            }}
+        },  
+        scales: {
+            xAxes: [{   
+                ticks: {
+                    maxTicksLimit: 8,
+                    maxRotation: 0,
+                    minRotation: 0
+                },
+            }],
         },
     }
 }
@@ -483,7 +654,14 @@ export function barChartOptions(){
         maintainAspectRatio: false,
         plugins: {
             datalabels: {
-                // display: false,
+                color:'white',
+                backgroundColor:'rgba(92, 92, 92,0.2)',
+                align:'center',
+                anchor:'center',
+                borderRadius:20,
+                formatter: (value, ctx) => {
+                    return value.toFixed(1);
+                },
             },
         },
         fontSize:20,
