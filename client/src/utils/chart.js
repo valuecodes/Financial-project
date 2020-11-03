@@ -10,140 +10,6 @@ import { stochasticOscillatorGradient, oscillatorPriceGradient } from "./calcula
 
 Chart.defaults.global.datasets.bar.categoryPercentage = 0.95;
 
-export function calculateRatioChartComponents(ticker,options){
-
-    const key = options.selected
-    let priceData = ticker.filterByDate('priceData',options)
-    let ratios=[]
-
-    let ratioName = ''
-    let data = []
-    let labels = []
-    let tickerPriceData=[]
-    let yearlyData={}
-
-    priceData.forEach(price =>{
-        
-        let income = ticker.incomeStatement.
-            find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
-        let balance = ticker.balanceSheet
-            .find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
-
-        let year = new Date(price.date).getFullYear()
-        let ratio = null
-        let closePrice = price.close
-        let financialValue = null
-
-        switch(key){
-            case 'pe':
-                if(income){
-                    ratio = price.close/income.eps
-                    yearlyData[year]=income.eps
-                    ratioName='Historical PE-ratio'
-                }
-                break
-            case 'pb':
-                if(balance){
-                    ratio = price.close/balance.bookValuePerShare  
-                    yearlyData[year] = balance.bookValuePerShare     
-                    ratioName='Historical PB-ratio'           
-                }
-                break
-            case 'dividendYield':
-                let yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
-                if(yearDivs.length===0){
-                    yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear()+1)
-                }
-                let totalDiv = yearDivs.reduce((a,b)=>a+b.dividend,0)
-                ratio = (totalDiv/price.close)*100
-                yearlyData[year] = totalDiv      
-                ratioName='Historical Dividend Yield'                 
-                break
-            case 'ev/ebit':
-                if(income&&balance){
-                    let shareCount = income.netIncome / income.eps
-                    let marketCap = shareCount*price.close
-                    let debt = balance.totalDebt?balance.totalDebt:balance.longTermDebt
-                    let ev = marketCap+debt-balance.cash
-                    let ebit = income.operatingIncome
-                    ratio = ev/ebit
-                    closePrice = marketCap
-                    yearlyData[year] = debt   
-                    console.log(shareCount,marketCap,debt,ev,ebit,)
-                    ratioName='Historical EV / Ebit' 
-                }                      
-                break
-            default: return ''
-        }
-        if(ratio!==null){
-            data.unshift(Number((ratio).toFixed(1)))
-            tickerPriceData.unshift(closePrice)                                    
-            labels.unshift(price.date.substring(0, 7))
-        }
-    })
-
-
-    let financialData = Object.values(yearlyData)
-    let financialLabels = Object.keys(yearlyData)
-
-    ticker.ratiosChart.ratioChartData = {
-        datasets:[{
-            label: ratioName,
-            pointRadius:0,
-            pointHitRadius:0,
-            borderWidth:1,
-            borderColor:'black',
-            data: data,  
-        }],
-        labels:labels
-    }
-
-    let ratioMin = Math.min(...data)
-    let ratioMax = Math.max(...data)
-    let averageTop=ratioMax-(ratioMax-ratioMin)/3
-    let averageBot=ratioMin+(ratioMax-ratioMin)/3
-
-    let reversed = false
-    if(key==='dividendYield') reversed=true
-    let pointColors=[]
-    data.forEach(value =>{    
-        if(value<averageBot){
-            pointColors.push(reversed?'rgba(252, 3, 3,0.7)':'rgba(21, 209, 90,0.9)')             
-        }else if(value>averageTop){
-            pointColors.push(reversed?'rgba(21, 209, 90,0.9)':'rgba(252, 3, 3,0.7)')             
-        }else{
-            pointColors.push('rgba(235, 252, 3,0.4)')
-        }
-    })
-
-    ticker.ratiosChart.priceChartData ={
-        datasets:[{
-            label: 'Stock Price',
-            pointRadius:data.length<200?4:2,
-            pointHitRadius:0,
-            pointBackgroundColor:pointColors,
-            borderWidth:1,
-            data: tickerPriceData, 
-        }],
-        labels:labels
-    }
-    
-    ticker.ratiosChart.financialChartData ={
-        datasets:[{
-            label: 'financialKey',
-            backgroundColor:'rgba(97, 194, 115,0.8)',
-            data: financialData,
-            categoryPercentage:0.5,
-            maxBarThickness: 20,
-            borderWidth:2,
-            borderColor:'rgb(89, 89, 89)'  
-        }],
-        labels:financialLabels
-    }
-
-    return { data, labels, tickerPriceData, financialData, financialLabels, ratios,ratioName:key}
-}
-
 
 export function calculatePriceChart(ticker,options){
     
@@ -568,232 +434,144 @@ function getInsiderTradeType(type){
       }
 }
 
-export function calculateFinancialChartComponents(ticker,options){
+export function calculateFinancialChart(ticker,options){
 
-    let selectedStatement = options.selected
-    let financialData = ticker.filterByDate(selectedStatement,options)
-    if(selectedStatement==='dividends'){
-        financialData = ticker.filterByDate('incomeStatement',options)
+    const { selected } = options
+
+    let financialSections={
+        incomeStatement:[
+            {type:'bar',ratio:'revenue',color:'rgba(70, 125, 189,0.8)'},
+            {type:'bar',ratio:'netIncome',color:'rgba(97, 194, 115,0.8)'},
+            {type:'line',ratio:'netProfitMargin',format:'%',dataLabels:true,yAxisID:'y-axis-2'},
+        ],
+        balanceSheet:[
+            {type:'bar',ratio:'currentAssets',color:'rgba(97, 194, 115,0.8)'},
+            {type:'bar',ratio:'currentLiabilities',color:'rgba(194, 128, 128,0.8)'},
+            {type:'line',ratio:'currentRatio',format:'',dataLabels:true,yAxisID:'y-axis-2'},
+        ],
+        cashFlow:[
+            {type:'bar',ratio:'operatingCashFlow',color:'rgba(70, 125, 189,0.8)'},
+            {type:'bar',ratio:'investingCashFlow',color:'rgba(252, 236, 3,0.6)'},
+            {type:'bar',ratio:'financingCashFlow',color:'rgba(194, 128, 128,0.8)'},
+            {type:'line',ratio:'freeCashFlow',format:'',fill:true,color:'rgba(143, 143, 143,0.3)'},
+        ],
+        dividends:[
+            {type:'bar',ratio:'eps',color:'rgba(70, 125, 189,0.8)'},
+            {type:'bar',ratio:'div',color:'rgba(194, 128, 128,0.8)'},
+            {type:'line',ratio:'payoutRatio',format:'%',dataLabels:true,yAxisID:'y-axis-2'},            
+        ]
     }
-    let dividends = ticker.dividendData
 
-    let data1=[]
-    let data2=[]
-    let data3=[]
-    let data4=[]
-    let labels=[]
-    
-    financialData.forEach(item =>{
-        switch(selectedStatement){
-            case 'incomeStatement':
-                data1.unshift(item.revenue)
-                data2.unshift(item.netIncome)                
-                data3.unshift((item.netIncome/item.revenue)*100)
-                break
-            case 'balanceSheet':
-                data1.unshift(item.currentAssets)
-                data2.unshift(item.currentLiabilities)
-                data3.unshift(item.currentAssets/item.currentLiabilities)
-                break
-            case 'cashFlow':
-                data1.unshift(item.operatingCashFlow)
-                data2.unshift(item.investingCashFlow)
-                data3.unshift(item.financingCashFlow)
-                data4.unshift(item.operatingCashFlow-item.capEx)
-                break
-            case 'dividends':
-                let yearDivs = dividends.filter(div => new Date(div.date).getFullYear()===new Date(item.date).getFullYear())
-                    .reduce((a,c)=>a+c.dividend,0)
-                data1.unshift(item.eps)      
-                data2.unshift(yearDivs)   
-                data3.unshift((yearDivs/item.eps)*100)   
-                break
-            default: break
-        }
-        labels.unshift(item.date.substring(0, 7))
+    let chartData=[]
+
+    financialSections[selected].forEach(chart=>{
+        let ratioData = ticker.getYearlyFinancialRatio(chart.ratio)
+        chartData.push({...ratioData,...chart})
     })
-    let fullFinancialData = ticker.getTickerData(selectedStatement)
-    return { data1, data2, data3, data4, labels, financialData, fullFinancialData }
+
+    let datasets = [] 
+    let labels = chartData[0].dateArray
+
+    chartData.forEach(chart =>{
+        datasets.push({    
+            type:chart.type, 
+            fill:chart.color?true:false,   
+            label: chart.name,
+            backgroundColor: chart.ratioArray.map(i => chart.color),
+            yAxisID: chart.yAxisID||'y-axis-1',
+            pointRadius:0,
+            pointHitRadius:5,
+            borderColor:'black',
+            data: chart.format==='%'?chart.ratioArray.map(i=>i*100):chart.ratioArray,   
+            categoryPercentage:0.5,
+            borderColor:'dimgray',
+            datalabels:chart.dataLabels?lineDataLabels(chart.format):{}
+        })
+    })
+
+    return {datasets,labels}    
 }
 
-export function calculateFinancialChart(chartComponents,options){
-    const {
-        data1,
-        data2,
-        data3,
-        data4,
-        labels,
-    } = chartComponents
-
-    let selectedStatement = options.selected 
-
-    let bg1=[]
-    let bg2=[]
-    let bg3=[]
-
-    let label1=''
-    let label2=''
-    let label3=''
-    let label4=''
-
-    switch(selectedStatement){
-        case 'incomeStatement':
-            bg1 = data1.map(item => 'rgba(70, 125, 189,0.8)')
-            bg2 = data1.map(item => 'rgba(97, 194, 115,0.8)')
-            label1='Revenue'            
-            label2='Net Income'    
-            label3='Profit Margin'              
-            break
-        case 'balanceSheet':
-            bg1 = data1.map(item => 'rgba(97, 194, 115,0.8)')
-            bg2 = data1.map(item => 'rgba(194, 128, 128,0.8)')
-            label1='Current Assets'
-            label2='Current Liabilities'
-            label3='Current Ratio'
-            break
-        case 'cashFlow':
-            bg1 = data1.map(item => 'rgba(70, 125, 189,0.8)')
-            bg2 = data1.map(item => 'rgba(252, 236, 3,0.6)')
-            bg3 = data1.map(item => 'rgba(194, 128, 128,0.8)')
-            label1='Operating Cashflow'        
-            label2='Investing Cashflow'        
-            label3='Financing Cashflow'        
-            label4='Free Cashflow'        
-            break
-        case 'dividends':
-            bg1 = data1.map(item => 'rgba(70, 125, 189,0.8)')
-            bg2 = data1.map(item => 'rgba(194, 128, 128,0.8)')
-            label1='EPS'            
-            label2='Dividend'    
-            label3='Payout Ratio'    
-            break
-        default: break
+function lineDataLabels(format){
+    return{
+        display: true,
+        backgroundColor:'dimgray',
+        borderRadius:5,
+        color:'white',
+        padding:3,
+        formatter: function(value, context) {
+            let text = value>=10?value.toFixed(0):value.toFixed(1)
+            return text+format
+        }            
     }
-
-    let dataSets = [];
-    
-    dataSets.push({
-        label: label1,
-        backgroundColor:bg1,
-        yAxisID: 'y-axis-1',
-        pointRadius:0,
-        pointHitRadius:5,
-        borderColor:'black',
-        data: data1,   
-        categoryPercentage:0.5 
-    })
-    dataSets.push({
-        label: label2,
-        backgroundColor:bg2,
-        yAxisID: 'y-axis-1',
-        pointRadius:0,
-        pointHitRadius:5,
-        borderColor:'black',
-        data: data2,    
-        categoryPercentage:0.5
-    })
-
-    if(
-        selectedStatement==='incomeStatement'||
-        selectedStatement==='dividends'||
-        selectedStatement==='balanceSheet'
-    ){
-        dataSets.push({
-            type:'line',
-            label: label3,
-            yAxisID: 'y-axis-2',
-            pointRadius:0,
-            pointHitRadius:5,
-            borderColor:'dimgray',
-            data: data3,    
-            categoryPercentage:0.5,
-            fill: false,
-            datalabels: {
-                display: true,
-                backgroundColor:'dimgray',
-                borderRadius:5,
-                color:'white',
-                padding:3,
-                formatter: function(value, context) {
-                    let text = value>=10?value.toFixed(0):value.toFixed(1)
-                    if(selectedStatement!=='balanceSheet') text+='%'
-                    return text
-                }
-            }
-        })            
-    }    
-    if(selectedStatement==='cashFlow'){
-        dataSets.push({
-            label: label3,
-            backgroundColor:bg3,
-            pointRadius:0,
-            pointHitRadius:5,
-            borderColor:'black',
-            data: data3,    
-            categoryPercentage:0.5
-        })
-        dataSets.push({
-            label: label4,
-            borderColor:'black',
-            data: data4,   
-            type: 'line' 
-        })
-    }
-    return {
-        datasets:dataSets,
-        labels: labels
-    }    
-
 }
 
 export function calculateRatioCharts(ticker,options){
+
     const { selected } = options
     const { priceData } = ticker
 
-    let label = ''   
-    let priceRatio={ratioArray:[],dateArray:[],priceArray:[]} 
-    let financialData={}
-    let financialData2={}
-
-    switch(selected){
-        case 'pe':
-            priceRatio = ticker.getPriceRatio('pe',options)
-            financialData = ticker.getYearlyFinancialRatio('eps',options)
-            label='Historical PE-ratio'
-            break
-        break
-        case 'pb':
-            priceRatio = ticker.getPriceRatio('pb',options)
-            financialData = ticker.getYearlyFinancialRatio('bookValuePerShare',options)            
-            label='Historical PB-ratio'
-            break
-        case 'dividendYield':
-            priceRatio = ticker.getPriceRatio('divYield',options)
-            label='Historical Dividend Yield'
-            financialData = ticker.getYearlyFinancialRatio('div',options)                        
-            break
-        case 'ev/ebit':
-            priceRatio = ticker.getPriceRatio('evEbit',options)
-            label='Historical EV / Ebit'
-            financialData2 = ticker.getYearlyFinancialRatio('debt',options)  
-            financialData = ticker.getYearlyFinancialRatio('marketCap',options)  
-            break
-        default:break
+    const ratiosSections={
+        pe:{
+            priceRatio:'pe',
+            financialRatios:['eps'],
+            label:'Historical PE-ratio'
+        },
+        pb:{
+            priceRatio:'pb',
+            financialRatios:['bookValuePerShare'],
+            label:'Historical PB-ratio'
+        },
+        dividendYield:{
+            priceRatio:'divYield',
+            financialRatios:['div'],
+            label:'Historical Dividend Yield',
+        },
+        'ev/ebit':{
+            priceRatio:'evEbit',
+            financialRatios:['marketCap','debt'],
+            label:'Historical EV / Ebit',
+            dataLabels:false,
+            ratioColors:['rgba(97, 194, 115,0.8)','rgba(197, 94, 115,0.8)']
+        },
+        ps:{
+            priceRatio:'ps',
+            financialRatios:['price','revenuePerShare'],
+            label:'Historical Price to Sales',
+            ratioColors:[,'rgba(197, 94, 115,0.8)','rgba(97, 194, 115,0.8)']
+        },
+        pfcf:{
+            priceRatio:'pfcf',
+            financialRatios:['price','freeCashFlowPerShare'],
+            label:'Historical Price to Free cash flow',
+            ratioColors:[,'rgba(197, 94, 115,0.8)','rgba(97, 194, 115,0.8)']
+        }
     }
 
-    let ratioData = priceRatio.ratioArray.reverse()
-    let labels = priceRatio.dateArray.reverse()
-    let ratioPriceData = priceRatio.priceArray.reverse()
+    const { 
+        priceRatio, 
+        financialRatios,
+        financialRatio2, 
+        label, 
+        dataLabels,
+        ratioColors,
+    } = ratiosSections[selected]
+    
 
-    let ratioMin = Math.min(...ratioData)
-    let ratioMax = Math.max(...ratioData)
-    let averageTop=ratioMax-(ratioMax-ratioMin)/3
-    let averageBot=ratioMin+(ratioMax-ratioMin)/3
+    const { ratioArray, dateArray, priceArray } = ticker.getPriceRatio(priceRatio,options)
+    
+    const financialData = financialRatios
+        .map(ratioName=> ticker.getYearlyFinancialRatio(ratioName,options))
+
+    const ratioMin = Math.min(...ratioArray)
+    const ratioMax = Math.max(...ratioArray)
+    const averageTop=ratioMax-(ratioMax-ratioMin)/3
+    const averageBot=ratioMin+(ratioMax-ratioMin)/3
 
     let reversed = false
     if(selected==='dividendYield') reversed=true
-    let pointColors=[]
-    ratioData.forEach(value =>{    
+    const pointColors=[]
+    ratioArray.forEach(value =>{    
         if(value<averageBot){
             pointColors.push(reversed?'rgba(252, 3, 3,0.7)':'rgba(21, 209, 90,0.9)')             
         }else if(value>averageTop){
@@ -810,53 +588,46 @@ export function calculateRatioCharts(ticker,options){
             pointHitRadius:0,
             borderWidth:1,
             borderColor:'black',
-            data: ratioData,  
+            data: ratioArray,  
         }],
-        labels:labels
+        labels:dateArray
     }
 
     let priceChart ={
         datasets:[{
             label: 'Stock Price',
-            pointRadius:ratioPriceData.length<200?4:2,
+            pointRadius:priceArray.length<200?4:2,
             pointHitRadius:0,
             pointBackgroundColor:pointColors,
             borderWidth:1,
-            data: ratioPriceData, 
+            data: priceArray, 
         }],
-        labels:labels
+        labels:dateArray
     }
 
     let financialCharts=[]
-    financialCharts.push(
-        {
-            label: financialData.name,
-            backgroundColor:'rgba(97, 194, 115,0.8)',
-            data: financialData.data,
-            categoryPercentage:0.5,
-            maxBarThickness: 20,
-            borderWidth:2,
-            borderColor:'rgb(89, 89, 89)'  
-        },
-    )
-    if(selected==='ev/ebit'){
+    financialData.forEach((data,index) =>{
         financialCharts.push(
             {
-                label: financialData2.name,
-                backgroundColor:'rgba(197, 94, 115,0.8)',
-                data: financialData2.data,
+                label: data.name,
+                backgroundColor: ratioColors?ratioColors[index]:'rgba(97, 194, 115,0.8)',
+                data: data.ratioArray,
                 categoryPercentage:0.5,
                 maxBarThickness: 20,
                 borderWidth:2,
-                borderColor:'rgb(89, 89, 89)'  
-            }
+                borderColor:'rgb(89, 89, 89)', 
+                datalabels:{
+                    display:dataLabels===false?false:true,
+                } 
+            },
         )        
-    }
+    })
 
     let financialChart ={
         datasets:financialCharts,
-        labels:financialData.dates
+        labels:financialData[0].dateArray
     }
+
     return { ratioChart, priceChart, financialChart }
 }
 
@@ -918,30 +689,6 @@ export function calculateDividendChart(chartComponents,options){
         datasets:dataSets,
         labels
     }    
-}
-
-export function calculateRatioChart(ratioChartComponents,options){
-
-    const { data, labels } = ratioChartComponents
-
-    let dataSets=[]
-
-    const key = options.selected
-    const ratioName = getRatioName(key)
-
-    dataSets.push({
-        label: ratioName,
-        pointRadius:0,
-        pointHitRadius:0,
-        borderWidth:1,
-        borderColor:'black',
-        data: data,    
-    })
-
-    return {
-        datasets:dataSets,
-        labels: labels
-    }
 }
 
 export function calculateStatCharts(chartComponents){

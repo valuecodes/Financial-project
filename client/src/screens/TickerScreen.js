@@ -391,11 +391,6 @@ function Financials({ticker,setTicker,navigation}){
     const [options,setOptions]=useState({
         selected:'incomeStatement',
         options:['incomeStatement','balanceSheet','cashFlow','dividends'],
-        time:{
-            timeValue:'15.years-years',
-            timeStart:new Date(),
-            timeEnd:new Date(),            
-        },
     })
 
     useEffect(()=>{
@@ -404,11 +399,11 @@ function Financials({ticker,setTicker,navigation}){
             setTicker({...updated})
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[options])  
+    },[options,navigation])  
 
     return(
         <div className='tickerFinancials'>
-            <Options options={options} setOptions={setOptions}/>        
+            <Options options={options} setOptions={setOptions} showTimePeriod={false}/>        
             <div className='financialChartContainer'>
                 {navigation.selected.name==='financials'&&
                     <Bar
@@ -454,7 +449,7 @@ function TickerRatios({ticker,setTicker,navigation}){
 
     const [options,setOptions]=useState({
         selected:'pe',
-        options:['pe','pb','dividendYield','ev/ebit'],
+        options:['pe','pb','dividendYield','ev/ebit','ps','pfcf'],
         time:{
             timeValue:'15.years-years',
             timeStart:new Date(),
@@ -499,7 +494,7 @@ function TickerRatios({ticker,setTicker,navigation}){
                         <Bar
                             datasetKeyProvider={datasetKeyProvider}
                             data={ticker.ratiosChart.financialChart}
-                            options={barChartOptions()}
+                            options={barChartOptions(options)}
                         />                 
                     }
                 </div>

@@ -166,7 +166,7 @@ export function financialChartOptions(options){
         scales: {            
             xAxes: [{  
                 ticks: {
-                    maxTicksLimit: 8,
+                    maxTicksLimit: 16,
                     maxRotation: 0,
                     minRotation: 0,
                 },
@@ -259,12 +259,17 @@ export function eventChartOptions(){
 } 
 
 function createRatioAnnotations(ratioData,options){
+    
     const { selected } = options
     let annotations=[]
     let ratioMin=0
     let ratioMax=0
     if(ratioData){
-        const data = ratioData.datasets[0].data
+        let data =[] 
+        if(ratioData.datasets){
+            data = ratioData.datasets[0].data
+        }
+        
         ratioMin = Math.min(...data)
         ratioMax = Math.max(...data)
         let averageTop=ratioMax-(ratioMax-ratioMin)/3
@@ -417,20 +422,6 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
 
                         }
 
-                        function formatRatio(text,ratio){
-                            switch(ratio){
-                                case 'Historical PE-ratio':
-                                    return 'P/E '+text
-                                case 'Historical PB-ratio':
-                                    return 'P/B '+text
-                                case 'Historical Dividend Yield':
-                                    return text+'%'
-                                case 'Historical EV / Ebit':
-                                    return 'EV / EBIT '+ text
-                                default: return ''
-                            }
-                        }
-
                         function setTooltipPoint(item,chart){                    
                             let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
                             let position = chart.chartInstance.canvas.getBoundingClientRect()
@@ -481,7 +472,23 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
             }]
         },
     }
+}                        
+function formatRatio(text,ratio){
+    switch(ratio){
+        case 'Historical PE-ratio':
+            return 'P/E '+text
+        case 'Historical PB-ratio':
+            return 'P/B '+text
+        case 'Historical Dividend Yield':
+            return text+'%'
+        case 'Historical EV / Ebit':
+            return 'EV / EBIT '+ text
+        case 'Historical Price to Sales':
+            return 'P/S '+ text
+        default: return text
+    }
 }
+
 export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,ratioData=null){
 
     return {    
@@ -588,20 +595,6 @@ export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,
 
                         }
 
-                        function formatRatio(text,ratio){
-                            switch(ratio){
-                                case 'Historical PE-ratio':
-                                    return 'P/E '+text
-                                case 'Historical PB-ratio':
-                                    return 'P/B '+text
-                                case 'Historical Dividend Yield':
-                                    return text+'%'
-                                case 'Historical EV / Ebit':
-                                    return 'EV / EBIT '+ text
-                                default: return ''
-                            }
-                        }
-
                         function setTooltipPoint(item,chart){                    
                             let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
                             let position = chart.chartInstance.canvas.getBoundingClientRect()
@@ -648,7 +641,7 @@ export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,
     }
 }
 
-export function barChartOptions(){
+export function barChartOptions(options){
     return{    
         responsive:true,
         maintainAspectRatio: false,
@@ -660,6 +653,7 @@ export function barChartOptions(){
                 anchor:'center',
                 borderRadius:20,
                 formatter: (value, ctx) => {
+                    if(!value) return ''
                     return value.toFixed(1);
                 },
             },
@@ -678,8 +672,20 @@ export function barChartOptions(){
         tooltips: {
             mode: 'index',
             intersect: false,
-            titleFontColor:'rgba(0,0,0,0)',
-        },  
+            callbacks: {
+                label: function (tooltipItem, data) {
+                    const { datasetIndex } = tooltipItem
+                    let value = tooltipItem.yLabel
+                    let label = data.datasets[datasetIndex].label
+                    if(options.selected==='ev/ebit'){
+                        value = formatMillions(value)+'M'
+                    }else{
+                        value=value.toFixed(2)
+                    }
+                    return label+' '+value
+                }
+            }
+        },
         scales: {
             yAxes: [{
                 ticks: {

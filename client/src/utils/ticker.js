@@ -1,6 +1,20 @@
 import { formatValue, getNumberOfWeek, roundToTwoDecimal, camelCaseToString } from "./utils";
-import { calculatePriceChart, calculateEventChart, calculateRatioFinacialChart, calculateRatioChart, calculateRatioPriceChart, calculateRatioChartComponents, calculateFinancialChartComponents, calculateFinancialChart, calculateForecastChartComponents, calculateRatioCharts } from "./chart";
-import { priceChartOptions, MACDDataOptions, eventChartOptions, financialChartOptions, calculateForecastChartOptions, calculateForecastFinancialsOptions } from "./chartOptions";
+import { 
+    calculatePriceChart, 
+    calculateEventChart, 
+    calculateRatioFinacialChart, 
+    calculateFinancialChart, 
+    calculateForecastChartComponents, 
+    calculateRatioCharts 
+} from "./chart";
+import { 
+    priceChartOptions, 
+    MACDDataOptions, 
+    eventChartOptions, 
+    financialChartOptions, 
+    calculateForecastChartOptions, 
+    calculateForecastFinancialsOptions 
+} from "./chartOptions";
 import { handleGetClosestPriceFromDate } from "./tickerData";
 
 export function Ticker(data,portfolioTicker){
@@ -196,54 +210,52 @@ function handleInit(ticker){
     return ticker
 }
 
-function handleGetYearlyFinancialRatio(ticker,ratioName,options){
-    const { yearlyData } = ticker.analytics
-    let years = Object.keys(yearlyData).filter(year => new Date(year)>options.time.timeStart)
-    let dates=[]
-    let data=[]
-    years.forEach(year=>{
-        dates.push(year)
-        data.push(yearlyData[year][ratioName])
-    })
-    return { data, dates, name:camelCaseToString(ratioName) }
-}
-
-function handleGetPriceRatio(ticker,ratioName,options){
-    const priceData = ticker.filterByDate('priceData',options)
-    let priceRatio = priceData.filter(item => item[ratioName])
-    let ratioArray = priceRatio.map(item => item[ratioName])
-    let dateArray = priceRatio.map(item => item.dateShort)
-    let priceArray = priceRatio.map(item => item.close)
-    return { ratioArray, dateArray, priceArray }
-}
-
 function handleSetFinancialRatios(ticker){
     let priceData = ticker.priceData
+    let currentYear = new Date().getFullYear()
     for(var i=0;i<priceData.length;i++){
         let price = priceData[i]
         let income = ticker.incomeStatement.
             find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
         let balance = ticker.balanceSheet
             .find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
+        let cashflow = ticker.cashFlow
+            .find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
+        let shareCount = 0
 
         if(income){
             price.pe = price.close/income.eps
+            shareCount = income.netIncome / income.eps
+            let rps = income.revenue/shareCount
+            price.ps = price.close/rps
         }
 
         if(balance){
             price.pb = price.close/balance.bookValuePerShare 
         }
         if(income&&balance){
-            let shareCount = income.netIncome / income.eps
+            shareCount = income.netIncome / income.eps
             let marketCap = shareCount*price.close
             let debt = balance.totalDebt?balance.totalDebt:balance.longTermDebt
             let ev = marketCap+debt-balance.cash
             let ebit = income.operatingIncome
             price.evEbit = ev/ebit
         }
+        if(cashflow&&income){
+            shareCount = income.netIncome / income.eps            
+            let fcfPerShare = (cashflow.operatingCashFlow+cashflow.capEx)/shareCount
+            price.pfcf = price.close/ fcfPerShare
+        }
         let yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
         if(yearDivs.length===0){
             yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear()+1)
+        }
+        if(currentYear===new Date(price.date).getFullYear()){
+            let pastYear = new Date(new Date(price.date).setFullYear(new Date().getFullYear() - 1));
+            yearDivs = ticker.dividendData.filter(item => 
+                new Date(item.date).getTime()<new Date(price.date).getTime()&&
+                new Date(item.date).getTime()>pastYear.getTime()
+            )
         }
         let totalDiv = yearDivs.reduce((a,b)=>a+b.dividend,0)
         price.divYield = (totalDiv/price.close)*100
@@ -260,7 +272,7 @@ function handleCalculateAnalytics(ticker){
     let divData = [...dividendData]
 
     let peData = ticker.getPriceRatio('pe').ratioArray
-
+    console.log(ticker.getPriceRatio('pe'))
     const { incomeStatement, balanceSheet, cashFlow } = ticker
 
     let latestEps = incomeStatement[0]
@@ -284,7 +296,7 @@ function handleCalculateAnalytics(ticker){
 
         let yearData = incomeStatement.find(item => new Date(item.date).getFullYear()===year)
         let balanceData = balanceSheet.find(item => new Date(item.date).getFullYear()===year)
-        let cashflowData = cashFlow.find(item => new Date(item.date).getFullYear()===year)     
+        let cashflowData = cashFlow.find(item => new Date(item.date).getFullYear()===year)||{}    
 
         let price = handleGetClosestPriceFromDate(ticker,new Date(year,11))
         let shareCount = yearData.netIncome / yearData.eps
@@ -294,9 +306,10 @@ function handleCalculateAnalytics(ticker){
         let ev = marketCap+balanceData.cash
         let ebit = yearData.operatingIncome
         let evEbit = ev/ebit
+        let revenuePerShare = yearData.revenue/shareCount
 
         yearlyData[year]={
-            div:0,
+            // div:0,
             ...yearData,
             ...balanceData,
             ...cashflowData,
@@ -306,14 +319,17 @@ function handleCalculateAnalytics(ticker){
             netProfitMargin: yearData.netIncome/yearData.revenue,
             ebitMargin:ebit/yearData.revenue,
             debtToEbit:debt/ebit,
+            currentRatio:balanceData.currentAssets/balanceData.currentLiabilities,
             shareCount,
             marketCap,
             debt,
             cash,
             ev,
+            price,
             ebit,
-            evEbit,                  
-            freeCashFlow: cashflowData.operatingCashFlow+cashflowData.capEx,        
+            evEbit,   
+            revenuePerShare,               
+            freeCashFlow: cashflowData.operatingCashFlow+cashflowData.capEx,freeCashFlowPerShare: (cashflowData.operatingCashFlow+cashflowData.capEx)/shareCount,  
             date:year+'-11'
         }
     }
@@ -483,6 +499,30 @@ function handleSetMovingAverages(ticker){
     })
 }
 
+function handleGetYearlyFinancialRatio(ticker,ratioName='',options){
+    const { yearlyData } = ticker.analytics
+    let timeStart = options?options.time.timeStart:2000
+    let years = Object.keys(yearlyData).filter(year => new Date(year)>timeStart)
+    let dateArray=[]
+    let ratioArray=[]
+    let priceArray=[]
+    years.forEach(year=>{
+        dateArray.push(year)
+        ratioArray.push(yearlyData[year][ratioName])
+        priceArray.push(yearlyData[year].price)
+    })
+    return { ratioArray, dateArray, priceArray , name:camelCaseToString(ratioName) }
+}
+
+function handleGetPriceRatio(ticker,ratioName='',options){
+    const priceData = ticker.filterByDate('priceData',options)
+    let priceRatio = priceData.filter(item => item[ratioName]).reverse()
+    let ratioArray = priceRatio.map(item => item[ratioName])
+    let dateArray = priceRatio.map(item => item.dateShort)
+    let priceArray = priceRatio.map(item => item.close)
+    return { ratioArray, dateArray, priceArray, name:camelCaseToString(ratioName) }
+}
+
 function calculateLatestPrice(ticker,format){
     if(!ticker.priceData[0]) return 0
     return formatValue(ticker.priceData[0].close,format)
@@ -639,11 +679,12 @@ function handleUpdateRatiosChart(ticker,options){
 }
 
 function handleUpdateFinancialChart(ticker,options){
-    let financialChartComponents = calculateFinancialChartComponents(ticker,options)  
-    let financialChartData = calculateFinancialChart(financialChartComponents,options)
+    let selectedStatement = options.selected
+    let fullFinancialData = ticker.getTickerData(selectedStatement)
+    let financialChartData = calculateFinancialChart(ticker,options)
     ticker.financialChart.data = financialChartData
     ticker.financialChart.options = financialChartOptions(options)
-    ticker.financialChart.fullFinancialData = financialChartComponents.fullFinancialData.length>0?financialChartComponents.fullFinancialData:null
+    ticker.financialChart.fullFinancialData = fullFinancialData.length>0?fullFinancialData:null
     return ticker
 }
 

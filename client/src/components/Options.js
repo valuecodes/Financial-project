@@ -7,6 +7,7 @@ export default function Options(props){
     const {
         options,
         setOptions,
+        showTimePeriod=true
     } = props
 
     return (
@@ -24,7 +25,7 @@ export default function Options(props){
                     </li>
                 )}
             </ul>
-            <SetTimePeriod options={options} setOptions={setOptions}/>
+            {showTimePeriod&&<SetTimePeriod options={options} setOptions={setOptions}/>} 
         </div>
     )
 }
