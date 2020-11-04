@@ -400,7 +400,7 @@ function Financials({ticker,setTicker,navigation}){
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     },[options,navigation])  
-
+    console.log(ticker)
     return(
         <div className='tickerFinancials'>
             <Options options={options} setOptions={setOptions} showTimePeriod={false}/>        
@@ -499,7 +499,6 @@ function TickerRatios({ticker,setTicker,navigation}){
                     }
                 </div>
             </div>
-
         </div>
     )
 }
@@ -566,7 +565,7 @@ function PriceChart({ ticker, setTicker ,navigation }){
     },[options])
 
     return(
-        <section className='section'>
+        <section className='section priceChartSection'>
             <Options options={options} setOptions={setOptions}/>
             <div className='tickerScreenChart'>
                 <div className='chartContainer'>

@@ -80,6 +80,11 @@ export function priceChartOptions(ticker,options){
             titleFontColor:'rgba(0,0,0,0)',
             enabled:false,
             custom: function(tooltipModel,index) {
+
+                console.log(window.innerWidth)    
+                if(window.innerWidth<800){
+                    return ''
+                }            
                 if(tooltipModel.dataPoints){
                     let tooltipPoints = tooltipModel.dataPoints.length
                     for(var i=0;i<tooltipPoints;i++){
@@ -395,7 +400,8 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
                         function setToolTipLabel(item,chart,chartIndex){  
 
                             if (tooltipModel.body) {
-                                let text =chart.props.data.datasets[0].data[index].toFixed(1)
+                                let value = chart.props.data.datasets[0].data[index]||0
+                                let text =value.toFixed(1)
                                 var tableRoot = item.querySelector('table');
                                 if(chartIndex===0){
                                     text = formatRatio(text,chart.props.data.datasets[0].label)
@@ -407,17 +413,28 @@ export function ratioChartOptions(ratioChartRef,ratioPriceChartRef,options,ratio
 
                             let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
                             let position = chart.chartInstance.canvas.getBoundingClientRect()
+                            
+
+                            let fontSize = 15
+                            let padding = 5
+                            let offset = 15
+                            if(window.innerWidth<800){
+                                fontSize=10
+                                padding=2
+                                offset=-50
+                            } 
+                            let leftPos = position.left + window.pageXOffset +tooltipModel.caretX+offset 
 
                             if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
                                 item.style.opacity = 1;
                                 item.style.position = 'absolute';
-                                item.style.left = position.left + window.pageXOffset +tooltipModel.caretX+15  + 'px';
+                                item.style.left = leftPos  + 'px';
                                 item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
                                 item.style.backgroundColor='dimgray'
                                 item.style.color='white'
-                                item.style.fontSize='15px'
+                                item.style.fontSize=fontSize+'px'
                                 item.style.borderRadius='25%'                                
-                                item.style.padding='5px'                                  
+                                item.style.padding=padding+'px'                                  
                             }
 
                         }
@@ -524,7 +541,6 @@ export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,
             titleFontColor:'rgba(0,0,0,0)',
             enabled:false,
             custom: function(tooltipModel) {
-
                 let ratioChart = ratioChartRef.current
                 let ratioPrice = ratioPriceChartRef.current
                 
@@ -568,7 +584,8 @@ export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,
                         function setToolTipLabel(item,chart,chartIndex){  
 
                             if (tooltipModel.body) {
-                                let text =chart.props.data.datasets[0].data[index].toFixed(1)
+                                let value = chart.props.data.datasets[0].data[index]||0
+                                let text =value.toFixed(1)
                                 var tableRoot = item.querySelector('table');
                                 if(chartIndex===0){
                                     text = formatRatio(text,chart.props.data.datasets[0].label)
@@ -580,17 +597,28 @@ export function ratioChartPriceOptions(ratioChartRef,ratioPriceChartRef,options,
 
                             let chartKey = Object.keys(chart.props.data.datasets[0]['_meta'])[0]
                             let position = chart.chartInstance.canvas.getBoundingClientRect()
+                            
+
+                            let fontSize = 15
+                            let padding = 5
+                            let offset = 15
+                            if(window.innerWidth<800){
+                                fontSize=10
+                                padding=2
+                                offset=-50
+                            } 
+                            let leftPos = position.left + window.pageXOffset +tooltipModel.caretX+offset 
 
                             if(chart.props.data.datasets[0]['_meta'][chartKey].data[index]){
                                 item.style.opacity = 1;
                                 item.style.position = 'absolute';
-                                item.style.left = position.left + window.pageXOffset +tooltipModel.caretX+15  + 'px';
+                                item.style.left = leftPos  + 'px';
                                 item.style.top = position.top + window.pageYOffset + chart.props.data.datasets[0]['_meta'][chartKey].data[index]['_model'].y-6+ 'px';
                                 item.style.backgroundColor='dimgray'
                                 item.style.color='white'
-                                item.style.fontSize='15px'
+                                item.style.fontSize=fontSize+'px'
                                 item.style.borderRadius='25%'                                
-                                item.style.padding='5px'                                  
+                                item.style.padding=padding+'px'                                  
                             }
 
                         }

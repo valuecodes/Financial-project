@@ -8,9 +8,15 @@ export default function SetTimePeriod({options,setOptions,type='full', yearsFrom
         
         if(type==='full'){
             changeTimePeriod('15.years-years')
-            setTimePeriods([
-                // '3.month-months', '6.months-months',
-                '1.years-years','2.years-years','3.years-years','5.years-years','10.years-years','15.years-years','20.years-years'])
+
+            let timePeriods = [
+                '1.years-years','2.years-years','3.years-years','5.years-years','10.years-years','15.years-years','20.years-years']
+
+            if(window.innerWidth<800){
+                timePeriods = [
+                    '1.years-years','5.years-years','10.years-years','15.years-years']
+            }            
+            setTimePeriods(timePeriods)
         }else if(type==='yearly'){
             let years = Array.from({length:(yearsTo+1)-yearsFrom},(v,k)=>k+yearsFrom+'.-fyears')
             if(all){

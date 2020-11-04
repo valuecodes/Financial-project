@@ -213,6 +213,7 @@ function handleInit(ticker){
 function handleSetFinancialRatios(ticker){
     let priceData = ticker.priceData
     let currentYear = new Date().getFullYear()
+    let numberOfDivs = null
     for(var i=0;i<priceData.length;i++){
         let price = priceData[i]
         let income = ticker.incomeStatement.
@@ -245,6 +246,7 @@ function handleSetFinancialRatios(ticker){
             shareCount = income.netIncome / income.eps            
             let fcfPerShare = (cashflow.operatingCashFlow+cashflow.capEx)/shareCount
             price.pfcf = price.close/ fcfPerShare
+            
         }
         let yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
         if(yearDivs.length===0){
@@ -256,6 +258,10 @@ function handleSetFinancialRatios(ticker){
                 new Date(item.date).getTime()<new Date(price.date).getTime()&&
                 new Date(item.date).getTime()>pastYear.getTime()
             )
+            if(numberOfDivs!==null&&yearDivs.length<numberOfDivs&&yearDivs[0]){
+                yearDivs.push(yearDivs[0])
+            }
+            numberOfDivs = yearDivs.length     
         }
         let totalDiv = yearDivs.reduce((a,b)=>a+b.dividend,0)
         price.divYield = (totalDiv/price.close)*100
@@ -327,7 +333,8 @@ function handleCalculateAnalytics(ticker){
             ev,
             price,
             ebit,
-            evEbit,   
+            evEbit,  
+            roe: yearData.netIncome/balanceData.totalEquity,
             revenuePerShare,               
             freeCashFlow: cashflowData.operatingCashFlow+cashflowData.capEx,freeCashFlowPerShare: (cashflowData.operatingCashFlow+cashflowData.capEx)/shareCount,  
             date:year+'-11'

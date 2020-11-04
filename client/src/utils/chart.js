@@ -545,7 +545,7 @@ export function calculateRatioCharts(ticker,options){
             financialRatios:['price','freeCashFlowPerShare'],
             label:'Historical Price to Free cash flow',
             ratioColors:[,'rgba(197, 94, 115,0.8)','rgba(97, 194, 115,0.8)']
-        }
+        },
     }
 
     const { 
@@ -555,10 +555,13 @@ export function calculateRatioCharts(ticker,options){
         label, 
         dataLabels,
         ratioColors,
+        financialRatio,
+        format,
     } = ratiosSections[selected]
     
 
-    const { ratioArray, dateArray, priceArray } = ticker.getPriceRatio(priceRatio,options)
+    const { ratioArray, dateArray, priceArray } = financialRatio?ticker.getYearlyFinancialRatio(financialRatio,options): 
+    ticker.getPriceRatio(priceRatio,options)
     
     const financialData = financialRatios
         .map(ratioName=> ticker.getYearlyFinancialRatio(ratioName,options))
@@ -588,15 +591,19 @@ export function calculateRatioCharts(ticker,options){
             pointHitRadius:0,
             borderWidth:1,
             borderColor:'black',
-            data: ratioArray,  
+            data: format==='%'?ratioArray.map(i=>i*100):ratioArray,  
         }],
         labels:dateArray
     }
 
+    let pointRadius=priceArray.length<200?4:2
+    if(window.innerWidth<800){
+        pointRadius*=0.75
+    }
     let priceChart ={
         datasets:[{
             label: 'Stock Price',
-            pointRadius:priceArray.length<200?4:2,
+            pointRadius:pointRadius,
             pointHitRadius:0,
             pointBackgroundColor:pointColors,
             borderWidth:1,
