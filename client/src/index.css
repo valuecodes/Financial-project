@@ -318,6 +318,11 @@ th{
   width: 7.5rem;
 }
 
+/* Page */
+.page{
+  margin-top: 5rem;
+}
+
 /* TickerCategory */
 
 .tickerCategoriesContainer{
@@ -1855,6 +1860,30 @@ td{
 
 .timePeriods li:first-child{
   border-radius: 0.5rem 0 0 0.5rem;
+}
+
+/* MachineLearning */
+.machineLearningOptions{
+  height: 6rem;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 30rem 1fr;
+}
+.machineLearningOptions h2{
+margin: 0;
+}
+
+.machineLearningOptions .searchBox{
+  padding: 0;
+  width: 10rem;
+  margin-left: 0;
+}
+
+.machineLearning{
+  height: 40rem;
+  background-color: aliceblue;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
 }
 
 @media only screen and (max-width: 800px) {

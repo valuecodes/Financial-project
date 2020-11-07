@@ -37,7 +37,7 @@ export default function Header(props) {
         <header className='header'>
             <div className='headerContainer container'>
                 <MainLogo setPage={setPage}/>
-                <SearchBox  tickers={tickers} addItem={selectTicker} placeholder={'Search tickers...'}/>
+                <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Search tickers...'}/>
                 <Navbar userInfo={userInfo}/>
             </div>
             <SubHeader userInfo={userInfo} setPage={setPage}/>
@@ -59,6 +59,7 @@ function SubHeader({userInfo,setPage}){
         {path:'/screener',text:'Screener',auth:[]},
         {path:'/scatter',text:'Scatter',auth:[]},
         {path:'/trading',text:'Trading',auth:['login']},
+        {path:'/machineLearning',text:'Machine Learning',auth:[]},
         {path:'/addData',text:'Admin',auth:['login','admin']},
     ]
 

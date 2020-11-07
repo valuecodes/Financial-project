@@ -21,7 +21,7 @@ export default function ScatterScreen({props}) {
     const { tickerRatiosData } = tickerRatios
 
     const [scatterPlot, setScatterPlot] = useState({...new ScatterPlot(tickers||[]).init()})
-        const [navigation,setNavigation] = useState({
+    const [navigation,setNavigation] = useState({
         selected:{name:'scatter',index:0},
         options:['scatter','historicalScatter']
     })

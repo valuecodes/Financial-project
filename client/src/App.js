@@ -10,6 +10,7 @@ import TickerScreen from './screens/TickerScreen'
 import PortfolioScreen from './screens/PortfolioScreen'
 import ScreenerScreen from './screens/ScreenerScreen'
 import ScatterScreen from './screens/ScatterScreen';
+import MachineLearningScreen from './screens/MachineLearningScreen';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path='/trading' component={TradingScreen}/>
           <Route path='/screener' component={ScreenerScreen}/>
           <Route path='/scatter' component={ScatterScreen}/>
+          <Route path='/machineLearning' component={MachineLearningScreen}/>
           <Route path='/' exact={true} component={HomeScreen}/>
         </main>
       </div>    
