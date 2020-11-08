@@ -29,7 +29,7 @@ export default function MachineLearningScreen() {
         <div className='page container'>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
             <Options machineLearning={machineLearning}/>
-            <Main machineLearning={machineLearning}/>
+            <Main machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
         </div>
     )
 }
@@ -52,10 +52,37 @@ function Options({machineLearning}){
     )
 }
 
-function Main({machineLearning}){
+function Main({machineLearning,setMachineLearning}){
+
+    const handleTrainModel= async () => {
+        let updated = await machineLearning.trainModel(setMachineLearning)
+        setMachineLearning({...updated})
+    }
+
+    const validateModel=()=>{
+        let updated = machineLearning.validateModel()
+        setMachineLearning({...updated})
+    }
+
+    const { stage } = machineLearning.ml
+
     return(
         <div className='machineLearning'>
-            <div></div>
+            <div>
+                <h2>{stage}</h2>
+                <button disabled={stage!=='Train model'} onClick={handleTrainModel}>Train model</button>
+                <button disabled={stage!=='Validate model'} onClick={validateModel}>Validate model</button>
+                <button disabled={stage!=='Make prediction'}>make prediction</button>
+                <div className='mlStats'>
+                {machineLearning.ml.stats.map(stat =>
+                    <div key={stat.epoch} className='mlStat'>
+                        <p>Epoch: {stat.epoch}/{stat.totalEpochs}</p>
+                        <p>Loss: {stat.loss.toFixed(5)}</p>
+                    </div>
+                )}                    
+                </div>
+
+            </div>
             <div className='chartContainer'>
                 <Line
                     data={machineLearning.chart.data}

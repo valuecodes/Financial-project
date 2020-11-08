@@ -1,14 +1,7 @@
 import { roundToTwoDecimal, camelCaseToString } from "../utils";
 import { handleGetClosestPriceFromDate } from "../tickerData";
 
-export function tickerInit(ticker){
-    addMovingAverages(ticker)
-    addFinancialRatios(ticker)
-    addAnalytics(ticker)
-    return ticker
-}
-
-function addFinancialRatios(ticker){
+export function addFinancialRatios(ticker){
     let priceData = ticker.priceData
     let currentYear = new Date().getFullYear()
     let numberOfDivs = null
@@ -69,7 +62,7 @@ function addFinancialRatios(ticker){
     return ticker
 }
 
-function addAnalytics(ticker){
+export function addAnalytics(ticker){
 
     let dividendData = ticker.dividendData
         .reverse() 
@@ -241,7 +234,7 @@ function addAnalytics(ticker){
 
 }
 
-function addMovingAverages(ticker){
+export function addMovingAverages(ticker){
     const { priceData } = ticker
 
     priceData.forEach((item,index) =>{

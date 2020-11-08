@@ -16,7 +16,7 @@ import {
     calculateForecastFinancialsOptions 
 } from "./chartOptions";
 import { handleGetClosestPriceFromDate } from "./tickerData";
-import { tickerInit, calculateFilterByDate, handleGetPriceRatio, handleGetYearlyFinancialRatio } from "./calculations/tickerCalculations";
+import { tickerInit, calculateFilterByDate, handleGetPriceRatio, handleGetYearlyFinancialRatio, addMovingAverages, addFinancialRatios, addAnalytics } from "./calculations/tickerCalculations";
 
 export function Ticker(data,portfolioTicker){
     this.profile = data?data.profile:{
@@ -198,7 +198,14 @@ export function Ticker(data,portfolioTicker){
     this.userPriceChart = (options) => calculateUserPriceChart(this,options)
     this.userReturnChart = (options) => calculateUserReturnChart(this,options) 
 
-    this.init = () => tickerInit(this)
+    this.init = () => handleInit(this)
+}
+
+function handleInit(ticker){
+    addMovingAverages(ticker)
+    addFinancialRatios(ticker)
+    addAnalytics(ticker)
+    return ticker
 }
 
 
