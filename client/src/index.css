@@ -1867,7 +1867,7 @@ td{
   height: 6rem;
   display: grid;
   align-items: center;
-  grid-template-columns: 30rem 1fr;
+  grid-template-columns: 30rem 30rem 20rem 5rem;
 }
 .machineLearningOptions h2{
 margin: 0;
@@ -1900,6 +1900,25 @@ margin: 0;
 
 .mlStat p{
   margin-right: 2rem;
+}
+
+.predictionChart{
+  grid-column: 2/3;
+}
+
+.mlTrainingOptions{
+  padding-right: 1rem;
+}
+
+.mlTrainingOptions li{
+  margin: 1rem 0;
+  display: grid;
+  color: azure;
+}
+
+.mlTrainingOptions li input{
+  height: 3rem;
+  font-size: 2rem;
 }
 
 @media only screen and (max-width: 800px) {

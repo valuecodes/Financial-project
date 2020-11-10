@@ -18,17 +18,31 @@ export default function MachineLearning(data){
                 datalabels:{
                     display:false
                 }
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
             }            
-        }
+        },
+        predictionChart:{}
     }
     this.ml={
         stage:'Select Ticker',
-        stats:[]
+        stats:[],
+        options:{
+            movingAverageWeeks:{value:7,step:1},
+            trainingPercentage:{ value:70, step:1},
+            epochs:{ value:5, step:1},
+            learningRate:{ value:0.01, step:0.002},
+            hiddenLayers:{ value:2, step:1},
+        }
     }
     this.filterByDate = (key,options) => calculateFilterByDate(this,key,options)
     this.getPriceRatio = (ratioName,options) => handleGetPriceRatio(this,ratioName,options)
+    this.addTraininData = ()=>addTraininData(this)
     this.trainModel = (setState) => trainModel(this,setState)
     this.validateModel = () => validateModel(this)
+    this.predictModel = () => predictModel(this)
     this.init = () => handleInit(this)
 }
 
@@ -36,36 +50,38 @@ function handleInit(ticker){
     addMovingAverages(ticker)
     addFinancialRatios(ticker)
     addAnalytics(ticker)
-    addTraininData(ticker)
-    ticker.ml.stage = 'Train model'
+    ticker.ml.stage = 'Add training Data'
     return ticker
 }
 
 function addTraininData(ticker){
     const { priceData } = ticker
+    const movingAverageWeeks = ticker.ml.options.movingAverageWeeks.value
     let trainingData = []
     priceData.forEach((item,index) =>{
-        let total50=0
+        let totalsma=0
         let set = []
-        for(let i=index;i<index+7;i++){
+        for(let i=index;i<index+movingAverageWeeks;i++){
             if(!priceData[i]){
-                total50=null
+                totalsma=null
                 break
             }
             set.push({
                 date:priceData[i].date,
                 price:priceData[i].close
             })
-            total50+=priceData[i].close
+            totalsma+=priceData[i].close
         }
-        if(total50>0){
+        if(totalsma>0){
             trainingData.unshift({
                 set,
-                avg:total50/7
+                avg:totalsma/movingAverageWeeks
             })            
         }
     })
+
     ticker.ml.trainingData = trainingData
+    ticker.ml.stage = 'Train model'
     return ticker
 }
 
@@ -73,15 +89,14 @@ async function trainModel(ticker,setState){
 
     ticker.ml.stage = 'Training model...'
     setState({...ticker}) 
-    
-    const trainingData = ticker.ml.trainingData
+    const { trainingData, options } = ticker.ml
     let inputs = trainingData.map(item =>item.set.map(i=>i.price))
     let outputs = trainingData.map(item => item.avg)
 
-    let epochs = 5
-    let learningRate = 0.01
-    let hiddenLayers = 2
-
+    let epochs = options.epochs.value
+    let learningRate = options.learningRate.value
+    let hiddenLayers = options.hiddenLayers.value
+    let movingAverageWeeks = options.movingAverageWeeks.value
     let callback = function(epoch, log) {
         let stats = ticker.ml.stats
         epoch++
@@ -93,7 +108,7 @@ async function trainModel(ticker,setState){
         setState({...ticker})
     };
 
-    let result = await train(inputs, outputs, 7, epochs, learningRate, hiddenLayers, callback);
+    let result = await train(inputs, outputs, movingAverageWeeks, epochs, learningRate, hiddenLayers, callback);
     
     ticker.ml={
         ...ticker.ml,
@@ -107,8 +122,10 @@ async function trainModel(ticker,setState){
 
 function validateModel(ticker){
 
-    const { inputs, result, trainingData } = ticker.ml
-    let trainingSize = 80 
+    const { inputs, result, trainingData, options } = ticker.ml
+    let trainingSize = options.trainingPercentage.value
+    let movingAverageWeeks = options.movingAverageWeeks.value
+
     let sma = trainingData.map(item => item.avg);
     let dates = ticker.priceData.map(item => item.dateShort).reverse()
     let trainX = inputs.slice(0, Math.floor(trainingSize / 100 * inputs.length));
@@ -118,7 +135,7 @@ function validateModel(ticker){
     let unseenY = makePredictions(unseenX, result['model']);
     let prices = ticker.priceData.map(item => item.close).reverse();
     
-    for(var i=0;i<7;i++){
+    for(var i=0;i<movingAverageWeeks;i++){
         sma.unshift(null)
         trainY.unshift(null)
     }
@@ -167,3 +184,65 @@ function validateModel(ticker){
     ticker.ml.stage = 'Make prediction'
     return ticker
 }
+
+async function predictModel(ticker) {
+    const { inputs, result, trainingData, options } = ticker.ml
+
+    let trainingsize = options.trainingPercentage.value
+    let movingAverageWeeks = options.movingAverageWeeks.value
+
+    let pred_X = [inputs[inputs.length-1]];
+    pred_X = pred_X.slice(Math.floor(trainingsize / 100 * pred_X.length), pred_X.length);
+    let pred_y = await makePredictions(pred_X, result['model']);
+
+    let resultChartWeeks = 30;
+    let priceData = [...ticker.priceData]
+    priceData = priceData.splice(0, resultChartWeeks)
+    let lastDate = new Date(priceData[0].date)
+    
+    priceData.unshift({
+        close:pred_y[0],
+        date:new Date(lastDate.setDate(lastDate.getDate() + movingAverageWeeks)).toISOString()       
+    })
+
+    priceData = priceData.reverse()
+    let dates = priceData.map(item => item.date.split('T')[0])
+    let prices=[]
+    let predictidPrice=[]
+    priceData.forEach((price,index) =>{
+        if(index<priceData.length-1){
+            prices.push(price.close)
+            predictidPrice.push(null)
+        }else{
+            prices.push(null)
+            predictidPrice.push(price.close)
+        }
+    })
+    predictidPrice[predictidPrice.length-2] = prices[prices.length-2]
+
+    let predictionChart = {
+        datasets:[
+            {
+                label:'Price',
+                data:prices,
+                borderColor:'black',
+                pointRadius:0,
+                borderWidth:2,            
+                fill:false,
+            },
+            {
+                label:'Predicted Price',
+                data:predictidPrice,
+                borderColor:'red',
+                pointRadius:5,
+                borderWidth:2,            
+                fill:false,
+            },
+        ],
+        labels:dates 
+    }
+
+    ticker.chart.predictionChart=predictionChart
+
+    return ticker
+  }
