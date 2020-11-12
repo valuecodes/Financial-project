@@ -40,7 +40,9 @@ export default async function train(X, Y, batchSize, epochs, learningRate, hidde
     const history = await model.fit(xs, ys,
       { batchSize: batchSize, epochs: epochs, callbacks: {
         onEpochEnd: async (epoch, log) => {
-          callback(epoch, log);
+        console.log(model.layers)
+          let pred = makePredictions(X, model)
+          callback(epoch, log, pred);
         }
       }
     });

@@ -27,14 +27,32 @@ export default function MachineLearning(data){
         predictionChart:{}
     }
     this.ml={
-        stage:'Select Ticker',
+        stage:'selectTicker',
+        stages:[
+            {name:'selectTicker'},
+            {name:'addTrainingData',icon:'ArrowForwardIosIcon',type:'button'},
+            {name:'trainModel',icon:'ArrowForwardIosIcon',type:'button'},
+            {name:'training',icon:'LoopIcon',spinning:true},
+            {name:'validateModel',icon:'ArrowForwardIosIcon',type:'button'},
+            {name:'makePrediction',icon:'ArrowForwardIosIcon',type:'button'},
+        ],
         stats:[],
         options:{
-            movingAverageWeeks:{value:7,step:1},
-            trainingPercentage:{ value:70, step:1},
-            epochs:{ value:5, step:1},
-            learningRate:{ value:0.01, step:0.002},
-            hiddenLayers:{ value:2, step:1},
+            movingAverageWeeks:{ 
+                value:7, step:1, max:50, stage:'addTrainingData'
+            },
+            trainingPercentage:{ 
+                value:70, step:1, max:100, stage:'trainModel'
+            },
+            epochs:{ 
+                value:5, step:1, stage:'trainModel'
+            },
+            learningRate:{ 
+                value:0.01, step:0.002,max:1, stage:'trainModel'
+            },
+            hiddenLayers:{ 
+                value:2, step:1, max:20, stage:'trainModel'
+            },
         }
     }
     this.filterByDate = (key,options) => calculateFilterByDate(this,key,options)
@@ -50,7 +68,7 @@ function handleInit(ticker){
     addMovingAverages(ticker)
     addFinancialRatios(ticker)
     addAnalytics(ticker)
-    ticker.ml.stage = 'Add training Data'
+    ticker.ml.stage = ticker.ml.stages[1].name
     return ticker
 }
 
@@ -78,16 +96,43 @@ function addTraininData(ticker){
                 avg:totalsma/movingAverageWeeks
             })            
         }
+        item.sma = totalsma/movingAverageWeeks || null
     })
 
+    let dates = priceData.map(item => item.date.split('T')[0]).reverse()
+    let prices = priceData.map(item => item.close).reverse()
+    let sma =  priceData.map(item => item.sma).reverse()
+    let chart = {
+        datasets:[
+            {
+                label:'Price',
+                data:prices,
+                borderColor:'black',
+                pointRadius:0,
+                borderWidth:2,            
+                fill:false,
+            },
+            {
+                label:'SMA',
+                data:sma,
+                borderColor:'yellow',
+                pointRadius:0,
+                borderWidth:2,            
+                fill:false,
+            },
+        ],
+        labels:dates 
+    }
+    ticker.chart.data=chart
+
     ticker.ml.trainingData = trainingData
-    ticker.ml.stage = 'Train model'
+    ticker.ml.stage = ticker.ml.stages[2].name
     return ticker
 }
 
 async function trainModel(ticker,setState){
 
-    ticker.ml.stage = 'Training model...'
+    ticker.ml.stage = 'training'
     setState({...ticker}) 
     const { trainingData, options } = ticker.ml
     let inputs = trainingData.map(item =>item.set.map(i=>i.price))
@@ -97,7 +142,7 @@ async function trainModel(ticker,setState){
     let learningRate = options.learningRate.value
     let hiddenLayers = options.hiddenLayers.value
     let movingAverageWeeks = options.movingAverageWeeks.value
-    let callback = function(epoch, log) {
+    let callback = function(epoch, log,pred) {
         let stats = ticker.ml.stats
         epoch++
         stats.push({loss:log.loss,epoch,totalEpochs:epochs})
@@ -105,17 +150,28 @@ async function trainModel(ticker,setState){
             ...ticker.ml,
             stats,
         }
+        for(var i=0;i<movingAverageWeeks;i++){
+            pred.unshift(null)
+        }
+        ticker.chart.data.datasets.push({
+            label:'Prediction '+epoch,
+            data:pred,
+            borderColor:`rgba(227, 36, 36,${epoch/epochs})`,
+            pointRadius:0,
+            borderWidth:2,            
+            fill:false,
+        })
         setState({...ticker})
     };
 
     let result = await train(inputs, outputs, movingAverageWeeks, epochs, learningRate, hiddenLayers, callback);
-    
+
     ticker.ml={
         ...ticker.ml,
         inputs,
         outputs,
         result,
-        stage:'Validate model'
+        stage:'validateModel'
     }
     return ticker
 }
@@ -181,7 +237,7 @@ function validateModel(ticker){
         labels:dates 
     }
     ticker.chart.data=chart
-    ticker.ml.stage = 'Make prediction'
+    ticker.ml.stage = 'makePrediction'
     return ticker
 }
 

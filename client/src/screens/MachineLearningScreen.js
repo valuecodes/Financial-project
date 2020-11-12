@@ -6,6 +6,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
 import { Line } from 'react-chartjs-2';
 import { camelCaseToString } from '../utils/utils';
+import MaterialIcon from '../components/MaterialIcon'
 
 export default function MachineLearningScreen() {
 
@@ -26,130 +27,143 @@ export default function MachineLearningScreen() {
         }
     },[tickerFullData])
 
+    const { stage } = machineLearning.ml
+    
+
     return (
         <div className='page container'>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
-            <Options machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
-            <Main machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
+            <div className='machineLearning'>
+                <Header machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
+                <Stages machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
+                <div className='chartContainer'>
+                    <Line
+                        data={machineLearning.chart.data}
+                        options={machineLearning.chart.options}
+                    />
+                </div>
+                <div className='chartContainer predictionChart'>
+                    <Line
+                        data={machineLearning.chart.predictionChart}
+                        options={machineLearning.chart.options}
+                    />
+                </div>
+            </div>
         </div>
     )
 }
 
-function Options({machineLearning,setMachineLearning}){
-
+function Header({machineLearning, setMachineLearning}){
+    
     const dispatch = useDispatch()
     const tickerListData = useSelector(state => state.tickerListData)
     const { tickers } = tickerListData
-    
+
     const selectTicker=(ticker)=>{
         dispatch(getTickerData(ticker.ticker))
     }
 
-    const { stage, options } = machineLearning.ml    
+    const handleReset=()=>{
+        machineLearning.ml.stage='selectTicker'
+        setMachineLearning({...machineLearning})
+    }
+
+    const handleStageChange = async (newStage)=>{
+        let updated
+        switch(newStage){
+            case 'addTrainingData':
+                updated = machineLearning.addTraininData()
+                break
+            case 'trainModel':
+                updated = await machineLearning.trainModel(setMachineLearning)
+                break
+            case 'validateModel':
+                updated = machineLearning.validateModel()
+                break
+            case 'makePrediction':
+                updated = await machineLearning.predictModel()
+                break
+            default:return
+        }
+        setMachineLearning({...updated})
+    }
+
+    const { stage,stages, options } = machineLearning.ml    
 
     return(
-        <div className={'machineLearningOptions'}>
-            <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Select ticker...'}/>
-            <h2>{machineLearning.profile.name}</h2>
-            <label>Moving Average Weeks</label>
-            <input 
-                type='number'
-                value={options.movingAverageWeeks.value}
-                name='movingAverageWeeks'
-                onChange={(e)=>handleMLOptionChange(e,machineLearning,setMachineLearning)}
-            />
-        </div>
-    )
-}
-
-function Main({machineLearning,setMachineLearning}){
-
-    const handleAddTrainingData = () => {
-        let updated = machineLearning.addTraininData()
-        setMachineLearning({...updated})
-    }
-
-    const handleTrainModel= async () => {
-        let updated = await machineLearning.trainModel(setMachineLearning)
-        setMachineLearning({...updated})
-    }
-
-    const validateModel=()=>{
-        let updated = machineLearning.validateModel()
-        setMachineLearning({...updated})
-    }
-
-    const predictModel = async () => {
-        let updated = await machineLearning.predictModel()
-        setMachineLearning({...updated})
-    }
-
-    const { stage } = machineLearning.ml
-
-    return(
-        <div className='machineLearning'>
-            <div>
-                <h2>{stage}</h2>
-                <button disabled={stage!=='Add training Data'} onClick={handleAddTrainingData}>Add Trainin Data</button>
-                <button disabled={stage!=='Train model'} onClick={handleTrainModel}>Train model</button>
-                <button disabled={stage!=='Validate model'} onClick={validateModel}>Validate model</button>
-                <button disabled={stage!=='Make prediction'} onClick={predictModel}>make prediction</button>
-                <MachineLearningStats machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
-            </div>
-            <div className='chartContainer'>
-                <Line
-                    data={machineLearning.chart.data}
-                    options={machineLearning.chart.options}
-                />
-            </div>
-            <div className='chartContainer predictionChart'>
-                <Line
-                    data={machineLearning.chart.predictionChart}
-                    options={machineLearning.chart.options}
-                />
+        <div className='mlHeader'>
+            {stage==='selectTicker'?
+                <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Select ticker...'}/>:
+                <div className='stageHeader'>
+                    <h2 className='mlTicker'>{machineLearning.profile.ticker}</h2>
+                </div>
+            }
+            <div className='stages'>
+                {stages.map(item => 
+                    <button 
+                        disabled={item.name!==stage} 
+                        className={`stage button ${item.name===stage&&'active'}`} 
+                        onClick={()=>handleStageChange(item.name)}
+                    >
+                        <p>{camelCaseToString(item.name)}</p>
+                        <i className={item.name===stage&&item.spinning&&'spinning'}>
+                            <MaterialIcon icon={item.icon} color={item.name===stage&&'lightGreen'}/>
+                        </i> 
+                    </button>
+                )}
+                <button className='stage button errorMessage' onClick={handleReset}>
+                    <p>Reset</p>
+                    <MaterialIcon icon={'SettingsBackupRestoreIcon'}/>
+                </button>
             </div>
         </div>
     )
 }
 
-const handleMLOptionChange = (e,state,setState) => {
-    const { value, name } = e.target
-    state.ml.options[name].value = Number(value)
-    setState({...state})
-}
 
-function MachineLearningStats({machineLearning, setMachineLearning}){
+function Stages({machineLearning, setMachineLearning}){
+
+    const handleMLOptionChange = (e,state,setState) => {
+        const { value, name } = e.target
+        state.ml.options[name].value = Number(value)
+        setState({...state})
+    }
 
     const { stage, options } = machineLearning.ml
 
     return(
-        <div className='mlStats'>
-
-            {stage==='Train model'&&
-                <ul className='mlTrainingOptions'>
-                    {Object.keys(options).map(option =>
-                        option!=='movingAverageWeeks'&&
-                        <li key={option}>
-                            <label>{camelCaseToString(option)}</label>
-                            <input 
-                                name={option} 
-                                type='number' 
-                                value={options[option].value||0} 
-                                step={options[option].step}
-                                onChange={(e)=>handleMLOptionChange(e,machineLearning,setMachineLearning)}
-                            />                        
-                        </li>                    
-                    )}
-                </ul>
-            }
-            {(stage==='Training model...'||stage==='Validate model')&&
-                machineLearning.ml.stats.map(stat =>
-                    <div key={stat.epoch} className='mlStat'>
-                        <p>Epoch: {stat.epoch}/{stat.totalEpochs}</p>
-                        <p>Loss: {stat.loss.toFixed(5)}</p>
-                    </div>
-                )                 
-            }
+        <div className='mlStages'>                
+            <h2>{camelCaseToString(stage)}</h2>
+            <div className='mlStats'>
+                {(stage==='trainModel'||stage==='addTrainingData')&&
+                    <ul className='mlTrainingOptions'>
+                        {Object.keys(options).map(option =>
+                            options[option].stage==stage&&
+                            <li key={option}>
+                                <label>{camelCaseToString(option)}</label>
+                                <input 
+                                    name={option} 
+                                    type='range' 
+                                    min={0}
+                                    max={options[option].max}
+                                    value={options[option].value||0} 
+                                    step={options[option].step}
+                                    onChange={(e)=>handleMLOptionChange(e,machineLearning,setMachineLearning)}
+                                />       
+                                <h3>{options[option].value||0} </h3>                 
+                            </li>                    
+                        )}
+                    </ul>
+                }
+                {(stage==='training'||stage==='validateModel')&&
+                    machineLearning.ml.stats.map(stat =>
+                        <div key={stat.epoch} className='mlStat'>
+                            <p>Epoch: {stat.epoch}/{stat.totalEpochs}</p>
+                            <p>Loss: {stat.loss.toFixed(5)}</p>
+                        </div>
+                    )                 
+                }                
+            </div>
         </div>
     )
 }
