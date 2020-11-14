@@ -1,5 +1,6 @@
 import { tickerInit, calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics } from './calculations/tickerCalculations';
 import train, { makePredictions } from './calculations/model';
+import { randomColor, colorArray } from './utils';
 
 export default function MachineLearning(data){
     this.profile = data?data.profile:{}
@@ -37,10 +38,15 @@ export default function MachineLearning(data){
             {name:'makePrediction',icon:'ArrowForwardIosIcon',type:'button'},
         ],
         stats:[],
+        ratios:[
+            {name:'movingAverage',value:7},
+            {name:'movingAverageSet',value:7},
+            {name:'pe'},
+            {name:'volume'},
+            {name:'oscillator'}, 
+        ],
+        selectedRatios:[],
         options:{
-            movingAverageWeeks:{ 
-                value:7, step:1, max:50, stage:'addTrainingData'
-            },
             trainingPercentage:{ 
                 value:70, step:1, max:100, stage:'trainModel'
             },
@@ -73,75 +79,77 @@ function handleInit(ticker){
 }
 
 function addTraininData(ticker){
-    const { priceData } = ticker
-    const movingAverageWeeks = ticker.ml.options.movingAverageWeeks.value
+
+    let { priceData } = ticker
+    const { selectedRatios } = ticker.ml
     let trainingData = []
+    console.log(priceData)
     priceData.forEach((item,index) =>{
-        let totalsma=0
-        let set = []
-        for(let i=index;i<index+movingAverageWeeks;i++){
-            if(!priceData[i]){
-                totalsma=null
-                break
+        let set=[]
+        selectedRatios.forEach(ratio => {
+            switch(ratio.name){
+                case 'movingAverage':
+                    const simpleMovingAverage = createMovingAverage(priceData,index,ratio.value).sma
+                    set.push(simpleMovingAverage)
+                    item[ratio.id] = simpleMovingAverage
+                    break
+                case 'movingAverageSet':
+                    const { days, sma } = createMovingAverage(priceData,index,ratio.value)
+                    set.push(...days.map(i => i.price))
+                    item[ratio.id] = sma
+                    break
+                default:  
+                    set.push(priceData[index][ratio.name])
+                    item[ratio.id] = priceData[index][ratio.name]                   
+                    break
             }
-            set.push({
-                date:priceData[i].date,
-                price:priceData[i].close
-            })
-            totalsma+=priceData[i].close
-        }
-        if(totalsma>0){
-            trainingData.unshift({
-                set,
-                avg:totalsma/movingAverageWeeks
-            })            
-        }
-        item.sma = totalsma/movingAverageWeeks || null
+        });
+
+        trainingData.unshift({
+            set,
+            price:item.close,
+            date:item.date
+        })
+
     })
 
-    let dates = priceData.map(item => item.date.split('T')[0]).reverse()
-    let prices = priceData.map(item => item.close).reverse()
-    let sma =  priceData.map(item => item.sma).reverse()
-    let chart = {
-        datasets:[
-            {
-                label:'Price',
-                data:prices,
-                borderColor:'black',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-            {
-                label:'SMA',
-                data:sma,
-                borderColor:'yellow',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-        ],
-        labels:dates 
-    }
-    ticker.chart.data=chart
+    priceData = [...ticker.priceData].reverse()
+    let max = 0
+    selectedRatios.forEach(item => {
+        if(item.value&&item.value>max){
+            max=item.value    
+        }    
+    })
+    
+    priceData.splice(0,max)
+    trainingData.splice(0,max)
 
-    ticker.ml.trainingData = trainingData
-    ticker.ml.stage = ticker.ml.stages[2].name
+    selectedRatios.push({label:'price', name:'close', color:'black'})
+    ticker.chart.data=createMLChart(selectedRatios,priceData)
+
+    ticker.ml={
+        ...ticker.ml,
+        priceData,
+        trainingData,
+        stage: ticker.ml.stages[2].name
+    }
+
     return ticker
 }
 
 async function trainModel(ticker,setState){
 
-    ticker.ml.stage = 'training'
+    ticker.ml.stage = ticker.ml.stages[3].name
     setState({...ticker}) 
     const { trainingData, options } = ticker.ml
-    let inputs = trainingData.map(item =>item.set.map(i=>i.price))
-    let outputs = trainingData.map(item => item.avg)
+
+    let inputs = trainingData.map(item => item.set)
+    let outputs = trainingData.map(item => item.price)
 
     let epochs = options.epochs.value
     let learningRate = options.learningRate.value
     let hiddenLayers = options.hiddenLayers.value
-    let movingAverageWeeks = options.movingAverageWeeks.value
+
     let callback = function(epoch, log,pred) {
         let stats = ticker.ml.stats
         epoch++
@@ -149,9 +157,6 @@ async function trainModel(ticker,setState){
         ticker.ml={
             ...ticker.ml,
             stats,
-        }
-        for(var i=0;i<movingAverageWeeks;i++){
-            pred.unshift(null)
         }
         ticker.chart.data.datasets.push({
             label:'Prediction '+epoch,
@@ -164,141 +169,109 @@ async function trainModel(ticker,setState){
         setState({...ticker})
     };
 
-    let result = await train(inputs, outputs, movingAverageWeeks, epochs, learningRate, hiddenLayers, callback);
+    let result = await train(inputs, outputs, inputs[0].length, epochs, learningRate, hiddenLayers, callback);
 
     ticker.ml={
         ...ticker.ml,
         inputs,
         outputs,
         result,
-        stage:'validateModel'
+        stage:ticker.ml.stages[4].name
     }
     return ticker
 }
 
 function validateModel(ticker){
 
-    const { inputs, result, trainingData, options } = ticker.ml
+    const { inputs, result, options,priceData, selectedRatios } = ticker.ml
     let trainingSize = options.trainingPercentage.value
-    let movingAverageWeeks = options.movingAverageWeeks.value
 
-    let sma = trainingData.map(item => item.avg);
-    let dates = ticker.priceData.map(item => item.dateShort).reverse()
     let trainX = inputs.slice(0, Math.floor(trainingSize / 100 * inputs.length));
     let trainY = makePredictions(trainX, result['model']);
     let unseenX = inputs.slice(Math.floor((trainingSize / 100) * inputs.length), inputs.length);
-
     let unseenY = makePredictions(unseenX, result['model']);
-    let prices = ticker.priceData.map(item => item.close).reverse();
-    
-    for(var i=0;i<movingAverageWeeks;i++){
-        sma.unshift(null)
-        trainY.unshift(null)
-    }
 
     trainY.forEach(i => unseenY.unshift(null))
     unseenY[trainY.length-1] = trainY[trainY.length-1]
 
-    let chart = {
-        datasets:[
-            {
-                label:'Price',
-                data:prices,
-                borderColor:'black',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-            {
-                label:'SMA',
-                data:sma,
-                borderColor:'yellow',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-            {
-                label:'Train',
-                data:trainY,
-                borderColor:'red',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-            {
-                label:'Unseen',
-                data:unseenY,
-                borderColor:'purple',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-        ],
-        labels:dates 
-    }
-    ticker.chart.data=chart
+    priceData.forEach((item,index)=>{
+        item.trainY = trainY[index]
+        item.unseenY = unseenY[index]
+    })
+
+    selectedRatios.push({label:'Train', name:'trainY', color:'red'})
+    selectedRatios.push({label:'Unseen', name:'unseenY', color:'purple'})
+
+    ticker.chart.data = createMLChart(selectedRatios,priceData)
     ticker.ml.stage = 'makePrediction'
     return ticker
 }
 
 async function predictModel(ticker) {
-    const { inputs, result, trainingData, options } = ticker.ml
+    const { inputs, result, options,priceData } = ticker.ml
 
     let trainingsize = options.trainingPercentage.value
-    let movingAverageWeeks = options.movingAverageWeeks.value
 
     let pred_X = [inputs[inputs.length-1]];
     pred_X = pred_X.slice(Math.floor(trainingsize / 100 * pred_X.length), pred_X.length);
     let pred_y = await makePredictions(pred_X, result['model']);
 
     let resultChartWeeks = 30;
-    let priceData = [...ticker.priceData]
-    priceData = priceData.splice(0, resultChartWeeks)
-    let lastDate = new Date(priceData[0].date)
-    
-    priceData.unshift({
-        close:pred_y[0],
-        date:new Date(lastDate.setDate(lastDate.getDate() + movingAverageWeeks)).toISOString()       
+    let resultPriceData = [...priceData]
+    resultPriceData = resultPriceData.splice(resultPriceData.length-resultChartWeeks,resultPriceData.length-1 )
+    let lastDate = new Date(resultPriceData[resultPriceData.length-1].date)
+    let predictionDate = new Date(lastDate.setDate(lastDate.getDate() + 7)).toISOString()
+
+    resultPriceData[resultPriceData.length-1].prediction = resultPriceData[resultPriceData.length-1].close
+    resultPriceData.push({
+        prediction:pred_y[0],
+        date:predictionDate      
     })
 
-    priceData = priceData.reverse()
-    let dates = priceData.map(item => item.date.split('T')[0])
-    let prices=[]
-    let predictidPrice=[]
-    priceData.forEach((price,index) =>{
-        if(index<priceData.length-1){
-            prices.push(price.close)
-            predictidPrice.push(null)
-        }else{
-            prices.push(null)
-            predictidPrice.push(price.close)
-        }
-    })
-    predictidPrice[predictidPrice.length-2] = prices[prices.length-2]
+    let priceChartOptions = [
+       {label:'Price', name:'close', color:'black'},
+       {label:'Prediction', name:'prediction', color:'red',pointRadius:5},
+    ]
 
-    let predictionChart = {
-        datasets:[
-            {
-                label:'Price',
-                data:prices,
-                borderColor:'black',
-                pointRadius:0,
-                borderWidth:2,            
-                fill:false,
-            },
-            {
-                label:'Predicted Price',
-                data:predictidPrice,
-                borderColor:'red',
-                pointRadius:5,
-                borderWidth:2,            
-                fill:false,
-            },
-        ],
-        labels:dates 
-    }
-
-    ticker.chart.predictionChart=predictionChart
+    ticker.chart.predictionChart=createMLChart(priceChartOptions,resultPriceData)
 
     return ticker
   }
+  
+function createMLChart(selectedRatios,priceData){
+    let chart={
+        datasets:[],
+        labels:priceData.map(item => item.date.split('T')[0])
+    }
+
+    selectedRatios.forEach((ratio,index) => {
+        chart.datasets.push({
+            label: ratio.label || ratio.name+index,
+            data: priceData.map(i => i[ratio.id||ratio.name]||null),
+            borderColor: ratio.color || colorArray(index),
+            pointRadius: 0,
+            borderWidth: 2,            
+            pointRadius: ratio.pointRadius||0,
+            fill: false,
+        })        
+    })
+    return chart
+}
+
+function createMovingAverage(priceData,index,weeks){
+    let totalsma=0
+    let days = []
+    for(let i=index;i<index+weeks;i++){
+        if(!priceData[i]){
+            totalsma=null
+            break
+        }
+        days.push({
+            date:priceData[i].date,
+            price:priceData[i].close
+        })
+        totalsma+=priceData[i].close
+    }
+    let sma = totalsma/weeks||null
+    return { days, sma }
+}

@@ -5,7 +5,7 @@ import SearchBox from '../components/SearchBox'
 import { useSelector, useDispatch } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
 import { Line } from 'react-chartjs-2';
-import { camelCaseToString } from '../utils/utils';
+import { camelCaseToString, uuidv4 } from '../utils/utils';
 import MaterialIcon from '../components/MaterialIcon'
 
 export default function MachineLearningScreen() {
@@ -29,7 +29,6 @@ export default function MachineLearningScreen() {
 
     const { stage } = machineLearning.ml
     
-
     return (
         <div className='page container'>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
@@ -101,13 +100,14 @@ function Header({machineLearning, setMachineLearning}){
             <div className='stages'>
                 {stages.map(item => 
                     <button 
+                        key={item.name}
                         disabled={item.name!==stage} 
-                        className={`stage button ${item.name===stage&&'active'}`} 
+                        className={`stage button ${item.name===stage?'active':''}`} 
                         onClick={()=>handleStageChange(item.name)}
                     >
                         <p>{camelCaseToString(item.name)}</p>
-                        <i className={item.name===stage&&item.spinning&&'spinning'}>
-                            <MaterialIcon icon={item.icon} color={item.name===stage&&'lightGreen'}/>
+                        <i className={(item.name===stage&&item.spinning)?'spinning':''}>
+                            <MaterialIcon icon={item.icon} color={item.name===stage?'lightGreen':''}/>
                         </i> 
                     </button>
                 )}
@@ -155,6 +155,7 @@ function Stages({machineLearning, setMachineLearning}){
                         )}
                     </ul>
                 }
+                {stage==='addTrainingData'&&<MLRAtios machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>}
                 {(stage==='training'||stage==='validateModel')&&
                     machineLearning.ml.stats.map(stat =>
                         <div key={stat.epoch} className='mlStat'>
@@ -165,5 +166,66 @@ function Stages({machineLearning, setMachineLearning}){
                 }                
             </div>
         </div>
+    )
+}
+
+function MLRAtios({ machineLearning, setMachineLearning }){
+
+    const handleAddRatio=(ratio)=>{
+        const selectedRatio={...ratio}
+        selectedRatio.id = uuidv4()
+        machineLearning.ml.selectedRatios.push(selectedRatio)
+        setMachineLearning({...machineLearning})
+    }
+
+    const handleRemoveRatio=(ratio)=>{
+        let { selectedRatios } = machineLearning.ml
+        selectedRatios = selectedRatios.filter(item => item.id!==ratio.id)
+        machineLearning.ml.selectedRatios = selectedRatios
+        setMachineLearning({...machineLearning})        
+    }
+
+    const handleMLRatioChange=(e)=>{
+        const { value,name } = e.target
+        let selectedIndex =  machineLearning.ml.selectedRatios.findIndex(item => item.id===name)
+        machineLearning.ml.selectedRatios[selectedIndex].value = Number(value)
+        setMachineLearning({...machineLearning})
+    }
+
+    return(
+        <>
+            <div>
+                <h3>Add ratios</h3>
+                <div className='addMLRatios'>
+                    {machineLearning.ml.ratios.map(ratio =>
+                        <button key={ratio.name} className='button small' onClick={()=>handleAddRatio(ratio)}>{camelCaseToString(ratio.name)}</button>
+                    )}                    
+                </div>
+            </div>
+            <div>
+                <h3>Selected Ratios</h3>
+                <ul className='mlTrainingOptions'>
+                    {machineLearning.ml.selectedRatios.map(ratio =>
+                        <li key={ratio.id}>
+                            <p>{camelCaseToString(ratio.name)}</p>
+                            <div className='ratioOption'>
+                                {ratio.value&&
+                                    <>
+                                        <input
+                                            type='range'
+                                            value={ratio.value}
+                                            name={ratio.id}
+                                            onChange={(e)=>handleMLRatioChange(e)}
+                                        />
+                                        <h3>{ratio.value||0}</h3>  
+                                    </> 
+                                }
+                            </div>
+                            <button onClick={()=>handleRemoveRatio(ratio)}>X</button>
+                        </li>
+                    )}                    
+                </ul>
+            </div>
+        </>
     )
 }

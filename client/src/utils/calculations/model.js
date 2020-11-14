@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 tf.setBackend('cpu')
 
 export default async function train(X, Y, batchSize, epochs, learningRate, hiddenLayers, callback){
-
+  console.log(X, Y,batchSize, epochs, learningRate, hiddenLayers)
     const inputLayerShape  = batchSize;
     const inputLayerNeurons = 100;
     const inputLayerFeatures = 10;

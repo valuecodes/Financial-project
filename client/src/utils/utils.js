@@ -84,6 +84,18 @@ export function getNumberOfWeek(dt) {
     return 1 + Math.ceil((firstThursday - tdt) / 604800000);
 }
 
+export function colorArray(index){
+    let colors=[
+        'yellow',
+        'purple',
+        'green',
+        'salmon',
+        'cyan',
+        'lime'
+    ]
+    return colors[index]
+}
+
 export function randomColor(){
     
     let colorArray = [
