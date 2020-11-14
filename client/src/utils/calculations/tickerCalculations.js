@@ -244,6 +244,7 @@ export function addMovingAverages(ticker){
         let total200=0
         let high14Days=-Infinity
         let low14Days=Infinity
+        let MACD = 0
 
         for(let i=index;i<index+2;i++){
             if(!priceData[i]){
@@ -294,6 +295,7 @@ export function addMovingAverages(ticker){
         item.MA26 = total26?total26/4:item.close
         item.MA50 = total50?total50/7.14:item.close
         item.MA200 = total200?total200/28.57:item.close
+        item.MACD = (total26&&total12)? total12-total26:null
     })
 }
 

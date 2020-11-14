@@ -4,7 +4,7 @@ import MachineLearning from '../utils/machineLearning'
 import SearchBox from '../components/SearchBox'
 import { useSelector, useDispatch } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { camelCaseToString, uuidv4 } from '../utils/utils';
 import MaterialIcon from '../components/MaterialIcon'
 
@@ -37,8 +37,14 @@ export default function MachineLearningScreen() {
                 <Stages machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
                 <div className='chartContainer'>
                     <Line
-                        data={machineLearning.chart.data}
+                        data={machineLearning.chart.priceChart}
                         options={machineLearning.chart.options}
+                    />
+                </div>
+                <div className='chartContainerSmall'>
+                    <Line
+                        data={machineLearning.chart.ratioChart}
+                        options={machineLearning.chart.ratiosChartOptions}
                     />
                 </div>
                 <div className='chartContainer predictionChart'>
@@ -63,7 +69,7 @@ function Header({machineLearning, setMachineLearning}){
     }
 
     const handleReset=()=>{
-        machineLearning.ml.stage='selectTicker'
+        machineLearning.ml.stage=0
         setMachineLearning({...machineLearning})
     }
 
@@ -91,7 +97,7 @@ function Header({machineLearning, setMachineLearning}){
 
     return(
         <div className='mlHeader'>
-            {stage==='selectTicker'?
+            {stage===0?
                 <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Select ticker...'}/>:
                 <div className='stageHeader'>
                     <h2 className='mlTicker'>{machineLearning.profile.ticker}</h2>
@@ -101,13 +107,13 @@ function Header({machineLearning, setMachineLearning}){
                 {stages.map(item => 
                     <button 
                         key={item.name}
-                        disabled={item.name!==stage} 
-                        className={`stage button ${item.name===stage?'active':''}`} 
+                        disabled={item.number!==stage} 
+                        className={`stage button ${item.number===stage?'active':''}`} 
                         onClick={()=>handleStageChange(item.name)}
                     >
                         <p>{camelCaseToString(item.name)}</p>
-                        <i className={(item.name===stage&&item.spinning)?'spinning':''}>
-                            <MaterialIcon icon={item.icon} color={item.name===stage?'lightGreen':''}/>
+                        <i className={(item.number===stage&&item.spinning)?'spinning':''}>
+                            <MaterialIcon icon={item.icon} color={item.number===stage?'lightGreen':''}/>
                         </i> 
                     </button>
                 )}
@@ -120,6 +126,32 @@ function Header({machineLearning, setMachineLearning}){
     )
 }
 
+function TrainingStatistics({machineLearning}){
+    const { options, stats } = machineLearning.ml
+    return(
+        <div>
+            <div className='selectedMLRatios'>
+                <h3>Selected Ratios</h3>
+                {machineLearning.ml.selectedRatios.map(ratio =>
+                    <label key={ratio.id}>{camelCaseToString(ratio.name)} {ratio.value}</label>
+                )}                    
+            </div>
+            <div>
+                <div className='statHeader'>
+                    <h3>Epochs: {stats.currentEpoch}/{options.epochs.value} ({stats.percentage}%)</h3>
+                    <h3>Loss: {stats.currentLoss}</h3>
+                </div>
+                <div className='chartContainer'>
+                    <Bar
+                        data={machineLearning.chart.lossChart}
+                        options={machineLearning.chart.options}
+                    />
+                </div>                
+            </div>
+
+        </div>
+    )
+}
 
 function Stages({machineLearning, setMachineLearning}){
 
@@ -129,16 +161,18 @@ function Stages({machineLearning, setMachineLearning}){
         setState({...state})
     }
 
-    const { stage, options } = machineLearning.ml
+    const { stage,stages, options } = machineLearning.ml
 
     return(
         <div className='mlStages'>                
-            <h2>{camelCaseToString(stage)}</h2>
+            <h2>{camelCaseToString(stages[stage].name)}</h2>
             <div className='mlStats'>
-                {(stage==='trainModel'||stage==='addTrainingData')&&
+                {stage>=3 &&
+                    <TrainingStatistics machineLearning={machineLearning}/>
+                }                  
+                {stage===2&&
                     <ul className='mlTrainingOptions'>
                         {Object.keys(options).map(option =>
-                            options[option].stage==stage&&
                             <li key={option}>
                                 <label>{camelCaseToString(option)}</label>
                                 <input 
@@ -150,20 +184,12 @@ function Stages({machineLearning, setMachineLearning}){
                                     step={options[option].step}
                                     onChange={(e)=>handleMLOptionChange(e,machineLearning,setMachineLearning)}
                                 />       
-                                <h3>{options[option].value||0} </h3>                 
+                                <h3>{options[option].value||0}</h3>  
                             </li>                    
                         )}
                     </ul>
                 }
-                {stage==='addTrainingData'&&<MLRAtios machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>}
-                {(stage==='training'||stage==='validateModel')&&
-                    machineLearning.ml.stats.map(stat =>
-                        <div key={stat.epoch} className='mlStat'>
-                            <p>Epoch: {stat.epoch}/{stat.totalEpochs}</p>
-                            <p>Loss: {stat.loss.toFixed(5)}</p>
-                        </div>
-                    )                 
-                }                
+                {stage===1&&<MLRAtios machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>}             
             </div>
         </div>
     )

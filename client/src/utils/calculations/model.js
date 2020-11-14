@@ -1,8 +1,8 @@
 import * as tf from '@tensorflow/tfjs';
 tf.setBackend('cpu')
 
-export default async function train(X, Y, batchSize, epochs, learningRate, hiddenLayers, callback){
-  console.log(X, Y,batchSize, epochs, learningRate, hiddenLayers)
+export default async function train(X, Y, batchSize, epochs, learningRate, hiddenLayers,trainingPercentage, callback){
+
     const inputLayerShape  = batchSize;
     const inputLayerNeurons = 100;
     const inputLayerFeatures = 10;
@@ -40,8 +40,10 @@ export default async function train(X, Y, batchSize, epochs, learningRate, hidde
     const history = await model.fit(xs, ys,
       { batchSize: batchSize, epochs: epochs, callbacks: {
         onEpochEnd: async (epoch, log) => {
-        console.log(model.layers)
-          let pred = makePredictions(X, model)
+        console.log(model.layers,X.length,xs, ys,)
+          let inputs=[...X]
+          let trainX = inputs.slice(0, Math.floor(trainingPercentage / 100 * inputs.length));
+          let pred = makePredictions(trainX, model)
           callback(epoch, log, pred);
         }
       }

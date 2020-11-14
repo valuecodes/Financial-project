@@ -1,6 +1,7 @@
 import { tickerInit, calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics } from './calculations/tickerCalculations';
 import train, { makePredictions } from './calculations/model';
-import { randomColor, colorArray } from './utils';
+import { randomColor, colorArray, normalize } from './utils';
+import { input } from '@tensorflow/tfjs';
 
 export default function MachineLearning(data){
     this.profile = data?data.profile:{}
@@ -11,7 +12,7 @@ export default function MachineLearning(data){
     this.dividendData = data?data.dividendData:[]
     this.priceData = data?data.priceData:[]
     this.chart={
-        data:{},
+        priceChart:{},
         options:{
             responsive:true,
             maintainAspectRatio: false,
@@ -25,39 +26,78 @@ export default function MachineLearning(data){
                 intersect: false,
             }            
         },
-        predictionChart:{}
+        ratioChart:{},
+        predictionChart:{},
+        ratiosChartOptions:{
+            responsive:true,
+            maintainAspectRatio: false,
+            plugins:{
+                datalabels:{
+                    display:false
+                }
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+                position:'nearest'
+            },
+            scales: {
+                xAxes: [{
+                    ticks: {
+                        display: false
+                    }
+                }]
+            }
+        },
+        lossChart:{   
+            labels:[],     
+            datasets:[{
+                label:'Loss',
+                data: [],
+                borderColor: "black"
+            }],
+        }
     }
     this.ml={
-        stage:'selectTicker',
+        stage:0,
         stages:[
-            {name:'selectTicker'},
-            {name:'addTrainingData',icon:'ArrowForwardIosIcon',type:'button'},
-            {name:'trainModel',icon:'ArrowForwardIosIcon',type:'button'},
-            {name:'training',icon:'LoopIcon',spinning:true},
-            {name:'validateModel',icon:'ArrowForwardIosIcon',type:'button'},
-            {name:'makePrediction',icon:'ArrowForwardIosIcon',type:'button'},
+            {number:0, name:'selectTicker'},
+            {number:1, name:'addTrainingData',icon:'ArrowForwardIosIcon',type:'button'},
+            {number:2, name:'trainModel',icon:'ArrowForwardIosIcon',type:'button'},
+            {number:3, name:'training',icon:'LoopIcon',spinning:true},
+            {number:4, name:'validateModel',icon:'ArrowForwardIosIcon',type:'button'},
+            {number:5, name:'makePrediction',icon:'ArrowForwardIosIcon',type:'button'},
         ],
-        stats:[],
+        stats:{
+            currentEpoch:0,
+            currentLoss:0,
+            percentage:0,
+        },
         ratios:[
-            {name:'movingAverage',value:7},
-            {name:'movingAverageSet',value:7},
-            {name:'pe'},
-            {name:'volume'},
-            {name:'oscillator'}, 
+            {name:'movingAverage',value:7,values:[],chart:'priceChart'},
+            {name:'movingAverageSet',value:7,values:[],chart:'priceChart'},
+            {name:'pe',normalize:true,values:[],chart:'ratioChart'},
+            {name:'volume',normalize:true,values:[],chart:'ratioChart'},
+            {name:'oscillator',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'MACD',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'pb',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'ps',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'pfcf',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'divYield',normalize:true,values:[],chart:'ratioChart'}, 
         ],
         selectedRatios:[],
         options:{
             trainingPercentage:{ 
-                value:70, step:1, max:100, stage:'trainModel'
+                value:70, step:1, max:100
             },
             epochs:{ 
-                value:5, step:1, stage:'trainModel'
+                value:5, step:1
             },
             learningRate:{ 
-                value:0.01, step:0.002,max:1, stage:'trainModel'
+                value:0.01, step:0.002,max:1
             },
             hiddenLayers:{ 
-                value:2, step:1, max:20, stage:'trainModel'
+                value:2, step:1, max:20
             },
         }
     }
@@ -74,7 +114,7 @@ function handleInit(ticker){
     addMovingAverages(ticker)
     addFinancialRatios(ticker)
     addAnalytics(ticker)
-    ticker.ml.stage = ticker.ml.stages[1].name
+    ticker.ml.stage = 1
     return ticker
 }
 
@@ -83,7 +123,7 @@ function addTraininData(ticker){
     let { priceData } = ticker
     const { selectedRatios } = ticker.ml
     let trainingData = []
-    console.log(priceData)
+
     priceData.forEach((item,index) =>{
         let set=[]
         selectedRatios.forEach(ratio => {
@@ -92,15 +132,18 @@ function addTraininData(ticker){
                     const simpleMovingAverage = createMovingAverage(priceData,index,ratio.value).sma
                     set.push(simpleMovingAverage)
                     item[ratio.id] = simpleMovingAverage
+                    ratio.values.push(simpleMovingAverage)
                     break
                 case 'movingAverageSet':
                     const { days, sma } = createMovingAverage(priceData,index,ratio.value)
                     set.push(...days.map(i => i.price))
                     item[ratio.id] = sma
+                    ratio.values.push(...days.map(i => i.price))
                     break
                 default:  
                     set.push(priceData[index][ratio.name])
-                    item[ratio.id] = priceData[index][ratio.name]                   
+                    item[ratio.id] = priceData[index][ratio.name]     
+                    ratio.values.push(priceData[index][ratio.name])      
                     break
             }
         });
@@ -110,28 +153,53 @@ function addTraininData(ticker){
             price:item.close,
             date:item.date
         })
-
     })
-
+ 
     priceData = [...ticker.priceData].reverse()
-    let max = 0
+    priceData = priceData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
+    trainingData = trainingData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
+
+    let nullValues = 0
     selectedRatios.forEach(item => {
-        if(item.value&&item.value>max){
-            max=item.value    
+        if(item.value&&item.value>nullValues){
+            nullValues=item.value    
         }    
     })
     
-    priceData.splice(0,max)
-    trainingData.splice(0,max)
+    priceData.splice(0,nullValues)
+    trainingData.splice(0,nullValues)
 
-    selectedRatios.push({label:'price', name:'close', color:'black'})
-    ticker.chart.data=createMLChart(selectedRatios,priceData)
+    let priceValues = priceData.map(item => item.close)
+    let maxPrice = Math.max(...priceValues)
+    trainingData.forEach(item => item.price=item.price/maxPrice)
+    console.log(trainingData)
+    selectedRatios.forEach((ratio,index) =>{
+        let values = trainingData.map(item => item.set[index]).map(item => item||0)
+        let min = Math.min(...values)
+        let max = Math.max(...values)
+        trainingData.forEach((item,i) => trainingData[i].set[index] = normalize(item.set[index],max,0))
+        ratio.min = min
+        ratio.max = max
+    })
+ 
+    const mlChartRatios=[...selectedRatios]
+    
+    mlChartRatios.push({label:'Price', name:'close', color:'black', chart:'priceChart'})
+    const { priceChart, ratioChart } = createMLChart(mlChartRatios,priceData)
+    
+    ticker.chart={
+        ...ticker.chart,
+        priceChart,
+        ratioChart
+    }
 
     ticker.ml={
         ...ticker.ml,
         priceData,
         trainingData,
-        stage: ticker.ml.stages[2].name
+        mlChartRatios,
+        stage: 2,
+        maxPrice
     }
 
     return ticker
@@ -139,51 +207,62 @@ function addTraininData(ticker){
 
 async function trainModel(ticker,setState){
 
-    ticker.ml.stage = ticker.ml.stages[3].name
+    ticker.ml.stage = 3
     setState({...ticker}) 
-    const { trainingData, options } = ticker.ml
+    const { trainingData, options, maxPrice } = ticker.ml
 
     let inputs = trainingData.map(item => item.set)
     let outputs = trainingData.map(item => item.price)
-
+    console.log(inputs)
     let epochs = options.epochs.value
     let learningRate = options.learningRate.value
     let hiddenLayers = options.hiddenLayers.value
+    let trainingPercentage = options.trainingPercentage.value
+
+    ticker.chart.lossChart.labels = [...Array(epochs).keys()].map(i => i+1)
 
     let callback = function(epoch, log,pred) {
         let stats = ticker.ml.stats
         epoch++
-        stats.push({loss:log.loss,epoch,totalEpochs:epochs})
+        stats={
+            currentEpoch:epoch,
+            currentLoss:log.loss.toFixed(5),
+            percentage:((epoch/epochs)*100).toFixed(0)
+        }
         ticker.ml={
             ...ticker.ml,
             stats,
         }
-        ticker.chart.data.datasets.push({
+        ticker.chart.priceChart.datasets.push({
             label:'Prediction '+epoch,
-            data:pred,
+            data:pred.map(item => item*maxPrice),
             borderColor:`rgba(227, 36, 36,${epoch/epochs})`,
             pointRadius:0,
             borderWidth:2,            
             fill:false,
         })
+
+        let lossChartData =[...ticker.chart.lossChart.datasets[0].data]
+        lossChartData.push(log.loss)
+        ticker.chart.lossChart.datasets[0].data=lossChartData
         setState({...ticker})
     };
 
-    let result = await train(inputs, outputs, inputs[0].length, epochs, learningRate, hiddenLayers, callback);
+    let result = await train(inputs, outputs, inputs[0].length, epochs, learningRate, hiddenLayers,trainingPercentage, callback);
 
     ticker.ml={
         ...ticker.ml,
         inputs,
         outputs,
         result,
-        stage:ticker.ml.stages[4].name
+        stage:4
     }
     return ticker
 }
 
 function validateModel(ticker){
 
-    const { inputs, result, options,priceData, selectedRatios } = ticker.ml
+    const { inputs, result, options,priceData, mlChartRatios, maxPrice } = ticker.ml
     let trainingSize = options.trainingPercentage.value
 
     let trainX = inputs.slice(0, Math.floor(trainingSize / 100 * inputs.length));
@@ -199,16 +278,22 @@ function validateModel(ticker){
         item.unseenY = unseenY[index]
     })
 
-    selectedRatios.push({label:'Train', name:'trainY', color:'red'})
-    selectedRatios.push({label:'Unseen', name:'unseenY', color:'purple'})
+    mlChartRatios.push({label:'Train', name:'trainY', color:'red', chart:'priceChart'})
+    mlChartRatios.push({label:'Unseen', name:'unseenY', color:'purple', chart:'priceChart'})
 
-    ticker.chart.data = createMLChart(selectedRatios,priceData)
-    ticker.ml.stage = 'makePrediction'
+    const { priceChart, ratioChart } = createMLChart(mlChartRatios,priceData, maxPrice)
+    ticker.chart={
+        ...ticker.chart,
+        priceChart,
+        ratioChart
+    }
+
+    ticker.ml.stage = 5
     return ticker
 }
 
 async function predictModel(ticker) {
-    const { inputs, result, options,priceData } = ticker.ml
+    const { inputs, result, options, priceData,maxPrice } = ticker.ml
 
     let trainingsize = options.trainingPercentage.value
 
@@ -222,40 +307,68 @@ async function predictModel(ticker) {
     let lastDate = new Date(resultPriceData[resultPriceData.length-1].date)
     let predictionDate = new Date(lastDate.setDate(lastDate.getDate() + 7)).toISOString()
 
-    resultPriceData[resultPriceData.length-1].prediction = resultPriceData[resultPriceData.length-1].close
     resultPriceData.push({
-        prediction:pred_y[0],
+        prediction: pred_y[0]*maxPrice,
         date:predictionDate      
     })
 
     let priceChartOptions = [
-       {label:'Price', name:'close', color:'black'},
-       {label:'Prediction', name:'prediction', color:'red',pointRadius:5},
+       {label:'Price', name:'close', color:'black',chart:'predictionChart'},
+       {label:'Prediction', name:'prediction', color:'red',pointRadius:5,chart:'predictionChart'},
     ]
 
-    ticker.chart.predictionChart=createMLChart(priceChartOptions,resultPriceData)
+    ticker.chart.predictionChart=createMLChart(priceChartOptions,resultPriceData).predictionChart
 
     return ticker
   }
   
-function createMLChart(selectedRatios,priceData){
-    let chart={
-        datasets:[],
-        labels:priceData.map(item => item.date.split('T')[0])
+function createMLChart(mlChartOptions,priceData,maxPrice){
+    
+    let labels = priceData.map(item => item.date.split('T')[0])
+    
+    let charts={
+        priceChart:{
+            datasets:[],
+            labels          
+        },
+        ratioChart:{
+            datasets:[],
+            labels   
+        },
+        predictionChart:{
+            datasets:[],
+            labels  
+        }
     }
 
-    selectedRatios.forEach((ratio,index) => {
-        chart.datasets.push({
-            label: ratio.label || ratio.name+index,
-            data: priceData.map(i => i[ratio.id||ratio.name]||null),
-            borderColor: ratio.color || colorArray(index),
+    mlChartOptions.forEach((option,index) => {
+
+        let data = priceData.map(i => i[option.id||option.name]||null)
+        let dataLabels = data
+        if(option.normalize){
+            data = data.map(item => normalize(item,option.max,option.min))
+        }
+
+        if(['trainY','unseenY'].includes(option.name)){
+            data = data.map(item => item?item*maxPrice:null)
+        }
+        
+        if(option.name==='prediction'){
+            data[data.length-2] = priceData[priceData.length-2].close
+        }
+
+        charts[option.chart].datasets.push({
+            label: option.label || option.name+index,
+            data: data,
+            borderColor: option.color || colorArray(index),
             pointRadius: 0,
             borderWidth: 2,            
-            pointRadius: ratio.pointRadius||0,
+            pointRadius: option.pointRadius||0,
+            dataLabels,
             fill: false,
         })        
     })
-    return chart
+    return charts
 }
 
 function createMovingAverage(priceData,index,weeks){

@@ -1,3 +1,5 @@
+import { func } from "@tensorflow/tfjs-data";
+
 export function camelCaseToString(s) {
     if(s===null) return ''
 
@@ -82,6 +84,12 @@ export function getNumberOfWeek(dt) {
      tdt.setMonth(0, 1 + ((4 - tdt.getDay()) + 7) % 7);
        }
     return 1 + Math.ceil((firstThursday - tdt) / 604800000);
+}
+
+export function normalize(val=0, max=1, min=0) {
+    let result = (val - min) / (max - min)
+    if(isNaN(result)) result=0
+    return result;
 }
 
 export function colorArray(index){
