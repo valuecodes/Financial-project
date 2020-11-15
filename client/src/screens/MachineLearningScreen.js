@@ -15,8 +15,8 @@ export default function MachineLearningScreen() {
     
     const [machineLearning, setMachineLearning] = useState(new MachineLearning(null))
     const [navigation,setNavigation] = useState({
-        selected:{name:'scatter',index:0},
-        options:['scatter','historicalScatter']
+        selected:{name:'machineLearning',index:0},
+        options:['machineLearning']
     })
 
     useEffect(()=>{
@@ -197,10 +197,44 @@ function Stages({machineLearning, setMachineLearning}){
 
 function MLRAtios({ machineLearning, setMachineLearning }){
 
-    const handleAddRatio=(ratio)=>{
+    const handleAddPriceRatio=(ratio)=>{
         const selectedRatio={...ratio}
         selectedRatio.id = uuidv4()
         machineLearning.ml.selectedRatios.push(selectedRatio)
+        setMachineLearning({...machineLearning})
+    }
+
+    const handleAddFinancialRatio=(ratio)=>{
+        let found = machineLearning.ml.selectedRatios.findIndex(item =>item.name===ratio)
+        if(found>=0){
+            machineLearning.ml.selectedRatios.splice(found,1)
+        }else{
+            addFinancialRatio(ratio)
+        }
+        setMachineLearning({...machineLearning})
+    }
+
+    const addFinancialRatio=(ratio)=>{
+            let newRatio={
+                name:ratio,
+                category:'financialRatio',
+                chart:'ratioChart',
+                normalize:true,
+                id:uuidv4(),
+                values:[]
+            }
+            machineLearning.ml.selectedRatios.push(newRatio)
+    }
+
+    const handleAddCategory=(category)=>{
+        let categoryNames = machineLearning.analytics.financialCategories[category]
+        let firstItem = categoryNames[0]
+        let firstIncludes = machineLearning.ml.selectedRatios.findIndex(item => item.name === firstItem) 
+        machineLearning.ml.selectedRatios =  machineLearning.ml.selectedRatios
+            .filter(item => !categoryNames.includes(item.name))
+        if(firstIncludes===-1){
+            categoryNames.forEach(item => addFinancialRatio(item))
+        }
         setMachineLearning({...machineLearning})
     }
 
@@ -218,15 +252,45 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         setMachineLearning({...machineLearning})
     }
 
+    console.log(machineLearning,machineLearning.ml.selectedRatios.find(item =>item.name==='pe')&&'lightgreen')
+
     return(
         <>
             <div>
-                <h3>Add ratios</h3>
+                <h3>Add Price ratios</h3>
                 <div className='addMLRatios'>
-                    {machineLearning.ml.ratios.map(ratio =>
-                        <button key={ratio.name} className='button small' onClick={()=>handleAddRatio(ratio)}>{camelCaseToString(ratio.name)}</button>
+                    {machineLearning.ml.priceRatios.map(ratio =>
+                        <button 
+                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio.name)&&'lightgreen'}}
+                            key={ratio.name} 
+                            className='button small' 
+                            onClick={()=>handleAddPriceRatio(ratio)
+                        }>
+                            {camelCaseToString(ratio.name)}
+                        </button>
                     )}                    
                 </div>
+                <div>Add financials</div>
+                {Object.keys(machineLearning.analytics.financialCategories).map(category => 
+                    <div key={category}>
+                        <div className='financialCategoryHeader'>
+                            <h3>{camelCaseToString(category)}</h3>
+                            <button onClick={()=>handleAddCategory(category)}>Add All</button>                            
+                        </div>
+                        <div>
+                            {machineLearning.analytics.financialCategories[category].map(item => 
+                                <button
+                                    style={{color:machineLearning.ml.selectedRatios.find(i =>i.name===item)&&'lightgreen'}}
+                                    className={`button small`}
+                                    key={item} 
+                                    onClick={()=>handleAddFinancialRatio(item)}
+                                >
+                                    {item}
+                                </button>
+                            )}                            
+                        </div>
+                    </div>
+                )}
             </div>
             <div>
                 <h3>Selected Ratios</h3>

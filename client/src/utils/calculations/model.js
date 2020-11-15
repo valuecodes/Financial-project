@@ -40,7 +40,6 @@ export default async function train(X, Y, batchSize, epochs, learningRate, hidde
     const history = await model.fit(xs, ys,
       { batchSize: batchSize, epochs: epochs, callbacks: {
         onEpochEnd: async (epoch, log) => {
-        console.log(model.layers,X.length,xs, ys,)
           let inputs=[...X]
           let trainX = inputs.slice(0, Math.floor(trainingPercentage / 100 * inputs.length));
           let pred = makePredictions(trainX, model)

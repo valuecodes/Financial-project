@@ -194,7 +194,6 @@ export function Ticker(data,portfolioTicker){
     this.updateRatiosChart = (options) => handleUpdateRatiosChart(this,options)
     this.updateFinancialChart = (options) => handleUpdateFinancialChart(this,options)
     this.updateForecastChart = () => handleUpdateForecastChart(this)
-
     this.userPriceChart = (options) => calculateUserPriceChart(this,options)
     this.userReturnChart = (options) => calculateUserReturnChart(this,options) 
 

@@ -1,4 +1,4 @@
-import { tickerInit, calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics } from './calculations/tickerCalculations';
+import { tickerInit, calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics, getStatement, addFinancialCategories } from './calculations/tickerCalculations';
 import train, { makePredictions } from './calculations/model';
 import { randomColor, colorArray, normalize } from './utils';
 import { input } from '@tensorflow/tfjs';
@@ -35,6 +35,9 @@ export default function MachineLearning(data){
                 datalabels:{
                     display:false
                 }
+            },
+            legend:{
+                display:false
             },
             tooltips: {
                 mode: 'index',
@@ -73,17 +76,15 @@ export default function MachineLearning(data){
             currentLoss:0,
             percentage:0,
         },
-        ratios:[
-            {name:'movingAverage',value:7,values:[],chart:'priceChart'},
-            {name:'movingAverageSet',value:7,values:[],chart:'priceChart'},
-            {name:'pe',normalize:true,values:[],chart:'ratioChart'},
-            {name:'volume',normalize:true,values:[],chart:'ratioChart'},
-            {name:'oscillator',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'MACD',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'pb',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'ps',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'pfcf',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'divYield',normalize:true,values:[],chart:'ratioChart'}, 
+        priceRatios:[
+            {name:'movingAverage',category:'movingAverage',value:7,values:[],chart:'priceChart'},
+            {name:'pe',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'},
+            {name:'volume',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'},
+            {name:'oscillator',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'pb',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'ps',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'pfcf',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
+            {name:'divYield',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
         ],
         selectedRatios:[],
         options:{
@@ -114,6 +115,7 @@ function handleInit(ticker){
     addMovingAverages(ticker)
     addFinancialRatios(ticker)
     addAnalytics(ticker)
+    addFinancialCategories(ticker)
     ticker.ml.stage = 1
     return ticker
 }
@@ -123,11 +125,14 @@ function addTraininData(ticker){
     let { priceData } = ticker
     const { selectedRatios } = ticker.ml
     let trainingData = []
+    let lastFullFinancialYear = ticker.analytics.financialInputs.lastFullFinancialYear
+    let firstFullFinancialYear = ticker.analytics.financialInputs.firstFullFinancialYear
+    let yearlyData = ticker.analytics.yearlyData
 
     priceData.forEach((item,index) =>{
         let set=[]
         selectedRatios.forEach(ratio => {
-            switch(ratio.name){
+            switch(ratio.category){
                 case 'movingAverage':
                     const simpleMovingAverage = createMovingAverage(priceData,index,ratio.value).sma
                     set.push(simpleMovingAverage)
@@ -140,11 +145,25 @@ function addTraininData(ticker){
                     item[ratio.id] = sma
                     ratio.values.push(...days.map(i => i.price))
                     break
-                default:  
+                case 'priceRatio':
                     set.push(priceData[index][ratio.name])
                     item[ratio.id] = priceData[index][ratio.name]     
                     ratio.values.push(priceData[index][ratio.name])      
                     break
+                case 'financialRatio':
+                    let year = new Date(item.date).getFullYear()-1 
+                    if(year>lastFullFinancialYear) year=lastFullFinancialYear
+                    if(year<firstFullFinancialYear) break
+                    let value = yearlyData[year][ratio.name]                 
+                    set.push(value)
+                    item[ratio.id] = value    
+                    ratio.values.push(value)      
+                    break
+                default:  
+                    // set.push(priceData[index][ratio.name])
+                    // item[ratio.id] = priceData[index][ratio.name]     
+                    // ratio.values.push(priceData[index][ratio.name])      
+                    // break
             }
         });
 
@@ -154,7 +173,7 @@ function addTraininData(ticker){
             date:item.date
         })
     })
- 
+    
     priceData = [...ticker.priceData].reverse()
     priceData = priceData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
     trainingData = trainingData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
@@ -177,11 +196,17 @@ function addTraininData(ticker){
         let values = trainingData.map(item => item.set[index]).map(item => item||0)
         let min = Math.min(...values)
         let max = Math.max(...values)
-        trainingData.forEach((item,i) => trainingData[i].set[index] = normalize(item.set[index],max,0))
+        console.log(ratio.scale,)
+        if(ratio.normalize){
+            trainingData.forEach((item,i) => trainingData[i].set[index] = normalize(item.set[index],max,0))
+        }
+        if(ratio.scale){
+            trainingData.forEach((item,i) => trainingData[i].set[index] = item.set[index]/max)
+        }
         ratio.min = min
         ratio.max = max
     })
- 
+    console.log(trainingData,selectedRatios)
     const mlChartRatios=[...selectedRatios]
     
     mlChartRatios.push({label:'Price', name:'close', color:'black', chart:'priceChart'})
@@ -213,7 +238,6 @@ async function trainModel(ticker,setState){
 
     let inputs = trainingData.map(item => item.set)
     let outputs = trainingData.map(item => item.price)
-    console.log(inputs)
     let epochs = options.epochs.value
     let learningRate = options.learningRate.value
     let hiddenLayers = options.hiddenLayers.value
@@ -347,6 +371,10 @@ function createMLChart(mlChartOptions,priceData,maxPrice){
         let dataLabels = data
         if(option.normalize){
             data = data.map(item => normalize(item,option.max,option.min))
+        }
+
+        if(option.scale){
+            data = data.map(item => item/option)            
         }
 
         if(['trainY','unseenY'].includes(option.name)){

@@ -1,5 +1,7 @@
 import { roundToTwoDecimal, camelCaseToString } from "../utils";
 import { handleGetClosestPriceFromDate } from "../tickerData";
+import { tickerDataModel } from '../dataModels'
+import { connect } from "mongoose";
 
 export function addFinancialRatios(ticker){
     let priceData = ticker.priceData
@@ -94,7 +96,7 @@ export function addAnalytics(ticker){
         let yearData = incomeStatement.find(item => new Date(item.date).getFullYear()===year)
         let balanceData = balanceSheet.find(item => new Date(item.date).getFullYear()===year)
         let cashflowData = cashFlow.find(item => new Date(item.date).getFullYear()===year)||{}    
-
+        console.log(yearData)
         let price = handleGetClosestPriceFromDate(ticker,new Date(year,11))
         let shareCount = yearData.netIncome / yearData.eps
         let marketCap = shareCount*price
@@ -149,6 +151,8 @@ export function addAnalytics(ticker){
         cash:{}
     }
 
+
+
     Object.keys(yearlyData).forEach((item,index) =>{
         Object.keys(financialInputs).forEach(name =>{
             let value = yearlyData[item][name]
@@ -167,13 +171,14 @@ export function addAnalytics(ticker){
                 let average = total/count
                 let averageGrowth = growthTotal/(count-1)
                 financialInputs[name]={
+                    ...financialInputs[name],
                     latest: value,
                     date: yearlyData[item].date,
                     count:count,
                     total:total,
                     average: average,
                     growthTotal:growthTotal,
-                    averageGrowth:averageGrowth
+                    averageGrowth:averageGrowth,
                 }
             }else{
                 financialInputs[name]={
@@ -232,6 +237,37 @@ export function addAnalytics(ticker){
         yearlyData
     }
 
+}
+
+export function addFinancialCategories(ticker){
+    let latestFinanacialYear = ticker.analytics.financialInputs.lastFullFinancialYear
+    let inputs = Object.keys(ticker.analytics.yearlyData[latestFinanacialYear])
+    let financialCategories = {
+        incomeStatement:[],
+        balanceSheet:[],
+        cashFlow:[],
+        other:[]
+    }
+    inputs = inputs.filter(item => !['_id','date'].includes(item))
+    inputs.forEach(item =>{
+        let statement = getStatement(item)
+        financialCategories[statement].push(item)
+    })
+    ticker.analytics.financialCategories = financialCategories
+}
+
+export function getStatement(name){
+    let statement = ''
+    if(tickerDataModel.incomeStatement[name]===null){
+        statement = 'incomeStatement'
+    }else if(tickerDataModel.balanceSheet[name]===null){
+        statement = 'balanceSheet'
+    }else if(tickerDataModel.cashFlow[name]===null){
+        statement = 'cashFlow'
+    }else{
+        statement = 'other'
+    }
+    return statement
 }
 
 export function addMovingAverages(ticker){

@@ -1950,6 +1950,11 @@ td{
   margin: 1rem 0;
 }
 
+.financialCategoryHeader{
+  display: flex;
+  justify-content: space-between;
+}
+
 .selectedMLRatios h3{
   grid-column: 1/3;
 }

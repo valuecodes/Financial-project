@@ -89,6 +89,8 @@ export function getNumberOfWeek(dt) {
 export function normalize(val=0, max=1, min=0) {
     let result = (val - min) / (max - min)
     if(isNaN(result)) result=0
+    if(result===-Infinity) result=0
+    if(result===Infinity) result=0
     return result;
 }
 
