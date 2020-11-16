@@ -1,7 +1,6 @@
-import { tickerInit, calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics, getStatement, addFinancialCategories } from './calculations/tickerCalculations';
+import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics, addFinancialCategories } from './calculations/tickerCalculations';
 import train, { makePredictions } from './calculations/model';
-import { randomColor, colorArray, normalize } from './utils';
-import { input } from '@tensorflow/tfjs';
+import { colorArray, normalize } from './utils';
 
 export default function MachineLearning(data){
     this.profile = data?data.profile:{}
@@ -89,16 +88,19 @@ export default function MachineLearning(data){
         selectedRatios:[],
         options:{
             trainingPercentage:{ 
-                value:70, step:1, max:100
+                value:70, step:1, max:100,stage:2
             },
             epochs:{ 
-                value:5, step:1
+                value:5, step:1,stage:2
             },
             learningRate:{ 
-                value:0.01, step:0.002,max:1
+                value:0.01, step:0.002,max:1,stage:2
             },
             hiddenLayers:{ 
-                value:2, step:1, max:20
+                value:2, step:1, max:20,stage:2
+            },
+            predictionWeeks:{ 
+                value:2, step:1, max:50,stage:1
             },
         }
     }
@@ -123,12 +125,12 @@ function handleInit(ticker){
 function addTraininData(ticker){
 
     let { priceData } = ticker
-    const { selectedRatios } = ticker.ml
+    const { selectedRatios, options } = ticker.ml
     let trainingData = []
     let lastFullFinancialYear = ticker.analytics.financialInputs.lastFullFinancialYear
     let firstFullFinancialYear = ticker.analytics.financialInputs.firstFullFinancialYear
     let yearlyData = ticker.analytics.yearlyData
-
+    const predictionWeeks = options.predictionWeeks.value
     priceData.forEach((item,index) =>{
         let set=[]
         selectedRatios.forEach(ratio => {
@@ -146,38 +148,36 @@ function addTraininData(ticker){
                     ratio.values.push(...days.map(i => i.price))
                     break
                 case 'priceRatio':
-                    set.push(priceData[index][ratio.name])
-                    item[ratio.id] = priceData[index][ratio.name]     
-                    ratio.values.push(priceData[index][ratio.name])      
+                    let priceRatio = priceData[index][ratio.name]
+                    if(!isFinite(priceRatio)) priceRatio=null
+                    set.push(priceRatio)  
+                    item[ratio.id] = priceRatio    
+                    ratio.values.push(priceRatio)      
                     break
                 case 'financialRatio':
                     let year = new Date(item.date).getFullYear()-1 
                     if(year>lastFullFinancialYear) year=lastFullFinancialYear
                     if(year<firstFullFinancialYear) break
-                    let value = yearlyData[year][ratio.name]                 
+                    let value = yearlyData[year][ratio.name]
+                    if(!isFinite(value)) value=null                
                     set.push(value)
                     item[ratio.id] = value    
                     ratio.values.push(value)      
                     break
                 default:  
-                    // set.push(priceData[index][ratio.name])
-                    // item[ratio.id] = priceData[index][ratio.name]     
-                    // ratio.values.push(priceData[index][ratio.name])      
-                    // break
             }
         });
-
         trainingData.unshift({
             set,
-            price:item.close,
+            price:priceData[index-predictionWeeks]?priceData[index-predictionWeeks].close:null,
             date:item.date
-        })
+        })            
     })
     
     priceData = [...ticker.priceData].reverse()
     priceData = priceData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
     trainingData = trainingData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
-
+    let futureData = trainingData.splice(trainingData.length-predictionWeeks,predictionWeeks)
     let nullValues = 0
     selectedRatios.forEach(item => {
         if(item.value&&item.value>nullValues){
@@ -191,24 +191,26 @@ function addTraininData(ticker){
     let priceValues = priceData.map(item => item.close)
     let maxPrice = Math.max(...priceValues)
     trainingData.forEach(item => item.price=item.price/maxPrice)
-    console.log(trainingData)
+    futureData.forEach(item => item.price=item.price/maxPrice)
+
     selectedRatios.forEach((ratio,index) =>{
         let values = trainingData.map(item => item.set[index]).map(item => item||0)
         let min = Math.min(...values)
         let max = Math.max(...values)
-        console.log(ratio.scale,)
         if(ratio.normalize){
             trainingData.forEach((item,i) => trainingData[i].set[index] = normalize(item.set[index],max,0))
+            futureData.forEach((item,i) => trainingData[i].set[index] = normalize(item.set[index],max,0))
         }
         if(ratio.scale){
             trainingData.forEach((item,i) => trainingData[i].set[index] = item.set[index]/max)
+            futureData.forEach((item,i) => trainingData[i].set[index] = Number.isInteger(item.set[index])?item.set[index]/max:null)
         }
         ratio.min = min
         ratio.max = max
     })
-    console.log(trainingData,selectedRatios)
+
     const mlChartRatios=[...selectedRatios]
-    
+
     mlChartRatios.push({label:'Price', name:'close', color:'black', chart:'priceChart'})
     const { priceChart, ratioChart } = createMLChart(mlChartRatios,priceData)
     
@@ -224,7 +226,8 @@ function addTraininData(ticker){
         trainingData,
         mlChartRatios,
         stage: 2,
-        maxPrice
+        maxPrice,
+        futureData
     }
 
     return ticker
@@ -242,6 +245,7 @@ async function trainModel(ticker,setState){
     let learningRate = options.learningRate.value
     let hiddenLayers = options.hiddenLayers.value
     let trainingPercentage = options.trainingPercentage.value
+    const predictionWeeks = options.predictionWeeks.value
 
     ticker.chart.lossChart.labels = [...Array(epochs).keys()].map(i => i+1)
 
@@ -256,10 +260,13 @@ async function trainModel(ticker,setState){
         ticker.ml={
             ...ticker.ml,
             stats,
-        }
+        };
+        
+        [...Array(predictionWeeks).keys()].map( i => pred.unshift(null));
+        
         ticker.chart.priceChart.datasets.push({
             label:'Prediction '+epoch,
-            data:pred.map(item => item*maxPrice),
+            data:pred.map(item => item?item*maxPrice:null),
             borderColor:`rgba(227, 36, 36,${epoch/epochs})`,
             pointRadius:0,
             borderWidth:2,            
@@ -288,6 +295,7 @@ function validateModel(ticker){
 
     const { inputs, result, options,priceData, mlChartRatios, maxPrice } = ticker.ml
     let trainingSize = options.trainingPercentage.value
+    const predictionWeeks = options.predictionWeeks.value
 
     let trainX = inputs.slice(0, Math.floor(trainingSize / 100 * inputs.length));
     let trainY = makePredictions(trainX, result['model']);
@@ -302,8 +310,8 @@ function validateModel(ticker){
         item.unseenY = unseenY[index]
     })
 
-    mlChartRatios.push({label:'Train', name:'trainY', color:'red', chart:'priceChart'})
-    mlChartRatios.push({label:'Unseen', name:'unseenY', color:'purple', chart:'priceChart'})
+    mlChartRatios.push({label:'Train', name:'trainY', color:'red', chart:'priceChart',predictionWeeks})
+    mlChartRatios.push({label:'Unseen', name:'unseenY', color:'purple', chart:'priceChart',predictionWeeks})
 
     const { priceChart, ratioChart } = createMLChart(mlChartRatios,priceData, maxPrice)
     ticker.chart={
@@ -317,34 +325,34 @@ function validateModel(ticker){
 }
 
 async function predictModel(ticker) {
-    const { inputs, result, options, priceData,maxPrice } = ticker.ml
+    const { result, options, priceData,maxPrice, futureData } = ticker.ml
 
-    let trainingsize = options.trainingPercentage.value
-
-    let pred_X = [inputs[inputs.length-1]];
-    pred_X = pred_X.slice(Math.floor(trainingsize / 100 * pred_X.length), pred_X.length);
-    let pred_y = await makePredictions(pred_X, result['model']);
-
-    let resultChartWeeks = 30;
+    const predictionWeeks = options.predictionWeeks.value    
+    let resultChartWeeks = 100;
     let resultPriceData = [...priceData]
     resultPriceData = resultPriceData.splice(resultPriceData.length-resultChartWeeks,resultPriceData.length-1 )
     let lastDate = new Date(resultPriceData[resultPriceData.length-1].date)
-    let predictionDate = new Date(lastDate.setDate(lastDate.getDate() + 7)).toISOString()
-
-    resultPriceData.push({
-        prediction: pred_y[0]*maxPrice,
-        date:predictionDate      
+    
+    await futureData.forEach(async(data,index) =>{
+        let predX = [data.set]
+        let pred_y = await makePredictions(predX, result['model']);     
+        let dateCopy = new Date(lastDate)
+        let predictionDate = new Date(dateCopy.setDate(dateCopy.getDate() + ((index+1)*7))).toISOString()
+        resultPriceData.push({  
+            prediction: pred_y[0]*maxPrice,
+            date:predictionDate      
+        })
     })
 
     let priceChartOptions = [
        {label:'Price', name:'close', color:'black',chart:'predictionChart'},
-       {label:'Prediction', name:'prediction', color:'red',pointRadius:5,chart:'predictionChart'},
+       {label:'Prediction', name:'prediction', color:'red',pointRadius:5,chart:'predictionChart',predictionWeeks},
     ]
 
     ticker.chart.predictionChart=createMLChart(priceChartOptions,resultPriceData).predictionChart
 
     return ticker
-  }
+}
   
 function createMLChart(mlChartOptions,priceData,maxPrice){
     
@@ -380,16 +388,20 @@ function createMLChart(mlChartOptions,priceData,maxPrice){
         if(['trainY','unseenY'].includes(option.name)){
             data = data.map(item => item?item*maxPrice:null)
         }
-        
+
         if(option.name==='prediction'){
-            data[data.length-2] = priceData[priceData.length-2].close
+            console.log(priceData,priceData.length-option.predictionWeeks-1,priceData.length,option.predictionWeeks)
+            data[data.length-option.predictionWeeks-1] = priceData[priceData.length-option.predictionWeeks-1].close
+        }
+        
+        if(option.predictionWeeks&&option.name!=='prediction'){
+            [...Array(option.predictionWeeks).keys()].map( i => data.unshift(null));
         }
 
         charts[option.chart].datasets.push({
             label: option.label || option.name+index,
             data: data,
             borderColor: option.color || colorArray(index),
-            pointRadius: 0,
             borderWidth: 2,            
             pointRadius: option.pointRadius||0,
             dataLabels,

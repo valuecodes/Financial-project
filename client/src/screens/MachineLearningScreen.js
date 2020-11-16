@@ -170,9 +170,10 @@ function Stages({machineLearning, setMachineLearning}){
                 {stage>=3 &&
                     <TrainingStatistics machineLearning={machineLearning}/>
                 }                  
-                {stage===2&&
+                {(stage===1||stage===2)&&
                     <ul className='mlTrainingOptions'>
                         {Object.keys(options).map(option =>
+                            options[option].stage===stage&&
                             <li key={option}>
                                 <label>{camelCaseToString(option)}</label>
                                 <input 
