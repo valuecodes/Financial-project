@@ -789,12 +789,9 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
                     ...quarterData[index],
                     revenue: item.revenue,
                     netIncome: item.netIncome,
+                    operatingIncome: item.operatingIncome,
                     eps: item.eps,
                     sharesOutstanding: item.sharesOutstanding,
-                    operatingMargin: roundToTwoDecimal((item.operatingIncome/item.revenue)*100),
-                    profitMargin: roundToTwoDecimal((item.netIncome/item.revenue)*100),
-                    roe: roundToTwoDecimal((item.netIncome/quarterData[index].totalEquity)*100),
-                    roa: roundToTwoDecimal((item.netIncome/quarterData[index].totalAssets)*100)
                 }
             })
             break
@@ -805,9 +802,9 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
                     ...quarterData[index],
                     currentAssets: item.currentAssets,
                     currentLiabilities: item.currentLiabilities,
-                    bookValuePerShare: item.bookValuePerShare,
-                    roe: roundToTwoDecimal((quarterData[index].netIncome/item.totalEquity)*100),
-                    roa: roundToTwoDecimal((quarterData[index].netIncome/item.totalAssets)*100)
+                    totalEquity: item.totalEquity,
+                    totalDebt: item.totalDebt,
+                    totalAssets: item.totalAssets,
                 }
             })
         break
@@ -825,22 +822,6 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
         default: break
     }
 
-    quarterData.forEach(item =>{
-        if(!item.price){
-            item.price = tickerData.getClosestPriceFromDate(item.date)
-        } 
-        if(!item.divYield){
-            item.divYield = roundToTwoDecimal((tickerData.getYearlyDivsFromDate(item.date)/item.price)*100) 
-        }
-        if(!item.payoutRatio){
-            let yearEps = tickerData.incomeStatement.find(elem => 
-                new Date(elem.date)<= new Date(item.date)
-            )
-            item.payoutRatio = roundToTwoDecimal(
-                ((tickerData.getYearlyDivsFromDate(item.date))/yearEps.eps)*100
-            )
-        }
-    })
     return quarterData
 }
 

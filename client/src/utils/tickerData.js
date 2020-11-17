@@ -25,6 +25,7 @@ import {
     calculateMonthlyPrice,
     calculateYearlyData,
 } from "./calculations/inputCalculations";
+import { getRollingFinancialNum } from "./calculations/tickerCalculations";
 
 export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
     this.profile = data.profile?data.profile:{
@@ -85,6 +86,7 @@ export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
     this.tickerRatios = () => calculateTickerRatios(this)
     this.update = () => calculateUpdate(this)
     this.updateFinancialValue = (value) => calculateUpdateFinancialValue(this,value)
+    this.getRollingFinancialNum = (financialName,date) => getRollingFinancialNum(this,financialName,date)
 
     this.getClosestPriceFromDate = (date) => handleGetClosestPriceFromDate(this,date)
     this.getYearlyDivsFromDate = (date) => handleGetYearlyDivsFromDate(this,date)
@@ -162,18 +164,20 @@ function calculateGetRatio(tickerData,ratio){
     
     const { incomeStatement } = tickerData
     
-    let stockPrice = tickerData.getFinancialNum('close')
+    console.log(tickerData.getRollingFinancialNum('eps'))
+    let stockPrice = tickerData.priceData[0].close
+
     let yearDivs = tickerData.yearDivs()
-    let eps =  tickerData.getFinancialNum('eps')
-    let operatingIncome = tickerData.getFinancialNum('operatingIncome')
-    let revenue = tickerData.getFinancialNum('revenue')
-    let netIncome = tickerData.getFinancialNum('netIncome')
-    let sharesOutstanding = tickerData.getFinancialNum('sharesOutstanding')
-    let currentAssets = tickerData.getFinancialNum('currentAssets')
-    let currentLiabilities = tickerData.getFinancialNum('currentLiabilities')
-    let bookValuePerShare =  tickerData.getFinancialNum('bookValuePerShare')
-    let totalEquity = tickerData.getFinancialNum('totalEquity')
-    let totalAssets = tickerData.getFinancialNum('totalAssets')
+    console.log(yearDivs)
+    let eps =  tickerData.getRollingFinancialNum('eps')
+    let operatingIncome = tickerData.getRollingFinancialNum('operatingIncome')
+    let revenue = tickerData.getRollingFinancialNum('revenue')
+    let netIncome = tickerData.getRollingFinancialNum('netIncome')
+    let sharesOutstanding = tickerData.getRollingFinancialNum('sharesOutstanding')
+    let currentAssets = tickerData.getRollingFinancialNum('currentAssets')
+    let currentLiabilities = tickerData.getRollingFinancialNum('currentLiabilities')
+    let totalEquity = tickerData.getRollingFinancialNum('totalEquity')
+    let totalAssets = tickerData.getRollingFinancialNum('totalAssets')
 
     let value = null
 
@@ -182,7 +186,7 @@ function calculateGetRatio(tickerData,ratio){
                 value = stockPrice/eps
             break
         case 'pb':
-                value = stockPrice/bookValuePerShare
+                value = stockPrice/(totalEquity/(netIncome/eps))
             break
         case 'divYield':
                 value = (yearDivs/stockPrice)*100
@@ -191,7 +195,7 @@ function calculateGetRatio(tickerData,ratio){
                 value = (yearDivs/eps)*100
             break
         case 'marketCap':
-                value = stockPrice*sharesOutstanding
+                value = stockPrice*(netIncome/eps)
             break
         case 'currentRatio':
                 value = currentAssets/currentLiabilities
@@ -289,8 +293,7 @@ function calculateFinancialKeysStatements(tickerData){
     return keys
 }
 
-function calculateGetFinancialNum(tickerData,key,year=null){
-    
+export function calculateGetFinancialNum(tickerData,key,year=null){
     if(tickerData.valueStatements===null){
         tickerData.getValueStatements()
     }
@@ -312,23 +315,25 @@ function calculateGetFinancialNum(tickerData,key,year=null){
     }
     return null
 
-    function calculateExhangeRateModification(value, key,tickerData){
-        let financialDataCurrency = tickerData.profile.financialDataCurrency
-        let exhangeRate = tickerData.exhangeRate
-        let ticker = tickerData.profile.ticker
-        
-        if(ticker==='CIBUS'&&key==='close'){
-            return value/exhangeRate.rates[tickerData.profile.tickerCurrency]
-        }
 
-        switch(financialDataCurrency){
-            case 'RUB':
-                if(key==='eps') return value/exhangeRate.rates[financialDataCurrency]
-                if(key==='bookValuePerShare') return value/exhangeRate.rates[financialDataCurrency]
-                return value
-            default: 
-                return value
-        }
+}
+
+export function calculateExhangeRateModification(value, key,tickerData){
+    let financialDataCurrency = tickerData.profile.financialDataCurrency
+    let exhangeRate = tickerData.exhangeRate
+    let ticker = tickerData.profile.ticker
+    
+    if(ticker==='CIBUS'&&key==='close'){
+        return value/exhangeRate.rates[tickerData.profile.tickerCurrency]
+    }
+
+    switch(financialDataCurrency){
+        case 'RUB':
+            if(key==='eps') return value/exhangeRate.rates[financialDataCurrency]
+            if(key==='bookValuePerShare') return value/exhangeRate.rates[financialDataCurrency]
+            return value
+        default: 
+            return value
     }
 }
 

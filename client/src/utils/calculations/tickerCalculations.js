@@ -1,5 +1,5 @@
 import { roundToTwoDecimal, camelCaseToString } from "../utils";
-import { handleGetClosestPriceFromDate } from "../tickerData";
+import { handleGetClosestPriceFromDate, calculateGetFinancialNum, calculateExhangeRateModification } from "../tickerData";
 import { tickerDataModel } from '../dataModels'
 import { connect } from "mongoose";
 
@@ -377,4 +377,21 @@ export function handleGetPriceRatio(ticker,ratioName='',options){
     let dateArray = priceRatio.map(item => item.dateShort)
     let priceArray = priceRatio.map(item => item.close)
     return { ratioArray, dateArray, priceArray, name:camelCaseToString(ratioName) }
+}
+
+export function getRollingFinancialNum(ticker,financialName,date=new Date()){
+    
+    let quarterData = ticker.quarterData
+        .filter(item => new Date(item.date)<date)
+        .filter((item,index) =>index<4)
+
+    let value = 0
+    if(quarterData.length<4){
+        value = calculateGetFinancialNum(ticker,financialName,date)
+    }else{
+        value = quarterData.reduce((a,c)=>a+c[financialName],0)
+    }
+    value = calculateExhangeRateModification(value,financialName,ticker)
+
+    return value
 }
