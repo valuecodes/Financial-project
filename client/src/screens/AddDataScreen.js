@@ -95,8 +95,9 @@ export default function AddDataScreen() {
                         <InputInfo dataKey={'quarterData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                         <InputInfo dataKey={'yearlyData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                         <InputInfo dataKey={'monthlyPrice'} data={companyInfo} setSelectedKey={setSelectedKey}/>
+                        <InputInfo dataKey={'additionalRatios'} data={companyInfo} setSelectedKey={setSelectedKey}/>
                     </div>
-                    <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>   
+                    <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>     
                     </>          
                 }
                 {navigation.selected.name==='overview'&&
@@ -320,7 +321,7 @@ function InputActions({ companyInfo, setCompanyInfo, tickerList, selectTicker })
 }
 
 function Output({selectedKey, companyInfo, setCompanyInfo}){
-
+    let { selectedKey2 } =companyInfo
     const dispatch = useDispatch()
     const [table, setTable] = useState({
         headers:[],
@@ -330,7 +331,11 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 
     useEffect(()=>{
         if(selectedKey){
-            let selectedData = companyInfo.selectDataToTable(selectedKey)
+            if(selectedKey!=='additionalRatios'){
+                companyInfo.selectedKey2=null
+                selectedKey2=null
+            }
+            let selectedData = companyInfo.selectDataToTable(selectedKey,selectedKey2)
             setTable({...selectedData})
         }
     },[selectedKey,companyInfo])
@@ -340,13 +345,19 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         setCompanyInfo({...companyInfo})             
     }
 
-    const addRowHandler=(key)=>{
-        companyInfo.addRow(key)
+    const addRowHandler=(key,key2)=>{
+        companyInfo.addRow(key,key2)
         setCompanyInfo({...companyInfo})
     }
 
-    const deleteDataHandler = (row) => {
-        companyInfo.deleteRow(row)
+    const deleteDataHandler = (row,dataIndex) => {
+        if(typeof dataIndex==='number'){
+            let index = companyInfo.additionalRatios.findIndex(item => item.name === selectedKey2)
+            companyInfo.additionalRatios[index].ratios.splice(dataIndex,1)
+        }else{
+            companyInfo.deleteRow(row)
+            companyInfo.selectedKey2 = null               
+        }
         setCompanyInfo({...companyInfo})
     }
 
@@ -368,6 +379,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
             case 'position':
             case 'type':
             case 'instrument':
+            case 'period':
                 return 'text'
             default: return 'number'
         }
@@ -375,66 +387,137 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
 
     const deleteAll=(key)=>{
         companyInfo[key]=[]
+        companyInfo.selectedKey2 = null
+        setCompanyInfo({...companyInfo})
+    }
+
+    const handleAddAdditionalRatio = (index) =>{
+        companyInfo.selectedKey2 = companyInfo.additionalRatios[index].name
+        setCompanyInfo({...companyInfo})
+        
+    }
+
+    const modifyAdditionalDataHandler = (e,dataIndex,type) =>{
+        let { value, name } = e.target
+        let index = companyInfo.additionalRatios.findIndex(item => item.name === selectedKey2)
+        let inputType = value.split('-').length===3?'date':'value'
+        if(inputType==='date') value = new Date(value).toISOString()
+        companyInfo.additionalRatios[index].ratios[dataIndex][inputType] = value
         setCompanyInfo({...companyInfo})
     }
 
     return(
-        <table className='inputDataTable'>
-            <thead>
-                <tr>
-                    <th>{selectedKey&&<h3>{camelCaseToString(selectedKey)}</h3>}</th>
-                </tr>
-                <tr>
-                    <th>
-                    {selectedKey&&
-                        <>
-                        <button 
-                            onClick={e => addRowHandler(selectedKey)}
-                            className='tableButton'
-                        >
-                            Add row
-                        </button>
-                        <button onClick={()=>deleteAll(selectedKey)}>Delete All</button>
-                        </>
-                    }
-                    </th>
-                    {table.headers.map((item,index) =>
-                        <th className='tableHeader' key={index}>
-                            {table.direction==='row'&&
-                                <button onClick={e => deleteDataHandler(item)}>X</button>
-                            }                        
-                           <span>{camelCaseToString(item.value)}</span>
+        <div>
+            <table className='inputDataTable'>
+                <thead>
+                    <tr>
+                        <th>{selectedKey&&<h3>{camelCaseToString(selectedKey)}</h3>}</th>
+                    </tr>
+                    <tr>
+                        <th>
+                        {selectedKey&&
+                            <>
+                            <button 
+                                onClick={e => addRowHandler(selectedKey)}
+                                className='tableButton'
+                            >
+                                Add row
+                            </button>
+                            <button onClick={()=>deleteAll(selectedKey)}>Delete All</button>
+                            </>
+                        }
                         </th>
-                    )}
-                </tr>                
-            </thead>
-            <tbody>
-            {table.body.map((row,index) => 
-                <tr key={index}>
-                    <td>{camelCaseToString(row.key)}</td>
-                    {row.data.map((item,index) =>
-                        <td key={index}>
-                            <input
-                                onChange={(e)=>modifyDataHandler(e.target.value,item)}
-                                style={{
-                                    width:calculateInputWidth(row.data,item.key),
-                                    backgroundColor:item.value===null?'rgba(247, 103, 87,0.4)':'rgba(87, 247, 154,0.4)'
-                                }}
-                                className='inputTableInput' 
-                                value={item.value===null?'':item.value}
-                                type={calculateType(item.key) }
-                            />
-                        </td>  
-                    )}   
-                    {table.direction==='col'&&
-                        <td>
-                            <button onClick={() => deleteDataHandler(row)}>Delete</button>
-                        </td>                   
-                    }
-                </tr>
-            )}                
-            </tbody>
-        </table>
+                        {table.headers.map((item,index) =>
+                            <th className='tableHeader' key={index}>
+                                {table.direction==='row'&&
+                                    <button onClick={e => deleteDataHandler(item)}>X</button>
+                                }                        
+                            <span>{camelCaseToString(item.value)}</span>
+                            </th>
+                        )}
+                    </tr>                
+                </thead>
+                <tbody>
+                {table.body.map((row,index) => 
+                    <tr key={index}>
+                        <td>{camelCaseToString(row.key)}</td>
+                        {row.data.map((item,index) =>
+                            <td key={index}>
+                                <input
+                                    onChange={(e)=>modifyDataHandler(e.target.value,item)}
+                                    style={{
+                                        width:calculateInputWidth(row.data,item.key),
+                                        backgroundColor:item.value===null?'rgba(247, 103, 87,0.4)':'rgba(87, 247, 154,0.4)'
+                                    }}
+                                    name={item.key}
+                                    className='inputTableInput' 
+                                    value={item.value===null?'':item.value}
+                                    type={calculateType(item.key) }
+                                />
+                            </td>  
+                        )}   
+                        {selectedKey==='additionalRatios'&&
+                            <td>
+                                <button onClick={() => handleAddAdditionalRatio(index)}>Add Ratios</button>
+                            </td>                   
+                        }
+                        {table.direction==='col'&&
+                            <td>
+                                <button onClick={() => deleteDataHandler(row)}>Delete</button>
+                            </td>                   
+                        }
+                    </tr>
+                )}                
+                </tbody>
+            </table>
+            {selectedKey2&&selectedKey==='additionalRatios'&&    
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            <>
+                                <h3>{camelCaseToString(selectedKey2)}</h3>
+                                <button 
+                                    onClick={e => addRowHandler(selectedKey,selectedKey2)}
+                                    className='tableButton'
+                                >
+                                    Add row
+                                </button>
+                            </>
+                        </th>
+                        {table.headers2.map((item,index) =>
+                            <th className='tableHeader' key={index}>
+                                <button onClick={e => deleteDataHandler(item,index)}>X</button>
+                                <span>{camelCaseToString(item.value)}</span>
+                            </th>
+                        )}
+                    </tr>
+                </thead>
+                <tbody>
+                    {table.body2.map((row,index) => 
+                        <tr key={index}>
+                            <td>{camelCaseToString(row.key)}</td>
+                            {row.data.map((item,i) =>
+                                <td key={i}>
+                                    <input
+                                        onChange={(e)=>modifyAdditionalDataHandler(e,i,index,calculateType(item.key))}
+                                        style={{
+                                            width:calculateInputWidth(row.data,item.key),
+                                            backgroundColor:item.value===null?'rgba(247, 103, 87,0.4)':'rgba(87, 247, 154,0.4)'
+                                        }}
+                                        className='inputTableInput' 
+                                        value={item.value===null?'':item.value}
+                                        type={calculateType(item.key) }
+                                    />
+                                </td>  
+                            )}   
+                        </tr>
+                    )}                
+                </tbody> 
+                 
+            </table>   }     
+        </div>
+
     )
 }
 
@@ -521,7 +604,7 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
         companyInfo.ratios[ratio] = Number(value)
         setCompanyInfo({...companyInfo})
     }
-    console.log(companyInfo.ratios)
+
     return(
         <div className='inputInfoHeader'>
             <div className='inputInfoProfile'>

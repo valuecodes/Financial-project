@@ -18,6 +18,7 @@ exports.updateTicker = async ( req, res, next ) => {
         ticker.priceData=req.body.priceData,
         ticker.dividendData=req.body.dividendData,
         ticker.insiderTrading=req.body.insiderTrading
+        ticker.additionalRatios = req.body.additionalRatios
         let saved = await ticker.save()
         console.log('ticker saved')
         next()
@@ -30,7 +31,8 @@ exports.updateTicker = async ( req, res, next ) => {
             cashFlow:req.body.cashFlow,
             priceData:req.body.priceData,
             dividendData: req.body.dividendData,
-            insiderTrading:req.body.insiderTrading
+            insiderTrading:req.body.insiderTrading,
+            additionalRatios:req.body.additionalRatios
         })
         console.log('ticker created')
         let saved = await newTicker.save()

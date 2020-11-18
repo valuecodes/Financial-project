@@ -137,5 +137,14 @@ export const tickerDataModel={
     monthlyPrice:{
         date:new Date().toISOString(),
         price:null
+    },
+    additionalRatios:{
+        name:null,
+        period:'yearly',
+        ratios:[]
+    },
+    additionalRatio:{
+        date:new Date().toISOString(),
+        value:null
     }
 }

@@ -70,12 +70,14 @@ export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
     this.quarterData = tickerQuarter?tickerQuarter.quarterData:[]
     this.yearlyData = tickerRatios?tickerRatios.yearlyData: []
     this.monthlyPrice = tickerRatios?tickerRatios.monthlyPrice: []
+    this.additionalRatios = data.additionalRatios?data.additionalRatios:[]
     this._id=data._id?data._id:null
     this.ratios = {}
     this.latestPrice = {}
     this.valueStatements = null
     this.updateMessages = []
     this.exhangeRate = exhangeRate
+    this.selectedKey2 = null
     this.addUpdateMessage = (dataName,actions) => handleAddUpdateMessage(this,dataName,actions)
     this.addTickerSlimData = (tickerSlim) => handleAddTickerSlimData(this,tickerSlim)
     this.getValueStatements = () => calculateValueStatements(this)
@@ -96,9 +98,9 @@ export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
     this.addProfile = (data) => setAddProfile(this,data)
     this.addMacroTrendsAnnual = (array) => handleAddMacroTrendsAnnual(this,array)
     
-    this.selectDataToTable = (key) => setSelectDataToTable(this,key) 
+    this.selectDataToTable = (key,key2) => setSelectDataToTable(this,key,key2) 
     this.modifyData = (newValue,item) => handleModifyData(this,newValue,item)
-    this.addRow = (key) => setAddRow(this,key)
+    this.addRow = (key,key2) => setAddRow(this,key,key2)
     this.deleteRow = (row) => handleDeleteRow(this,row)
 
     this.updateRatiosFromApi = (data) => handleUpdateRatiosFromApi(this,data)
@@ -566,7 +568,7 @@ function handleAddMacroTrendsAnnual(tickerData,array){
 }
 
 function handleModifyData(tickerData, newValue, item){
-
+    console.log(newValue, item)
     if(typeof item ==='string'){
         tickerData.profile[item] = newValue
         return tickerData
@@ -583,6 +585,7 @@ function handleModifyData(tickerData, newValue, item){
             case 'position':
             case 'type':
             case 'instrument':
+            case 'period':
                 break
             default:
                 newValue = Number(newValue)
@@ -597,10 +600,20 @@ function handleModifyData(tickerData, newValue, item){
     return tickerData
 }
 
-function setAddRow(tickerData,key){
+function setAddRow(tickerData,key,key2=null){
     let template = Object.assign({}, tickerDataModel[key]);
     template.id = uuidv4()
-    tickerData[key].push(template)
+    if(key==='additionalRatios'&&key2){
+        template =Object.assign({}, tickerDataModel.additionalRatio);
+        template.id = uuidv4()
+        let index = tickerData[key].findIndex(item => item.name===key2)
+        tickerData[key][index].ratios.push(template)
+    }else if(key==='additionalRatios'){
+        template = {name:null,period:'yearly',ratios:[],id:uuidv4()}
+        tickerData[key].push(template)
+    }else{
+        tickerData[key].push({...template})
+    }
     return tickerData
 }
 
@@ -611,18 +624,20 @@ function handleDeleteRow(tickerData,row){
     return tickerData
 }
 
-function setSelectDataToTable(tickerData,key){
+function setSelectDataToTable(tickerData,key,key2){
 
     let selectedData = tickerData[key].sort((a,b)=>new Date(b.date)-new Date(a.date))
 
     let headers =[]
     let body = []
+    let headers2 =[]
+    let body2 = []
     let direction = ''
 
     if(!selectedData[0]){
-        return { headers, body, direction }
-    }  
-
+        return { headers, body, direction, headers2, body2 }
+    }    
+      
     switch(key){
         case 'incomeStatement':
         case 'balanceSheet':
@@ -637,13 +652,27 @@ function setSelectDataToTable(tickerData,key){
         case 'dividendData':
         case 'insiderTrading':
         case 'monthlyPrice':
+        case 'additionalRatios':
             headers = calculateTickerDataColHeaders(selectedData,key)
             body = calculateTickerDataColBody(selectedData,key)
             direction = 'col'
             break
         default:break
     }
-    return { headers, body, direction }
+
+    if(key==='additionalRatios'&&key2){
+        let index = tickerData.additionalRatios.findIndex(item => item.name === key2)
+        let  additionalData=tickerData.additionalRatios[index].ratios
+            .sort((a,b)=>new Date(b.date)-new Date(a.date))
+
+        if(additionalData.length>0){
+            headers2 = calculateTickerDataRowHeaders(additionalData,key)
+            body2 = calculateTickerDataRowBody(additionalData,key)            
+        }
+    }
+
+
+    return { headers, body, direction, headers2,body2 }
 }
 
 function calculateTickerDataRowHeaders(selectedData,key){

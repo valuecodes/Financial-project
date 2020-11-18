@@ -116,6 +116,17 @@ const profileSchema = new mongoose.Schema({
     financialDataCurrency:{type:String}    
 })
 
+const additionalRatioSchema = new mongoose.Schema({
+    date:{type:Date, required:true},
+    value:{type:Number}
+})
+
+const additionalRatiosSchema=new mongoose.Schema({
+    name:{type: String, required: true},
+    period:{type: String, default:'yearly'},
+    ratios:[additionalRatioSchema],
+})
+
 const tickerSchema = new mongoose.Schema({
     profile:profileSchema,
     incomeStatement:[incomeStatementSchema],
@@ -123,7 +134,8 @@ const tickerSchema = new mongoose.Schema({
     cashFlow:[cashFlowSchema],
     priceData:[priceDataSchema],
     dividendData:[dividendDataSchema],
-    insiderTrading:[insiderTradingSchema]
+    insiderTrading:[insiderTradingSchema],
+    additionalRatios:[additionalRatiosSchema]
 })
 
 const tickerModel = mongoose.model('Ticker', tickerSchema)
