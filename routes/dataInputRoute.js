@@ -12,7 +12,8 @@ const {
     deleteTicker,
     updateTickerApiRatios,
     getPriceDataFromApi,
-    getFinancialsDataFromApi
+    getFinancialsDataFromApi,
+    getMacroData
 } = require('../controllers/dataInput')
 
 router

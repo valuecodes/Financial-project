@@ -16,6 +16,7 @@ import {
     portfolioSelectedReducer
 } from './reducers/portfolioReducers';
 import { exhangeRateListReducer, exhangeRateUpdateReducer } from './reducers/exhangeRateReducer';
+import { macroDataReducer, macroSaveReducer, macroDeleteReducer } from './reducers/macroReducer';
 
 const userInfo = Cookie.getJSON('userInfo') || null
 const initialState = {userSignin:{userInfo},userPortfolios:[],}
@@ -47,7 +48,11 @@ const reducer = combineReducers({
     tickerRatios: tickerRatiosReducer,
 
     exhangeRateList:exhangeRateListReducer,
-    exhangeRateUpdate:exhangeRateUpdateReducer
+    exhangeRateUpdate:exhangeRateUpdateReducer,
+
+    macroData: macroDataReducer,
+    macroSave: macroSaveReducer,
+    macroDelete: macroDeleteReducer
 })
 
 const composeEnchancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__||compose

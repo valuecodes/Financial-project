@@ -148,3 +148,15 @@ export const tickerDataModel={
         value:null
     }
 }
+
+export const macroDataModel={
+    ratio:{
+        name:null,
+        frequence:'weekly',
+        data:[]
+    },
+    data:{
+        date:new Date().toISOString(),
+        value:null
+    }
+}

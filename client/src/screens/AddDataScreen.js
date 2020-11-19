@@ -8,7 +8,9 @@ import { TickerData } from '../utils/tickerData';
 import { updateTickerRatios } from '../actions/tickerActions';
 import SectionNav from '../components/SectionNav'
 import { TickerList } from '../utils/tickerList';
-import { calculateLatestPrice } from '../utils/calculations/inputCalculations';
+import { calculateLatestPrice, calculateYahooPrice } from '../utils/calculations/inputCalculations';
+import { getMacroData, saveMacroData, deleteMacroData } from '../actions/macroActions';
+import { macroDataModel } from '../utils/dataModels';
 
 export default function AddDataScreen() {
 
@@ -17,8 +19,8 @@ export default function AddDataScreen() {
     const [tickerList, setTickerList] = useState(new TickerList())
     const [selectedKey, setSelectedKey] = useState(null)
     const [navigation,setNavigation] = useState({
-        selected:{name:'ticker',index:0},
-        options:['overview','ticker','other']
+        selected:{name:'macroRatios',index:2},
+        options:['overview','ticker','macroRatios']
     })
 
     const { tickerListData, tickerData, tickerSave } = useSelector(state => state)
@@ -103,29 +105,113 @@ export default function AddDataScreen() {
                 {navigation.selected.name==='overview'&&
                     <Overview tickerList={tickerList} setTickerList={setTickerList} exhangeRate={exhangeRate}/>
                 }
-                {navigation.selected.name==='other'&&
-                    <Other/>
+                {navigation.selected.name==='macroRatios'&&
+                    <MacroRatios/>
                 }
             </div>
         </div>
     )
 }
 
-function Other(){
+function MacroRatios({}){
 
-    const handleData=(value)=>{
-        console.log(value.split('\n'))
+    const dispatch=useDispatch()
+    const [ratioName, setRatioName] = useState('')
+    const [macro,setMacro] = useState([])
+
+    const macroData = useSelector(state => state.macroData)
+    const { loading, data, error } = macroData
+    const macroSave = useSelector(state => state.macroSave)
+    const { loading:loadingSave, success:successSave, error:errorSave } = macroSave
+    const macroDelete = useSelector(state => state.macroDelete)
+    const { loading:loadingDelete, success:successDelete, error:errorDelete } = macroDelete
+
+    useEffect(()=>{
+        dispatch(getMacroData())
+    },[successSave,successDelete])
+
+    useEffect(()=>{
+        if(data){
+            setMacro(data)
+        }
+    },[data])
+
+    const handleAddRatio=()=>{
+        let newRatio = {...macroDataModel.ratio}
+        newRatio.name = ratioName
+        macro.push(newRatio)
+        setRatioName('')
+    }
+
+    const handleSaveMacro=(ratio)=>{
+        dispatch(saveMacroData(ratio))
+    }
+
+    const handleDeleteMacro=(ratio)=>{
+        let id = ratio._id
+        dispatch(deleteMacroData(id))
+    }
+
+    const handleModifyRatio=(e,index)=>{
+        const { value, name } = e.target
+        macro[index][name] = value
+        setMacro([...macro])
+    }
+
+    const handleFileData=(e,index)=>{
+        const file = e.target.files[0]
+        const reader = new FileReader();
+        reader.addEventListener('load', function(e) {   
+            var text = e.target.result.split('\n');
+            let data = calculateYahooPrice(text)
+            let macroData = data.map(item => {return{value:item.close,date:item.date}})
+            macroData = macroData.filter(item => new Date(item.date).getFullYear()>2000)
+            macro[index].data = macroData
+            setMacro([...macro])
+        });
+        reader.readAsText(file);
+    }
+
+    const handleTextData = (e,index)=>{
+        const { value } = e.target
+        let parsedData = value.split('\n')
+            .map(item => item.split('\t'))
+            .map(item => {return{ value:Number(item[1]),date: new Date(item[0])}})
+        macro[index].data = parsedData
+        setMacro([...macro])
     }
 
     return(
-        <div>
-                <textarea 
-                    className='financeInput' 
-                    type='text' 
-                    onChange={e => handleData(e.target.value)}
-                    // ref={inputRef}
-                    placeholder={'Copy paste text here...'}
-                />
+        <div className='macroSection'>
+            <div className='macroHeader'>
+                <input value={ratioName} type='text' onChange={(e)=>setRatioName(e.target.value)}/>
+                <button onClick={handleAddRatio}>Add Ratio</button>
+            </div>
+            <div className='macroRatios'>
+                {macro.map((ratio,index) =>
+                    <div className='macroRatio' key={ratio._id||index}>
+                        <label>Name</label>
+                        <input 
+                            value={ratio.name} 
+                            type='text' 
+                            name='name'
+                            onChange={e=>handleModifyRatio(e,index)}
+                        />
+                        <label>Frequence</label>                            
+                        <input 
+                            value={ratio.frequence} 
+                            type='text'
+                            name='frequence'
+                            onChange={e=>handleModifyRatio(e,index)}
+                        />
+                        <input type='file' onChange={e => handleFileData(e,index)}/>
+                        <textarea onChange={e => handleTextData(e,index)}/>
+                        <p>Items: {ratio.data.length}</p>
+                        <button onClick={()=>handleSaveMacro(ratio)}>Save Macro Ratio</button>
+                        {ratio._id&&<button onClick={()=>handleDeleteMacro(ratio)}>Delete Macro Ratio</button>} 
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

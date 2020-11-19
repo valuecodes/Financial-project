@@ -995,6 +995,18 @@ input[type=checkbox] {
   font-size: 1.4rem;
 }
 
+/* Macro Ratios */
+.macroRatio{
+  display: grid;
+  grid-template-columns: 10rem 15rem 10rem 15rem 25rem 1fr 10rem 10rem 10rem;
+  grid-gap: 2fr;
+  align-items: center;
+  background-color: rgb(209, 209, 209);
+  margin-top:1rem;
+  padding: 1rem;
+  border-bottom: 1px solid black;
+}
+
 .updateMessages{
   overflow-y: scroll;
   overscroll-behavior-y: contain;

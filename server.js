@@ -13,12 +13,14 @@ const tickerRoute = require('./routes/tickerRoute')
 const portfolioRoute = require('./routes/portfolioRoute')
 const userRoute = require('./routes/userRoute')
 const exhangeRatesRoute = require('./routes/exhangeRatesRoute')
+const macroRoute = require('./routes/macroRoute')
 
 app.use('/dataInput',dataInputRoute)
 app.use('/api/tickers',tickerRoute)
 app.use('/api/portfolio',portfolioRoute)
 app.use('/api/users', userRoute)
 app.use('/api/exhangeRates',exhangeRatesRoute)
+app.use('/api/macro',macroRoute)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, console.log(`Server started on ${PORT}`))
