@@ -753,6 +753,11 @@ function convertAlphaNum(num){
 
 export function getApiSymbol(country,symbol){
 
+    let exlude = ['NDA','FODELIA','700','NWH-U']
+    if(exlude.includes(symbol)){
+        return null
+    }
+
     if(symbol==='CTY1S') return 'TY2B.XFRA'
     if(symbol==='BRK') return 'BRK.B'
 

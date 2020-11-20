@@ -230,3 +230,13 @@ exports.deleteTicker = async ( req,res ) => {
         return res.status(404).send({message: 'Ticker not found'})
     }
 }
+
+
+exports.getAllPriceDataFromApi = async (req,res) =>{
+    const tickers = req.body
+    console.log(process.env.MARKET_STACK_API_KEY)
+    console.log(`http://api.marketstack.com/v1/eod?access_key=${process.env.MARKET_STACK_API_KEY}&symbols=${tickers.join(',')}`)
+    console.log(tickers.join(','))
+    data = await axios.get(`http://api.marketstack.com/v1/eod?access_key=${process.env.MARKET_STACK_API_KEY}&symbols=${ tickers.join(',') }`)
+    res.send({data:data.data})
+}

@@ -1,7 +1,11 @@
 import { TickerSlim } from "./tickerSlim";
+import { getApiSymbol } from "./calculations/inputCalculations";
+import apiTestData from '../utils/test/apiData'
+import axios from 'axios'
 
 export function TickerList(tickers){
     this.tickers = tickers?tickers.map(ticker => new TickerSlim(ticker)):[]  
+    this.sortOrder = 'ticker'
     this.updateMessages = []
     this.getTickerRatios = (ticker) => handleGetTickerRatios(this,ticker)
     this.getLatestPrice = (ticker) => handleGetLatestPrice(this,ticker)
@@ -32,18 +36,33 @@ function handleGetLatestPrice(tickerList,ticker){
 
 function handleSortBy(tickerList,sortOrder){
 
+    let ascending = true
+
+    if(sortOrder===tickerList.sortOrder){
+        ascending = false
+    }
+
+    tickerList.sortOrder = sortOrder
+    
     function compareLatestPrice(a,b){
         return new Date(b.latestPrice.date).getTime() -new Date(a.latestPrice.date).getTime()
     }
-
     if(sortOrder){
         switch(sortOrder){
             case 'ticker':
             case 'sector':
-                return tickerList.tickers.sort((a,b) => a[sortOrder].localeCompare(b[sortOrder]))
+                return tickerList.tickers.sort((a,b) =>
+                    ascending?
+                    a[sortOrder].localeCompare(b[sortOrder]):
+                    b[sortOrder].localeCompare(a[sortOrder])
+                )
             case 'latestPrice':            
             case 'ratios':      
-                return tickerList.tickers.sort((a,b) =>compareLatestPrice(a,b))
+                return tickerList.tickers.sort((a,b) =>
+                    ascending?
+                    compareLatestPrice(a,b):
+                    compareLatestPrice(b,a)
+                )
             default:return tickerList.tickers
         }
     }else{

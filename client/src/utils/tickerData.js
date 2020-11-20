@@ -25,54 +25,22 @@ import {
     calculateMonthlyPrice,
     calculateYearlyData,
 } from "./calculations/inputCalculations";
-import { getRollingFinancialNum } from "./calculations/tickerCalculations";
+import { getRollingFinancialNum, calculateGetRatio, handleGetClosestPriceFromDate, handleGetYearlyDivsFromDate } from "./calculations/tickerCalculations";
 
-export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
-    this.profile = data.profile?data.profile:{
-        ticker:'',
-        name:'',
-        description:'',
-        sector:'',
-        stockExhange: '',
-        industry:'',
-        subIndustry:'',
-        founded:'',
-        address:'',
-        website:'',
-        employees:'',
-        country:'',
-        tickerCurrency:'',
-        financialDataCurrency:'',
-    }
-    this.incomeStatement = data.incomeStatement?data.incomeStatement:[]
-    this.balanceSheet = data.balanceSheet?data.balanceSheet:[]
-    this.cashFlow = data.cashFlow?data.cashFlow:[]
-    this.insiderTrading = data.insiderTrading?data.insiderTrading:[]
-    this.dividendData = data.dividendData?data.dividendData:[]
-    this.priceData = data.priceData?data.priceData:[]
-    this.ratios = data.ratios?data.ratios:{
-        pe:null,
-        pb:null,
-        divYield:null,
-        payoutRatio:null,
-        marketCap:null,
-        currentRatio:null,
-        operatingMargin:null,
-        profitMargin:null,
-        profitGrowth5Years:null,
-        revenueGrowth5Years:null,
-        peg:null,
-        roe:null,
-        roa:null,
-        brand:null,
-        esg:null
-    }
-    this.quarterData = tickerQuarter?tickerQuarter.quarterData:[]
-    this.yearlyData = tickerRatios?tickerRatios.yearlyData: []
-    this.monthlyPrice = tickerRatios?tickerRatios.monthlyPrice: []
-    this.additionalRatios = data.additionalRatios?data.additionalRatios:[]
-    this._id=data._id?data._id:null
-    this.ratios = {}
+export function TickerData(data, tickerQuarter={}, tickerRatios={} ,exhangeRate=null){
+    this.profile = data.profile || tickerDataModel.profile
+    this.incomeStatement = data.incomeStatement || []
+    this.balanceSheet = data.balanceSheet || []
+    this.cashFlow = data.cashFlow || []
+    this.insiderTrading = data.insiderTrading || []
+    this.dividendData = data.dividendData || []
+    this.priceData = data.priceData || []
+    this.ratios = data.ratios || tickerDataModel.ratios
+    this.quarterData = tickerQuarter.quarterData || []
+    this.yearlyData = tickerRatios.yearlyData || []
+    this.monthlyPrice = tickerRatios.monthlyPrice || []
+    this.additionalRatios = data.additionalRatios || []
+    this._id = data._id || null
     this.latestPrice = {}
     this.valueStatements = null
     this.updateMessages = []
@@ -100,7 +68,7 @@ export function TickerData(data, tickerQuarter, tickerRatios ,exhangeRate=null){
     
     this.selectDataToTable = (key,key2) => setSelectDataToTable(this,key,key2) 
     this.modifyData = (newValue,item) => handleModifyData(this,newValue,item)
-    this.addRow = (key,key2) => setAddRow(this,key,key2)
+    this.addRow = (key,key2,date) => setAddRow(this,key,key2,date)
     this.deleteRow = (row) => handleDeleteRow(this,row)
 
     this.updateRatiosFromApi = (data) => handleUpdateRatiosFromApi(this,data)
@@ -160,92 +128,6 @@ function handleAddTickerSlimData(tickerData,tickerSlim){
         tickerSlim.ratios.brand = null
     }
     tickerData.latestPrice = tickerSlim.latestPrice
-}
-
-function calculateGetRatio(tickerData,ratio){
-    
-    const { incomeStatement } = tickerData
-    
-    console.log(tickerData.getRollingFinancialNum('eps'))
-    let stockPrice = tickerData.priceData[0].close
-
-    let yearDivs = tickerData.yearDivs()
-    console.log(yearDivs)
-    let eps =  tickerData.getRollingFinancialNum('eps')
-    let operatingIncome = tickerData.getRollingFinancialNum('operatingIncome')
-    let revenue = tickerData.getRollingFinancialNum('revenue')
-    let netIncome = tickerData.getRollingFinancialNum('netIncome')
-    let sharesOutstanding = tickerData.getRollingFinancialNum('sharesOutstanding')
-    let currentAssets = tickerData.getRollingFinancialNum('currentAssets')
-    let currentLiabilities = tickerData.getRollingFinancialNum('currentLiabilities')
-    let totalEquity = tickerData.getRollingFinancialNum('totalEquity')
-    let totalAssets = tickerData.getRollingFinancialNum('totalAssets')
-
-    let value = null
-
-    switch(ratio){
-        case 'pe':
-                value = stockPrice/eps
-            break
-        case 'pb':
-                value = stockPrice/(totalEquity/(netIncome/eps))
-            break
-        case 'divYield':
-                value = (yearDivs/stockPrice)*100
-            break
-        case 'payoutRatio':
-                value = (yearDivs/eps)*100
-            break
-        case 'marketCap':
-                value = stockPrice*(netIncome/eps)
-            break
-        case 'currentRatio':
-                value = currentAssets/currentLiabilities
-            break
-        case 'operatingMargin':
-                value = (operatingIncome/revenue)*100
-            break
-        case 'profitMargin':
-                value = (netIncome/revenue)*100
-            break
-        case 'profitGrowth5Years':
-            if(incomeStatement[0]){
-                let length = incomeStatement.length;
-                if(length<5){
-                    let startingNetIncome = incomeStatement[length-1].netIncome
-                    value = (((netIncome/startingNetIncome)**(1/length))-1)*100
-                }else{
-                    let startingNetIncome = incomeStatement[4].netIncome                   
-                    value = (((netIncome/startingNetIncome)**(1/5))-1)*100
-                } 
-            }
-            break
-        case 'revenueGrowth5Years':
-            if(incomeStatement[0]){
-                let length = incomeStatement.length;
-                if(length<5){
-                    let startingRevenue = incomeStatement[length-1].revenue
-                    value = (((revenue/startingRevenue)**(1/length))-1)*100
-                }else{
-                    let startingRevenue = incomeStatement[4].revenue                  
-                    value = (((revenue/startingRevenue)**(1/5))-1)*100
-                } 
-            }
-            break
-        case 'peg':
-                let pe = tickerData.getRatio('pe')
-                let growthRate = tickerData.getRatio('profitGrowth5Years')
-                value = pe / growthRate
-            break
-        case 'roe':
-                value = (netIncome/totalEquity)*100
-            break
-        case 'roa':
-                value = (netIncome/totalAssets)*100
-            break
-        default:return null
-    }
-    return roundFinancialNumber(value)
 }
 
 function calculateYearDivs(tickerData){
@@ -384,34 +266,6 @@ function calculateUpdateFinancialValue(tickerData,value){
     return tickerData
 }
 
-export function handleGetClosestPriceFromDate(tickerData,date){
-    const { priceData } = tickerData
-    let price = priceData.find(item => (new Date(item.date).getTime()-new Date(date).getTime()<804800000))
-    if(!price){
-       price = null 
-    }else{
-        price = price.close
-    }
-    return price
-}
-
-function handleGetYearlyDivsFromDate(tickerData,date){
-    const { dividendData } = tickerData
-
-    if(dividendData[0]){
-        let max = new Date(date)
-        let min = new Date(new Date(date).setFullYear(new Date(date).getFullYear() - 1))
-
-        let divs = dividendData.filter(item => new Date(item.date)>min&&new Date(item.date)<max)
-        return divs.reduce((a,c) => a+c.dividend,0)
-
-    }else{
-        return null
-    }
-
-
-}
-
 function setAddData(tickerData,data){
 
     let array=data.split('\n') 
@@ -429,7 +283,6 @@ function setAddData(tickerData,data){
         case 'reutersIncome.quarter':
             newData = calculateIncomeStatementReuters(array,true)
             newQuarterData= calculateQuarterData(newData,tickerData,'income')
-            console.log(newQuarterData)
             tickerData.quarterData = newQuarterData
             break
         case 'reutersBalance':
@@ -568,7 +421,7 @@ function handleAddMacroTrendsAnnual(tickerData,array){
 }
 
 function handleModifyData(tickerData, newValue, item){
-    console.log(newValue, item)
+
     if(typeof item ==='string'){
         tickerData.profile[item] = newValue
         return tickerData
@@ -600,12 +453,14 @@ function handleModifyData(tickerData, newValue, item){
     return tickerData
 }
 
-function setAddRow(tickerData,key,key2=null){
+function setAddRow(tickerData,key,key2=null,date=null){
+    console.log(date)
     let template = Object.assign({}, tickerDataModel[key]);
     template.id = uuidv4()
     if(key==='additionalRatios'&&key2){
         template =Object.assign({}, tickerDataModel.additionalRatio);
         template.id = uuidv4()
+        if(date) template.date = date
         let index = tickerData[key].findIndex(item => item.name===key2)
         tickerData[key][index].ratios.push(template)
     }else if(key==='additionalRatios'){

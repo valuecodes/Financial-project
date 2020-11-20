@@ -1,7 +1,6 @@
-import { roundToTwoDecimal, camelCaseToString } from "../utils";
-import { handleGetClosestPriceFromDate, calculateGetFinancialNum, calculateExhangeRateModification } from "../tickerData";
+import { roundToTwoDecimal, camelCaseToString, roundFinancialNumber } from "../utils";
+import { calculateGetFinancialNum, calculateExhangeRateModification } from "../tickerData";
 import { tickerDataModel } from '../dataModels'
-import { connect } from "mongoose";
 
 export function addFinancialRatios(ticker){
     let priceData = ticker.priceData
@@ -394,4 +393,112 @@ export function getRollingFinancialNum(ticker,financialName,date=new Date()){
     value = calculateExhangeRateModification(value,financialName,ticker)
 
     return value
+}
+
+export function calculateGetRatio(tickerData,ratio){
+    
+    const { incomeStatement } = tickerData
+    let stockPrice = tickerData.priceData[0].close
+    let yearDivs = tickerData.yearDivs()
+    let eps =  tickerData.getRollingFinancialNum('eps')
+    let operatingIncome = tickerData.getRollingFinancialNum('operatingIncome')
+    let revenue = tickerData.getRollingFinancialNum('revenue')
+    let netIncome = tickerData.getRollingFinancialNum('netIncome')
+    let sharesOutstanding = tickerData.getRollingFinancialNum('sharesOutstanding')
+    let currentAssets = tickerData.getRollingFinancialNum('currentAssets')
+    let currentLiabilities = tickerData.getRollingFinancialNum('currentLiabilities')
+    let totalEquity = tickerData.getRollingFinancialNum('totalEquity')
+    let totalAssets = tickerData.getRollingFinancialNum('totalAssets')
+
+    let value = null
+
+    switch(ratio){
+        case 'pe':
+                value = stockPrice/eps
+            break
+        case 'pb':
+                value = stockPrice/(totalEquity/(netIncome/eps))
+            break
+        case 'divYield':
+                value = (yearDivs/stockPrice)*100
+            break
+        case 'payoutRatio':
+                value = (yearDivs/eps)*100
+            break
+        case 'marketCap':
+                value = stockPrice*(netIncome/eps)
+            break
+        case 'currentRatio':
+                value = currentAssets/currentLiabilities
+            break
+        case 'operatingMargin':
+                value = (operatingIncome/revenue)*100
+            break
+        case 'profitMargin':
+                value = (netIncome/revenue)*100
+            break
+        case 'profitGrowth5Years':
+            if(incomeStatement[0]){
+                let length = incomeStatement.length;
+                if(length<5){
+                    let startingNetIncome = incomeStatement[length-1].netIncome
+                    value = (((netIncome/startingNetIncome)**(1/length))-1)*100
+                }else{
+                    let startingNetIncome = incomeStatement[4].netIncome                   
+                    value = (((netIncome/startingNetIncome)**(1/5))-1)*100
+                } 
+            }
+            break
+        case 'revenueGrowth5Years':
+            if(incomeStatement[0]){
+                let length = incomeStatement.length;
+                if(length<5){
+                    let startingRevenue = incomeStatement[length-1].revenue
+                    value = (((revenue/startingRevenue)**(1/length))-1)*100
+                }else{
+                    let startingRevenue = incomeStatement[4].revenue                  
+                    value = (((revenue/startingRevenue)**(1/5))-1)*100
+                } 
+            }
+            break
+        case 'peg':
+                let pe = tickerData.getRatio('pe')
+                let growthRate = tickerData.getRatio('profitGrowth5Years')
+                value = pe / growthRate
+            break
+        case 'roe':
+                value = (netIncome/totalEquity)*100
+            break
+        case 'roa':
+                value = (netIncome/totalAssets)*100
+            break
+        default:return null
+    }
+    return roundFinancialNumber(value)
+}
+
+export function handleGetClosestPriceFromDate(tickerData,date){
+    const { priceData } = tickerData
+    let price = priceData.find(item => (new Date(item.date).getTime()-new Date(date).getTime()<804800000))
+    if(!price){
+       price = null 
+    }else{
+        price = price.close
+    }
+    return price
+}
+
+export function handleGetYearlyDivsFromDate(tickerData,date){
+    const { dividendData } = tickerData
+
+    if(dividendData[0]){
+        let max = new Date(date)
+        let min = new Date(new Date(date).setFullYear(new Date(date).getFullYear() - 1))
+
+        let divs = dividendData.filter(item => new Date(item.date)>min&&new Date(item.date)<max)
+        return divs.reduce((a,c) => a+c.dividend,0)
+
+    }else{
+        return null
+    }
 }

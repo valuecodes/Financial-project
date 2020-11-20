@@ -11,7 +11,7 @@ import {
 } from '../utils/chartOptions'
 import SectionNav from '../components/SectionNav';
 import Options from '../components/Options'
-import { handleGetClosestPriceFromDate } from '../utils/tickerData';
+import { handleGetClosestPriceFromDate } from '../utils/calculations/tickerCalculations';
 
 export default function TickerScreen(props) {
 

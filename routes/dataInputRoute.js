@@ -13,7 +13,7 @@ const {
     updateTickerApiRatios,
     getPriceDataFromApi,
     getFinancialsDataFromApi,
-    getMacroData
+    getAllPriceDataFromApi
 } = require('../controllers/dataInput')
 
 router
@@ -33,6 +33,10 @@ router
 router  
     .route('/price/:id')
     .get(isAuth,isAdmin,getPriceDataFromApi)
+
+router  
+    .route('/priceAll')
+    .post(isAuth,isAdmin,getAllPriceDataFromApi)
 
 router  
     .route('/financials/:id')

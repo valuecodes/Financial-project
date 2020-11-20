@@ -19,7 +19,7 @@ export default function AddDataScreen() {
     const [tickerList, setTickerList] = useState(new TickerList())
     const [selectedKey, setSelectedKey] = useState(null)
     const [navigation,setNavigation] = useState({
-        selected:{name:'macroRatios',index:2},
+        selected:{name:'overview',index:2},
         options:['overview','ticker','macroRatios']
     })
 
@@ -48,6 +48,7 @@ export default function AddDataScreen() {
 
     useEffect(()=>{
         if(tickerFullData&&exhangeRate&&tickerList.tickers.length!==0){
+            console.log(tickerFullData)
             let ticker = new TickerData(tickerFullData,tickerQuarter,tickerRatios,exhangeRate)
             let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
             ticker.addTickerSlimData(tickerSlim)
@@ -87,18 +88,7 @@ export default function AddDataScreen() {
                         messages={messages}
                         tickerList={tickerList}
                     />
-                    <div className='inputInfoButtons'>   
-                        <InputInfo dataKey={'incomeStatement'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'balanceSheet'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'cashFlow'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'priceData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'dividendData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'insiderTrading'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'quarterData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'yearlyData'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'monthlyPrice'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                        <InputInfo dataKey={'additionalRatios'} data={companyInfo} setSelectedKey={setSelectedKey}/>
-                    </div>
+                    <InputInfoButtons companyInfo={companyInfo} setSelectedKey={setSelectedKey}/>
                     <Output selectedKey={selectedKey} companyInfo={companyInfo} setCompanyInfo={setCompanyInfo}/>     
                     </>          
                 }
@@ -492,6 +482,30 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         setCompanyInfo({...companyInfo})
     }
 
+    const addAdditionalRows = (e) =>{
+        const { value } = e.target
+        let array = []
+        let currentYear = new Date().getFullYear()
+        switch(value){
+            case 'year':
+            [...Array(5).keys()].forEach((item,i) => {
+                companyInfo.addRow(selectedKey,selectedKey2,new Date(currentYear-i,11))
+            })
+            break
+            case 'month':
+                [...Array(60).keys()].forEach((item,i) => {
+                    companyInfo.addRow(selectedKey,selectedKey2,new Date(currentYear-(Math.floor(i/12)),i%12))
+                })
+            break
+            case 'quarter':
+                [...Array(20).keys()].forEach((item,i) => {
+                    companyInfo.addRow(selectedKey,selectedKey2,new Date(currentYear-(Math.floor(i/4)),(i*3)%12))
+                })
+            break
+        }
+        setCompanyInfo({...companyInfo})
+    }
+
     return(
         <div>
             <table className='inputDataTable'>
@@ -569,6 +583,12 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                                 >
                                     Add row
                                 </button>
+                                <select name="addRows" id="addRows" onChange={(e)=>addAdditionalRows(e)}>
+                                    <option>Select</option>
+                                    <option value="year">Add year rows</option>
+                                    <option value="quarter">Add quarter rows</option>
+                                    <option value="month">Add month rows</option>
+                                </select>
                             </>
                         </th>
                         {table.headers2.map((item,index) =>
@@ -797,6 +817,19 @@ function InputInfoHeader({companyInfo, setCompanyInfo, messages, tickerList}){
     )
 }
 
+function InputInfoButtons({companyInfo, setSelectedKey}){
+
+    const inputInfoButtons = ['incomeStatement','balanceSheet','cashFlow','priceData','dividendData','insiderTrading','quarterData','yearlyData','monthlyPrice','additionalRatios']
+
+    return(
+        <div className='inputInfoButtons'>   
+             {inputInfoButtons.map(dataKey =>
+                <InputInfo dataKey={dataKey} data={companyInfo} setSelectedKey={setSelectedKey}/>                        
+            )}
+        </div>
+    )
+}
+
 function InputInfo({ dataKey, data, setSelectedKey}){
     return(
         <div className='inputInfo'
@@ -820,16 +853,15 @@ function Overview({tickerList,setTickerList,exhangeRate}){
         updated:0,
     })
     const [tickerTable,setTickerTable] = useState([])
-    const [sortOrder,setSortOrder]= useState('ticker')
     const userSignin = useSelector(state => state.userSignin)
     const { userInfo } = userSignin
 
     useEffect(()=>{
         if(tickerList){
-            let sortedTickers = tickerList.sortBy(sortOrder)
+            let sortedTickers = tickerList.sortBy('ticker')
             setTickerTable([...sortedTickers])
         }
-    },[tickerList,sortOrder])
+    },[tickerList])
 
     const tableHeads = ['ticker','sector','latestPrice','ratios']
 
@@ -850,7 +882,7 @@ function Overview({tickerList,setTickerList,exhangeRate}){
                 let updateMessages = updatedTickerData.updateMessages
                 tickerList.updateMessages = tickerList.updateMessages.concat(updateMessages)
 
-                let sortedTickers = tickerList.sortBy(sortOrder)
+                let sortedTickers = tickerList.sortBy(tickerList.sortOrder)
                 tickerList.tickers = sortedTickers
                 
                 setTickerList({...tickerList})
@@ -880,7 +912,7 @@ function Overview({tickerList,setTickerList,exhangeRate}){
         let index = tickerList.tickers.findIndex(item => item.ticker === ticker)
         let updated = {...tickerList}
         updated.tickers[index].selected = !updated.tickers[index].selected
-        let sortedTickers = tickerList.sortBy(sortOrder)
+        let sortedTickers = tickerList.sortBy(tickerList.sortOrder)
         updated.tickers = sortedTickers
         setTickerList(updated)
         handleUpdateStatus(updated)
@@ -896,6 +928,11 @@ function Overview({tickerList,setTickerList,exhangeRate}){
             selected:selectedTickers,
             updated:updatedTickers
         })
+    }
+
+    const handleSortOrder=(sortOrder)=>{
+        let sortedTickers = tickerList.sortBy(sortOrder)
+        setTickerTable([...sortedTickers])
     }
 
     return(
@@ -918,10 +955,10 @@ function Overview({tickerList,setTickerList,exhangeRate}){
                             <th 
                                 key={index}
                                 style={{
-                                    backgroundColor:sortOrder===item&&'rgba(181, 181, 181)',
-                                    color:sortOrder===item&&'var(--primary-color)'
+                                    backgroundColor:tickerList.sortOrder===item&&'rgba(181, 181, 181)',
+                                    color:tickerList.sortOrder===item&&'var(--primary-color)'
                                 }}   
-                                onClick={() => setSortOrder(item)}
+                                onClick={() => handleSortOrder(item)}
                             >
                             {camelCaseToString(item)}</th>
                         )}

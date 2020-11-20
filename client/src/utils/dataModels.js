@@ -97,6 +97,23 @@ export const tickerDataModel={
         change:null,
         percentageChange:null,
     },
+    ratios:{
+        pe:null,
+        pb:null,
+        divYield:null,
+        payoutRatio:null,
+        marketCap:null,
+        currentRatio:null,
+        operatingMargin:null,
+        profitMargin:null,
+        profitGrowth5Years:null,
+        revenueGrowth5Years:null,
+        peg:null,
+        roe:null,
+        roa:null,
+        brand:null,
+        esg:null
+    },
     quarterData:{
         date:new Date().toISOString(),
         revenue:null,
@@ -146,6 +163,22 @@ export const tickerDataModel={
     additionalRatio:{
         date:new Date().toISOString(),
         value:null
+    },
+    profile:{
+        ticker:'',
+        name:'',
+        description:'',
+        sector:'',
+        stockExhange: '',
+        industry:'',
+        subIndustry:'',
+        founded:'',
+        address:'',
+        website:'',
+        employees:'',
+        country:'',
+        tickerCurrency:'',
+        financialDataCurrency:'',
     }
 }
 
