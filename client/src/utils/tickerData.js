@@ -65,6 +65,7 @@ export function TickerData(data, tickerQuarter={}, tickerRatios={} ,exhangeRate=
     this.updateData = (dataName,newData) => setUpdateData(this,dataName,newData)
     this.addProfile = (data) => setAddProfile(this,data)
     this.addMacroTrendsAnnual = (array) => handleAddMacroTrendsAnnual(this,array)
+    this.addMacroTrendsQuarter = (array) => handleAddMacroTrendsQuarter(this,array)
     
     this.selectDataToTable = (key,key2) => setSelectDataToTable(this,key,key2) 
     this.modifyData = (newValue,item) => handleModifyData(this,newValue,item)
@@ -273,7 +274,7 @@ function setAddData(tickerData,data){
     let key = getKey(array,data)
     let newQuarterData
     let newData=[]
-
+    console.log(array)
     switch (key){
         case 'reutersIncome':
             tickerData.profile.financialDataCurrency = getReuterCurrency(array)
@@ -328,6 +329,9 @@ function setAddData(tickerData,data){
         case 'macroTrendsAnnual':      
             tickerData.addMacroTrendsAnnual(array)
             break
+        case 'macroTrendsQuarter':
+            tickerData.addMacroTrendsQuarter(array)
+            break
         default: 
     }
     tickerData.update()
@@ -356,6 +360,7 @@ function setUpdateData(tickerData,dataName,newData){
                 return startingPriceDate.getTime()>(new Date(newItem.date).getTime()-304800000)
             case 'dividendData':
                 return startingDivDate.getTime()>(new Date(newItem.date).getTime()-1004800000)
+            case 'quarterData':
             case 'insiderTrading':
                 return new Date(item.date).getTime() === new Date(newItem.date).getTime()&&
                     item.name ===newItem.name
@@ -386,6 +391,7 @@ function setAddProfile(tickerData,data){
 }
 
 function handleAddMacroTrendsAnnual(tickerData,array){
+
     array.shift()
     let numberOfYears=0
     let key=''
@@ -417,6 +423,46 @@ function handleAddMacroTrendsAnnual(tickerData,array){
         default:
     }
 
+    return tickerData
+}
+
+function handleAddMacroTrendsQuarter(tickerData,array){
+    
+    array.shift()
+    let numberOfYears=0
+    let key=''
+    
+    for(var i=1;i<array.length;i++){
+        if(letterCounter(array[i])>5){
+            console.log(array[i],i)
+            numberOfYears=i
+            key=array[i]
+            break
+        }
+    }
+    array = array.map(item => item.split(',')?item.split(',')[0]:item)
+    console.log(array,key,numberOfYears)
+
+    let newData=[]
+    tickerData.profile.financialDataCurrency='USD'  
+    switch(key){
+        case 'Revenue': 
+            newData = calculateMacroTrendsIncome(numberOfYears,array)       
+            tickerData.quarterData = calculateQuarterData(newData,tickerData,'income')
+            // tickerData.updateData('quarterData',newData)            
+            break
+        case 'Cash On Hand':
+            newData = calculateMacroTrendsBalance(numberOfYears,array)       
+            tickerData.quarterData = calculateQuarterData(newData,tickerData,'balance')
+            break
+        case 'Net Income/Loss':      
+            newData = calculateMacroTrendsCashflow(numberOfYears,array)       
+            tickerData.quarterData = calculateQuarterData(newData,tickerData,'cash')
+            break
+        default:
+    }
+    
+    console.log(newData)
     return tickerData
 }
 

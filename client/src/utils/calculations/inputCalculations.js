@@ -512,6 +512,7 @@ export function calculateMacroTrendsIncome(numberOfYears,data){
         }
         fData.push(namedDataBlock)
     }
+
     fData.pop()
     return fData
 }
@@ -541,6 +542,9 @@ export function getKey(array,data){
     if(key==='Annual Data | Millions of US $ except per share data'){
         return 'macroTrendsAnnual'
     } 
+    if(key==="Quarterly Data | Millions of US $ except per share data"){
+        return 'macroTrendsQuarter'
+    }
     
     let reuterKey = checkReuters(array)
     if(reuterKey){
@@ -775,6 +779,11 @@ export function getApiSymbol(country,symbol){
     }
 }
 
+function getDateName(date){
+    date = new Date(date)
+    return `${date.getFullYear()}/${date.getMonth()+1}`
+}
+
 export function calculateQuarterData(newQuarterData ,tickerData ,statement){
 
     let quarterData = tickerData.quarterData
@@ -782,10 +791,10 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
     newQuarterData.forEach(item =>{
         let index = quarterData.findIndex(data => new Date(data.date).getTime()===new Date(item.date).getTime())
         if(index===-1){
-            quarterData.push({...tickerDataModel.quarterData,date:item.date})
+            quarterData.push({...tickerDataModel.quarterData,date:item.date,dateName:getDateName(item.date)})
         }
     })
-    
+
     switch(statement){
         case'income':
             newQuarterData.forEach(item =>{
@@ -808,7 +817,7 @@ export function calculateQuarterData(newQuarterData ,tickerData ,statement){
                     currentAssets: item.currentAssets,
                     currentLiabilities: item.currentLiabilities,
                     totalEquity: item.totalEquity,
-                    totalDebt: item.totalDebt,
+                    totalDebt: item.totalDebt||item.longTermDebt,
                     totalAssets: item.totalAssets,
                 }
             })

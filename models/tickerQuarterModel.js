@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 
 const quarterDataSchema = new mongoose.Schema({
     date:{type:Date, required:true},
+    dateName:{type:String},
     revenue:{type:Number},
     netIncome:{type:Number},
     operatingIncome:{type:Number},

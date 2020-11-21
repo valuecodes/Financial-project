@@ -48,7 +48,6 @@ export default function AddDataScreen() {
 
     useEffect(()=>{
         if(tickerFullData&&exhangeRate&&tickerList.tickers.length!==0){
-            console.log(tickerFullData)
             let ticker = new TickerData(tickerFullData,tickerQuarter,tickerRatios,exhangeRate)
             let tickerSlim = tickerList.getTickerSlim(ticker.profile.ticker)
             ticker.addTickerSlimData(tickerSlim)
@@ -456,6 +455,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
             case 'type':
             case 'instrument':
             case 'period':
+            case 'dateName':
                 return 'text'
             default: return 'number'
         }
@@ -506,6 +506,21 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
         setCompanyInfo({...companyInfo})
     }
 
+    const handleAdjustDate=()=>{
+        switch(selectedKey){
+            case 'quarterData':
+                let startDate = companyInfo.quarterData[0].date
+                companyInfo.quarterData.forEach((item,index) =>{
+                    let newDate = new Date(startDate)
+                    newDate.setMonth(newDate.getMonth() - (index*3));
+                    item.date = newDate
+                })
+                break
+            default:
+        }
+        setCompanyInfo({...companyInfo})
+    }
+
     return(
         <div>
             <table className='inputDataTable'>
@@ -524,6 +539,7 @@ function Output({selectedKey, companyInfo, setCompanyInfo}){
                                 Add row
                             </button>
                             <button onClick={()=>deleteAll(selectedKey)}>Delete All</button>
+                            <button onClick={handleAdjustDate}>Adjust date</button>
                             </>
                         }
                         </th>
@@ -824,7 +840,7 @@ function InputInfoButtons({companyInfo, setSelectedKey}){
     return(
         <div className='inputInfoButtons'>   
              {inputInfoButtons.map(dataKey =>
-                <InputInfo dataKey={dataKey} data={companyInfo} setSelectedKey={setSelectedKey}/>                        
+                <InputInfo key={dataKey} dataKey={dataKey} data={companyInfo} setSelectedKey={setSelectedKey}/>  
             )}
         </div>
     )

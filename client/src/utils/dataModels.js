@@ -116,6 +116,7 @@ export const tickerDataModel={
     },
     quarterData:{
         date:new Date().toISOString(),
+        dateName:'',
         revenue:null,
         netIncome:null,
         operatingIncome:null,

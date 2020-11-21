@@ -398,7 +398,7 @@ export function getRollingFinancialNum(ticker,financialName,date=new Date()){
 export function calculateGetRatio(tickerData,ratio){
     
     const { incomeStatement } = tickerData
-    let stockPrice = tickerData.priceData[0].close
+    let stockPrice = tickerData.priceData[0]?tickerData.priceData[0].close:0
     let yearDivs = tickerData.yearDivs()
     let eps =  tickerData.getRollingFinancialNum('eps')
     let operatingIncome = tickerData.getRollingFinancialNum('operatingIncome')
