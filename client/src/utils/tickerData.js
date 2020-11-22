@@ -25,7 +25,7 @@ import {
     calculateMonthlyPrice,
     calculateYearlyData,
 } from "./calculations/inputCalculations";
-import { getRollingFinancialNum, calculateGetRatio, handleGetClosestPriceFromDate, handleGetYearlyDivsFromDate } from "./calculations/tickerCalculations";
+import { getRollingFinancialNum, calculateGetRatio, handleGetClosestPriceFromDate, handleGetYearlyDivsFromDate, addValueStatements } from "./calculations/tickerCalculations";
 
 export function TickerData(data, tickerQuarter={}, tickerRatios={} ,exhangeRate=null){
     this.profile = data.profile || tickerDataModel.profile
@@ -48,7 +48,7 @@ export function TickerData(data, tickerQuarter={}, tickerRatios={} ,exhangeRate=
     this.selectedKey2 = null
     this.addUpdateMessage = (dataName,actions) => handleAddUpdateMessage(this,dataName,actions)
     this.addTickerSlimData = (tickerSlim) => handleAddTickerSlimData(this,tickerSlim)
-    this.getValueStatements = () => calculateValueStatements(this)
+    this.getValueStatements = () => addValueStatements(this)
     this.getRatio = (ratio) => calculateGetRatio(this,ratio)
     this.yearDivs = () => calculateYearDivs(this)
     this.financialKeysStatements = () => calculateFinancialKeysStatements(this)
@@ -141,24 +141,6 @@ function calculateYearDivs(tickerData){
     }else{
         return null
     }
-}
-
-function calculateValueStatements(tickerData){
-    let keys = {}
-    Object.keys(tickerDataModel).forEach(statement =>{
-        if(
-            statement!=='latestPrice'&&
-            statement!=='quarterData'&&
-            statement!=='monthlyPrice'&&
-            statement!=='monthlyData'&&
-            statement!=='yearlyData'
-        ){
-            Object.keys(tickerDataModel[statement]).forEach(value =>{
-                keys[value] = statement
-            })            
-        }
-    })
-    tickerData.valueStatements = keys
 }
 
 function calculateFinancialKeysStatements(tickerData){

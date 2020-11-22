@@ -1,8 +1,8 @@
-import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics, addFinancialCategories } from './calculations/tickerCalculations';
+import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics, addFinancialCategories, getRollingFinancialNum, getTrailing12MonthsFinancials, addValueStatements } from './calculations/tickerCalculations';
 import train, { makePredictions } from './calculations/model';
 import { colorArray, normalize } from './utils';
 
-export default function MachineLearning(data){
+export default function MachineLearning(data,quarterData){
     this.profile = data?data.profile:{}
     this.incomeStatement = data?data.incomeStatement:[]
     this.balanceSheet = data?data.balanceSheet:[]
@@ -10,6 +10,7 @@ export default function MachineLearning(data){
     this.insiderTrading = data?data.insiderTrading:[]
     this.dividendData = data?data.dividendData:[]
     this.priceData = data?data.priceData:[]
+    this.quarterData = quarterData?quarterData.quarterData:[]
     this.chart={
         priceChart:{},
         options:{
@@ -110,10 +111,13 @@ export default function MachineLearning(data){
     this.trainModel = (setState) => trainModel(this,setState)
     this.validateModel = () => validateModel(this)
     this.predictModel = () => predictModel(this)
+    this.trailing12MonthsFinancials = (date) => getTrailing12MonthsFinancials(this,date)
+    this.rollingFinancialNum = (financialName,date) => getRollingFinancialNum(this,financialName,date)
     this.init = () => handleInit(this)
 }
 
 function handleInit(ticker){
+    addValueStatements(ticker)
     addMovingAverages(ticker)
     addFinancialRatios(ticker)
     addAnalytics(ticker)
@@ -164,6 +168,18 @@ function addTraininData(ticker){
                     item[ratio.id] = value    
                     ratio.values.push(value)      
                     break
+                case 'trailingRatio':
+                    let quarterRatio = ticker.analytics.trailingQuarterData.find(i =>{
+                        let startDate = new Date(item.date)
+                        let endDate = new Date(item.date)
+                        endDate.setMonth(endDate.getMonth() + 3);
+                        return new Date(i.date).getTime()<=startDate.getTime()      
+                    })
+                    let traValue = quarterRatio?quarterRatio[ratio.name.split('_')[1]]:null
+                    if(!isFinite(traValue)) traValue=null             
+                    set.push(traValue)
+                    item[ratio.id] = traValue    
+                    ratio.values.push(traValue)                          
                 default:  
             }
         });
@@ -175,8 +191,8 @@ function addTraininData(ticker){
     })
     
     priceData = [...ticker.priceData].reverse()
-    priceData = priceData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
-    trainingData = trainingData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear)
+    priceData = priceData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear+2)
+    trainingData = trainingData.filter(item=> new Date(item.date).getFullYear()>=ticker.analytics.financialInputs.firstFullFinancialYear+2)
     let futureData = trainingData.splice(trainingData.length-predictionWeeks,predictionWeeks)
     let nullValues = 0
     selectedRatios.forEach(item => {

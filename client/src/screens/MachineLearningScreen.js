@@ -11,7 +11,7 @@ import MaterialIcon from '../components/MaterialIcon'
 export default function MachineLearningScreen() {
 
     const tickerData = useSelector(state => state.tickerData)
-    const { loading, tickerFullData, error } = tickerData
+    const { loading, tickerFullData, tickerQuarter, error } = tickerData
     
     const [machineLearning, setMachineLearning] = useState(new MachineLearning(null))
     const [navigation,setNavigation] = useState({
@@ -21,14 +21,14 @@ export default function MachineLearningScreen() {
 
     useEffect(()=>{
         if(tickerFullData){
-            let newMachineLearning = new MachineLearning(tickerFullData)
+            let newMachineLearning = new MachineLearning(tickerFullData,tickerQuarter)
             let updated = newMachineLearning.init()
             setMachineLearning(newMachineLearning)
         }
     },[tickerFullData])
 
     const { stage } = machineLearning.ml
-    
+
     return (
         <div className='page container'>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
@@ -205,20 +205,20 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         setMachineLearning({...machineLearning})
     }
 
-    const handleAddFinancialRatio=(ratio)=>{
+    const handleAddFinancialRatio=(ratio,category)=>{
         let found = machineLearning.ml.selectedRatios.findIndex(item =>item.name===ratio)
         if(found>=0){
             machineLearning.ml.selectedRatios.splice(found,1)
         }else{
-            addFinancialRatio(ratio)
+            addFinancialRatio(ratio,category)
         }
         setMachineLearning({...machineLearning})
     }
 
-    const addFinancialRatio=(ratio)=>{
+    const addFinancialRatio=(ratio,category)=>{
             let newRatio={
                 name:ratio,
-                category:'financialRatio',
+                category:category,
                 chart:'ratioChart',
                 normalize:true,
                 id:uuidv4(),
@@ -253,8 +253,6 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         setMachineLearning({...machineLearning})
     }
 
-    console.log(machineLearning,machineLearning.ml.selectedRatios.find(item =>item.name==='pe')&&'lightgreen')
-
     return(
         <>
             <div>
@@ -271,6 +269,17 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                         </button>
                     )}                    
                 </div>
+                <div>Add trailing quarter data</div>
+                {machineLearning.analytics.trailingQuarterRatios.map(ratio =>
+                            <button 
+                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
+                            key={ratio} 
+                            className='button small' 
+                            onClick={()=>handleAddFinancialRatio(ratio,'trailingRatio')
+                        }>
+                            {camelCaseToString(ratio)}
+                        </button>
+                )}
                 <div>Add financials</div>
                 {Object.keys(machineLearning.analytics.financialCategories).map(category => 
                     <div key={category}>
@@ -284,7 +293,7 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                                     style={{color:machineLearning.ml.selectedRatios.find(i =>i.name===item)&&'lightgreen'}}
                                     className={`button small`}
                                     key={item} 
-                                    onClick={()=>handleAddFinancialRatio(item)}
+                                    onClick={()=>handleAddFinancialRatio(item,'financialRatio')}
                                 >
                                     {item}
                                 </button>

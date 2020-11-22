@@ -1,45 +1,48 @@
 import { roundToTwoDecimal, camelCaseToString, roundFinancialNumber } from "../utils";
 import { calculateGetFinancialNum, calculateExhangeRateModification } from "../tickerData";
 import { tickerDataModel } from '../dataModels'
+import { func } from "prop-types";
 
 export function addFinancialRatios(ticker){
     let priceData = ticker.priceData
     let currentYear = new Date().getFullYear()
     let numberOfDivs = null
     for(var i=0;i<priceData.length;i++){
-        let price = priceData[i]
-        let income = ticker.incomeStatement.
-            find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
-        let balance = ticker.balanceSheet
-            .find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
-        let cashflow = ticker.cashFlow
-            .find(item => new Date(item.date).getFullYear()<=new Date(price.date).getFullYear())
-        let shareCount = 0
+        
+        let price = priceData[i]    
+        let trailing12MonthsFinancials = ticker.trailing12MonthsFinancials(price.date)
+        
+        const {
+            revenue,
+            netIncome,
+            operatingIncome,
+            eps,
+            currentAssets,
+            currentLiabilities,
+            operatingCashFlow,
+            investingCashFlow,
+            financingCashFlow,
+            totalEquity,
+            totalDebt,
+            totalAssets, 
+            sharesOutstanding,  
+            cash,
+            bookValuePerShare,
+            capEx
+        } = trailing12MonthsFinancials
 
-        if(income){
-            price.pe = price.close/income.eps
-            shareCount = income.netIncome / income.eps
-            let rps = income.revenue/shareCount
-            price.ps = price.close/rps
-        }
+        let shareCount = netIncome / eps
+        price.pe = price.close/eps
+        let rps = revenue/shareCount
+        price.ps = price.close/rps
+        price.pb = price.close/bookValuePerShare 
+        let marketCap = shareCount*price.close
+        let ev = marketCap+totalDebt-cash
+        let ebit = operatingIncome
+        price.evEbit = ev/ebit
+        let fcfPerShare = (operatingCashFlow+capEx)/shareCount
+        price.pfcf = price.close/ fcfPerShare
 
-        if(balance){
-            price.pb = price.close/balance.bookValuePerShare 
-        }
-        if(income&&balance){
-            shareCount = income.netIncome / income.eps
-            let marketCap = shareCount*price.close
-            let debt = balance.totalDebt?balance.totalDebt:balance.longTermDebt
-            let ev = marketCap+debt-balance.cash
-            let ebit = income.operatingIncome
-            price.evEbit = ev/ebit
-        }
-        if(cashflow&&income){
-            shareCount = income.netIncome / income.eps            
-            let fcfPerShare = (cashflow.operatingCashFlow+cashflow.capEx)/shareCount
-            price.pfcf = price.close/ fcfPerShare
-            
-        }
         let yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear())
         if(yearDivs.length===0){
             yearDivs = ticker.dividendData.filter(item => new Date(item.date).getFullYear()===new Date(price.date).getFullYear()+1)
@@ -95,7 +98,6 @@ export function addAnalytics(ticker){
         let yearData = incomeStatement.find(item => new Date(item.date).getFullYear()===year)
         let balanceData = balanceSheet.find(item => new Date(item.date).getFullYear()===year)
         let cashflowData = cashFlow.find(item => new Date(item.date).getFullYear()===year)||{}    
-        console.log(yearData)
         let price = handleGetClosestPriceFromDate(ticker,new Date(year,11))
         let shareCount = yearData.netIncome / yearData.eps
         let marketCap = shareCount*price
@@ -133,6 +135,14 @@ export function addAnalytics(ticker){
         }
     }
 
+    let trailingQuarterData=[]
+    ticker.quarterData.forEach(item => {
+        trailingQuarterData.push(ticker.trailing12MonthsFinancials(item.date))
+    })
+    let trailingQuarterRatios = Object.keys(ticker.trailing12MonthsFinancials(new Date()))
+        .filter(item => item!=='date')
+        .map(item => 'trailing_'+item)
+        
     let financialInputs= {
         freeCashFlow:{},
         netProfitMargin:{},
@@ -149,8 +159,6 @@ export function addAnalytics(ticker){
         evEbit:{},
         cash:{}
     }
-
-
 
     Object.keys(yearlyData).forEach((item,index) =>{
         Object.keys(financialInputs).forEach(name =>{
@@ -233,7 +241,9 @@ export function addAnalytics(ticker){
         ...ticker.analytics,
         financialInputs,
         forecastInputs,
-        yearlyData
+        yearlyData,
+        trailingQuarterData,
+        trailingQuarterRatios
     }
 
 }
@@ -378,13 +388,32 @@ export function handleGetPriceRatio(ticker,ratioName='',options){
     return { ratioArray, dateArray, priceArray, name:camelCaseToString(ratioName) }
 }
 
+export function getTrailing12MonthsFinancials(ticker,date){
+    let quarterDataKeys = Object.keys(tickerDataModel.quarterData)
+        .filter(item => !['date','dateName'].includes(item))
+    let data = {
+        date,
+    }
+
+    let balance = ticker.balanceSheet
+        .find(item => new Date(item.date).getFullYear()<=new Date(date).getFullYear())
+    let cashflow = ticker.cashFlow
+        .find(item => new Date(item.date).getFullYear()<=new Date(date).getFullYear())
+    data.cash = balance?balance.cash:0
+    data.bookValuePerShare = balance?balance.bookValuePerShare:0
+    data.capEx = cashflow?cashflow.capEx:0
+    
+    quarterDataKeys.forEach(item => data[item]=ticker.rollingFinancialNum(item,date))
+    return data
+}
+
 export function getRollingFinancialNum(ticker,financialName,date=new Date()){
     
     let quarterData = ticker.quarterData
-        .filter(item => new Date(item.date)<date)
+        .filter(item => new Date(item.date)<new Date(date))
         .filter((item,index) =>index<4)
 
-    let value = 0
+    let value = 0   
     if(quarterData.length<4){
         value = calculateGetFinancialNum(ticker,financialName,date)
     }else{
@@ -501,4 +530,22 @@ export function handleGetYearlyDivsFromDate(tickerData,date){
     }else{
         return null
     }
+}
+
+export function addValueStatements(tickerData){
+    let keys = {}
+    Object.keys(tickerDataModel).forEach(statement =>{
+        if(
+            statement!=='latestPrice'&&
+            statement!=='quarterData'&&
+            statement!=='monthlyPrice'&&
+            statement!=='monthlyData'&&
+            statement!=='yearlyData'
+        ){
+            Object.keys(tickerDataModel[statement]).forEach(value =>{
+                keys[value] = statement
+            })            
+        }
+    })
+    tickerData.valueStatements = keys
 }
