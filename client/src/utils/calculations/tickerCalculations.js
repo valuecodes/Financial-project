@@ -135,13 +135,18 @@ export function addAnalytics(ticker){
         }
     }
 
-    let trailingQuarterData=[]
-    ticker.quarterData.forEach(item => {
-        trailingQuarterData.push(ticker.trailing12MonthsFinancials(item.date))
+    ticker.quarterData.forEach((item,index) => {
+        addTrailing12MonthsFinancials(ticker,index,item.date)
     })
-    let trailingQuarterRatios = Object.keys(ticker.trailing12MonthsFinancials(new Date()))
-        .filter(item => item!=='date')
-        .map(item => 'trailing_'+item)
+
+    ticker.quarterData.forEach((item,index) => {
+        addQuarterGrowth(ticker.quarterData,index,4)
+        addQuarterGrowth(ticker.quarterData,index,1)
+    })
+
+    let quarterRatios = Object.keys(ticker.quarterData[0])
+        .filter(item => !['date','dateName','_id'].includes(item))
+        .map(item => item+'_quarter')
         
     let financialInputs= {
         freeCashFlow:{},
@@ -242,10 +247,8 @@ export function addAnalytics(ticker){
         financialInputs,
         forecastInputs,
         yearlyData,
-        trailingQuarterData,
-        trailingQuarterRatios
+        quarterRatios,
     }
-
 }
 
 export function addFinancialCategories(ticker){
@@ -387,6 +390,8 @@ export function handleGetPriceRatio(ticker,ratioName='',options){
     let priceArray = priceRatio.map(item => item.close)
     return { ratioArray, dateArray, priceArray, name:camelCaseToString(ratioName) }
 }
+
+
 
 export function getTrailing12MonthsFinancials(ticker,date){
     let quarterDataKeys = Object.keys(tickerDataModel.quarterData)
@@ -548,4 +553,50 @@ export function addValueStatements(tickerData){
         }
     })
     tickerData.valueStatements = keys
+}
+
+function addTrailing12MonthsFinancials(ticker,index,date){
+    let quarterData = ticker.quarterData
+    let newData = ticker.trailing12MonthsFinancials(date)
+    let period=4
+    Object.keys(newData).forEach(item =>{
+        if(item!=='date'&&item!=='dateName'&&item!=='_id'){
+            let current = quarterData[index][item]
+            let last = quarterData[index+period]?quarterData[index+period][item]:null
+            if(last){                
+                quarterData[index][item+'_trailing'] = newData[item] 
+            }else{
+                quarterData[index][item+'_trailing'] = null
+            }
+
+        }
+    })
+}
+
+function addQuarterGrowth(data,index,period){
+    
+    let yoyGrowth = {...data[index]}
+    let text=''
+    switch(period){
+        case 1:
+            text = '_qoq_growth';
+            break
+        case 4:
+            text = '_yoy_growth';
+            break
+        default: text = '_'+period
+    }
+    Object.keys(yoyGrowth).forEach(item =>{
+        if(!['date','dateName','_id'].includes(item)&&!item.split('_')[2]){
+            let current = data[index][item]
+            let last = data[index+period]?data[index+period][item]:null
+            if(last){                
+                data[index][item+text] = roundToTwoDecimal(
+                    ((current-last)/last)*100
+                )  
+            }else{
+                data[index][item+text] = null
+            }
+        }
+    })
 }

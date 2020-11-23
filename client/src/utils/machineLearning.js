@@ -168,18 +168,19 @@ function addTraininData(ticker){
                     item[ratio.id] = value    
                     ratio.values.push(value)      
                     break
-                case 'trailingRatio':
-                    let quarterRatio = ticker.analytics.trailingQuarterData.find(i =>{
+                case 'quarterRatio':
+                    let quarterRatio = ticker.quarterData.find(i =>{
                         let startDate = new Date(item.date)
                         let endDate = new Date(item.date)
                         endDate.setMonth(endDate.getMonth() + 3);
                         return new Date(i.date).getTime()<=startDate.getTime()      
                     })
-                    let traValue = quarterRatio?quarterRatio[ratio.name.split('_')[1]]:null
-                    if(!isFinite(traValue)) traValue=null             
-                    set.push(traValue)
-                    item[ratio.id] = traValue    
-                    ratio.values.push(traValue)                          
+                    let quarterValue = quarterRatio?quarterRatio[ratio.name.slice(0,-8)]:null
+                    if(!isFinite(quarterValue)) quarterValue=null             
+                    set.push(quarterValue)
+                    item[ratio.id] = quarterValue    
+                    ratio.values.push(quarterValue)  
+                    break                        
                 default:  
             }
         });

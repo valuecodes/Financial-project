@@ -205,22 +205,22 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         setMachineLearning({...machineLearning})
     }
 
-    const handleAddFinancialRatio=(ratio,category)=>{
+    const handleAddFinancialRatio=(ratio,category,normalize)=>{
         let found = machineLearning.ml.selectedRatios.findIndex(item =>item.name===ratio)
         if(found>=0){
             machineLearning.ml.selectedRatios.splice(found,1)
         }else{
-            addFinancialRatio(ratio,category)
+            addFinancialRatio(ratio,category,normalize)
         }
         setMachineLearning({...machineLearning})
     }
 
-    const addFinancialRatio=(ratio,category)=>{
+    const addFinancialRatio=(ratio,category,normalize=true)=>{
             let newRatio={
                 name:ratio,
                 category:category,
                 chart:'ratioChart',
-                normalize:true,
+                normalize,
                 id:uuidv4(),
                 values:[]
             }
@@ -253,6 +253,12 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         setMachineLearning({...machineLearning})
     }
 
+    const handleAddQuarterRatios=()=>{
+        const { quarterRatios } = machineLearning.analytics
+        quarterRatios.forEach(ratio => handleAddFinancialRatio(ratio,'quarterRatio'))
+        setMachineLearning({...machineLearning})        
+    }
+
     return(
         <>
             <div>
@@ -269,17 +275,18 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                         </button>
                     )}                    
                 </div>
-                <div>Add trailing quarter data</div>
-                {machineLearning.analytics.trailingQuarterRatios.map(ratio =>
-                            <button 
-                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
-                            key={ratio} 
-                            className='button small' 
-                            onClick={()=>handleAddFinancialRatio(ratio,'trailingRatio')
-                        }>
-                            {camelCaseToString(ratio)}
-                        </button>
-                )}
+                <h3>Add quarter data</h3>
+                    <button onClick={handleAddQuarterRatios}>Add All</button>    
+                    {machineLearning.analytics.quarterRatios.map(ratio =>
+                                <button 
+                                style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
+                                key={ratio} 
+                                className='button small' 
+                                onClick={()=>handleAddFinancialRatio(ratio,'quarterRatio')
+                            }>
+                                {camelCaseToString(ratio)}
+                            </button>
+                    )}
                 <div>Add financials</div>
                 {Object.keys(machineLearning.analytics.financialCategories).map(category => 
                     <div key={category}>
