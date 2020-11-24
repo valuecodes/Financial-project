@@ -144,9 +144,13 @@ export function addAnalytics(ticker){
         addQuarterGrowth(ticker.quarterData,index,1)
     })
 
-    let quarterRatios = Object.keys(ticker.quarterData[0])
+    ticker.priceData.forEach((item,index)=>
+        addQuarterGrowth(ticker.priceData,index,1,'_change')
+    )
+
+    let quarterRatios =ticker.quarterData[0]? Object.keys(ticker.quarterData[0])
         .filter(item => !['date','dateName','_id'].includes(item))
-        .map(item => item+'_quarter')
+        .map(item => item+'_quarter'):[]
         
     let financialInputs= {
         freeCashFlow:{},
@@ -242,14 +246,18 @@ export function addAnalytics(ticker){
         forecastStartingDate:new Date().toISOString().split('T')[0]
     }
 
+    let macroRatios = ticker.macroData.map(item => item.name)
+
     ticker.analytics={
         ...ticker.analytics,
         financialInputs,
         forecastInputs,
         yearlyData,
         quarterRatios,
+        macroRatios
     }
 }
+
 
 export function addFinancialCategories(ticker){
     let latestFinanacialYear = ticker.analytics.financialInputs.lastFullFinancialYear
@@ -390,8 +398,6 @@ export function handleGetPriceRatio(ticker,ratioName='',options){
     let priceArray = priceRatio.map(item => item.close)
     return { ratioArray, dateArray, priceArray, name:camelCaseToString(ratioName) }
 }
-
-
 
 export function getTrailing12MonthsFinancials(ticker,date){
     let quarterDataKeys = Object.keys(tickerDataModel.quarterData)
@@ -573,7 +579,7 @@ function addTrailing12MonthsFinancials(ticker,index,date){
     })
 }
 
-function addQuarterGrowth(data,index,period){
+function addQuarterGrowth(data,index,period,key=null){
     
     let yoyGrowth = {...data[index]}
     let text=''
@@ -586,6 +592,9 @@ function addQuarterGrowth(data,index,period){
             break
         default: text = '_'+period
     }
+
+    if(key) text=key
+
     Object.keys(yoyGrowth).forEach(item =>{
         if(!['date','dateName','_id'].includes(item)&&!item.split('_')[2]){
             let current = data[index][item]

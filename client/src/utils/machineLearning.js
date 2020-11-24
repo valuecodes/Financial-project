@@ -2,7 +2,7 @@ import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinan
 import train, { makePredictions } from './calculations/model';
 import { colorArray, normalize } from './utils';
 
-export default function MachineLearning(data,quarterData){
+export default function MachineLearning(data,macroData,quarterData){
     this.profile = data?data.profile:{}
     this.incomeStatement = data?data.incomeStatement:[]
     this.balanceSheet = data?data.balanceSheet:[]
@@ -11,6 +11,7 @@ export default function MachineLearning(data,quarterData){
     this.dividendData = data?data.dividendData:[]
     this.priceData = data?data.priceData:[]
     this.quarterData = quarterData?quarterData.quarterData:[]
+    this.macroData = macroData||[]
     this.chart={
         priceChart:{},
         options:{
@@ -180,7 +181,17 @@ function addTraininData(ticker){
                     set.push(quarterValue)
                     item[ratio.id] = quarterValue    
                     ratio.values.push(quarterValue)  
-                    break                        
+                    break    
+                case 'macroRatio':
+                    let macroIndex = ticker.macroData.findIndex(data => data.name===ratio.name)   
+                    let macroRatio = ticker.macroData[macroIndex].data.find(i =>
+                        new Date(i.date) < new Date(item.date)
+                    )
+                    let macroValue = macroRatio?Number(macroRatio.value):null
+                    if(!isFinite(macroValue)) macroValue=null             
+                    set.push(macroValue)
+                    item[ratio.id] = macroValue    
+                    ratio.values.push(macroValue) 
                 default:  
             }
         });

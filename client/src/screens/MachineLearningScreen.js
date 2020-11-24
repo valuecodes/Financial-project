@@ -7,11 +7,15 @@ import { getTickerData } from '../actions/tickerActions';
 import { Line, Bar } from 'react-chartjs-2';
 import { camelCaseToString, uuidv4 } from '../utils/utils';
 import MaterialIcon from '../components/MaterialIcon'
+import { getMacroData } from '../actions/macroActions';
 
 export default function MachineLearningScreen() {
 
+    const dispatch = useDispatch()
     const tickerData = useSelector(state => state.tickerData)
     const { loading, tickerFullData, tickerQuarter, error } = tickerData
+    const macroData = useSelector(state => state.macroData)
+    const { loading:loadingMacro, data:macroRatios, error:errorMacro } = macroData
     
     const [machineLearning, setMachineLearning] = useState(new MachineLearning(null))
     const [navigation,setNavigation] = useState({
@@ -20,12 +24,16 @@ export default function MachineLearningScreen() {
     })
 
     useEffect(()=>{
-        if(tickerFullData){
-            let newMachineLearning = new MachineLearning(tickerFullData,tickerQuarter)
+        if(tickerFullData&&macroRatios){
+            let newMachineLearning = new MachineLearning(tickerFullData,macroRatios,tickerQuarter)
             let updated = newMachineLearning.init()
             setMachineLearning(newMachineLearning)
         }
-    },[tickerFullData])
+    },[tickerFullData,macroRatios])
+
+    useEffect(()=>{
+        dispatch(getMacroData())
+    },[])
 
     const { stage } = machineLearning.ml
 
@@ -275,6 +283,17 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                         </button>
                     )}                    
                 </div>
+                <h3>Add Macro ratios</h3>
+                {machineLearning.analytics.macroRatios.map(ratio =>
+                        <button 
+                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
+                            key={ratio} 
+                            className='button small' 
+                            onClick={()=>handleAddFinancialRatio(ratio,'macroRatio')
+                        }>
+                            {camelCaseToString(ratio)}
+                        </button>
+                )}                    
                 <h3>Add quarter data</h3>
                     <button onClick={handleAddQuarterRatios}>Add All</button>    
                     {machineLearning.analytics.quarterRatios.map(ratio =>
