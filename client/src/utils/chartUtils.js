@@ -1,8 +1,6 @@
-export function normalize(min, max) {
+export function normalize(val,max, min) {
     var delta = max - min;
-    return function (val) {
-        return (val - min) / delta;
-    };
+    return (val - min) / delta;
 }
 
 export function getColorFromRedToGreenByPercentage(percent) {

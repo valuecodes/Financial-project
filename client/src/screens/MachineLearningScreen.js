@@ -224,15 +224,15 @@ function MLRAtios({ machineLearning, setMachineLearning }){
     }
 
     const addFinancialRatio=(ratio,category,normalize=true)=>{
-            let newRatio={
-                name:ratio,
-                category:category,
-                chart:'ratioChart',
-                normalize,
-                id:uuidv4(),
-                values:[]
-            }
-            machineLearning.ml.selectedRatios.push(newRatio)
+        let newRatio={
+            name:ratio,
+            category:category,
+            chart:'ratioChart',
+            normalize,
+            id:uuidv4(),
+            values:[]
+        }
+        machineLearning.ml.selectedRatios.push(newRatio)
     }
 
     const handleAddCategory=(category)=>{

@@ -73,7 +73,7 @@ export function addAnalytics(ticker){
     let divData = [...dividendData]
 
     let peData = ticker.getPriceRatio('pe').ratioArray
-    
+
     const { incomeStatement, balanceSheet, cashFlow } = ticker
 
     let latestEps = incomeStatement[0]
@@ -246,7 +246,7 @@ export function addAnalytics(ticker){
         forecastStartingDate:new Date().toISOString().split('T')[0]
     }
 
-    let macroRatios = ticker.macroData.map(item => item.name)
+    let macroRatios = ticker.macroData?ticker.macroData.map(item => item.name):[]
 
     ticker.analytics={
         ...ticker.analytics,
@@ -431,7 +431,6 @@ export function getRollingFinancialNum(ticker,financialName,date=new Date()){
         value = quarterData.reduce((a,c)=>a+c[financialName],0)
     }
     value = calculateExhangeRateModification(value,financialName,ticker)
-
     return value
 }
 
