@@ -206,13 +206,6 @@ function Stages({machineLearning, setMachineLearning}){
 
 function MLRAtios({ machineLearning, setMachineLearning }){
 
-    const handleAddPriceRatio=(ratio)=>{
-        const selectedRatio={...ratio}
-        selectedRatio.id = uuidv4()
-        machineLearning.ml.selectedRatios.push(selectedRatio)
-        setMachineLearning({...machineLearning})
-    }
-
     const handleAddFinancialRatio=(ratio,category,normalize)=>{
         let found = machineLearning.ml.selectedRatios.findIndex(item =>item.name===ratio)
         if(found>=0){
@@ -235,18 +228,6 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         machineLearning.ml.selectedRatios.push(newRatio)
     }
 
-    const handleAddCategory=(category)=>{
-        let categoryNames = machineLearning.analytics.financialCategories[category]
-        let firstItem = categoryNames[0]
-        let firstIncludes = machineLearning.ml.selectedRatios.findIndex(item => item.name === firstItem) 
-        machineLearning.ml.selectedRatios =  machineLearning.ml.selectedRatios
-            .filter(item => !categoryNames.includes(item.name))
-        if(firstIncludes===-1){
-            categoryNames.forEach(item => addFinancialRatio(item))
-        }
-        setMachineLearning({...machineLearning})
-    }
-
     const handleRemoveRatio=(ratio)=>{
         let { selectedRatios } = machineLearning.ml
         selectedRatios = selectedRatios.filter(item => item.id!==ratio.id)
@@ -254,36 +235,19 @@ function MLRAtios({ machineLearning, setMachineLearning }){
         setMachineLearning({...machineLearning})        
     }
 
-    const handleMLRatioChange=(e)=>{
-        const { value,name } = e.target
-        let selectedIndex =  machineLearning.ml.selectedRatios.findIndex(item => item.id===name)
-        machineLearning.ml.selectedRatios[selectedIndex].value = Number(value)
-        setMachineLearning({...machineLearning})
-    }
-
-    const handleAddQuarterRatios=()=>{
-        const { quarterRatios } = machineLearning.analytics
-        quarterRatios.forEach(ratio => handleAddFinancialRatio(ratio,'quarterRatio'))
-        setMachineLearning({...machineLearning})        
+    const handleAddRatios = (categoryName,category) => {
+        const ratioNames = machineLearning.analytics[categoryName]
+        ratioNames.forEach(ratio => handleAddFinancialRatio(ratio,category))
+        setMachineLearning({...machineLearning})  
     }
 
     return(
         <>
             <div>
-                <h3>Add Price ratios</h3>
-                <div className='addMLRatios'>
-                    {machineLearning.ml.priceRatios.map(ratio =>
-                        <button 
-                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio.name)&&'lightgreen'}}
-                            key={ratio.name} 
-                            className='button small' 
-                            onClick={()=>handleAddPriceRatio(ratio)
-                        }>
-                            {camelCaseToString(ratio.name)}
-                        </button>
-                    )}                    
-                </div>
                 <h3>Add Macro ratios</h3>
+                <button onClick={()=>handleAddRatios('macroRatios','macroRatio')}>
+                    Add All
+                </button>  
                 {machineLearning.analytics.macroRatios.map(ratio =>
                         <button 
                             style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
@@ -293,9 +257,25 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                         }>
                             {camelCaseToString(ratio)}
                         </button>
+                )}   
+                <h3>Add price ratios</h3>
+                <button onClick={()=>handleAddRatios('priceRatios','priceRatio')}>
+                    Add All
+                </button>  
+                {machineLearning.analytics.priceRatios.map(ratio =>
+                        <button 
+                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
+                            key={ratio} 
+                            className='button small' 
+                            onClick={()=>handleAddFinancialRatio(ratio,'priceRatio')
+                        }>
+                            {camelCaseToString(ratio)}
+                        </button>
                 )}                    
                 <h3>Add quarter data</h3>
-                    <button onClick={handleAddQuarterRatios}>Add All</button>    
+                    <button onClick={()=>handleAddRatios('quarterRatios','quarterRatio')}>
+                        Add All
+                    </button>    
                     {machineLearning.analytics.quarterRatios.map(ratio =>
                                 <button 
                                 style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
@@ -306,27 +286,20 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                                 {camelCaseToString(ratio)}
                             </button>
                     )}
-                <div>Add financials</div>
-                {Object.keys(machineLearning.analytics.financialCategories).map(category => 
-                    <div key={category}>
-                        <div className='financialCategoryHeader'>
-                            <h3>{camelCaseToString(category)}</h3>
-                            <button onClick={()=>handleAddCategory(category)}>Add All</button>                            
-                        </div>
-                        <div>
-                            {machineLearning.analytics.financialCategories[category].map(item => 
-                                <button
-                                    style={{color:machineLearning.ml.selectedRatios.find(i =>i.name===item)&&'lightgreen'}}
-                                    className={`button small`}
-                                    key={item} 
-                                    onClick={()=>handleAddFinancialRatio(item,'financialRatio')}
-                                >
-                                    {item}
-                                </button>
-                            )}                            
-                        </div>
-                    </div>
-                )}
+                    <h3>Add year data</h3>
+                    <button onClick={()=>handleAddRatios('yearRatios','yearRatio')}>
+                        Add All
+                    </button>    
+                    {machineLearning.analytics.yearRatios.map(ratio =>
+                                <button 
+                                style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
+                                key={ratio} 
+                                className='button small' 
+                                onClick={()=>handleAddFinancialRatio(ratio,'yearRatio')
+                            }>
+                                {camelCaseToString(ratio)}
+                            </button>
+                    )}
             </div>
             <div>
                 <h3>Selected Ratios</h3>
@@ -334,19 +307,7 @@ function MLRAtios({ machineLearning, setMachineLearning }){
                     {machineLearning.ml.selectedRatios.map(ratio =>
                         <li key={ratio.id}>
                             <p>{camelCaseToString(ratio.name)}</p>
-                            <div className='ratioOption'>
-                                {ratio.value&&
-                                    <>
-                                        <input
-                                            type='range'
-                                            value={ratio.value}
-                                            name={ratio.id}
-                                            onChange={(e)=>handleMLRatioChange(e)}
-                                        />
-                                        <h3>{ratio.value||0}</h3>  
-                                    </> 
-                                }
-                            </div>
+                            <p></p>
                             <button onClick={()=>handleRemoveRatio(ratio)}>X</button>
                         </li>
                     )}                    

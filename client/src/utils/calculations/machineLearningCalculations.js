@@ -13,18 +13,6 @@ export function createTrainingData(ticker){
         let set=[]
         selectedRatios.forEach(ratio => {
             switch(ratio.category){
-                case 'movingAverage':
-                    const simpleMovingAverage = createMovingAverage(priceData,index,ratio.value).sma
-                    set.push(simpleMovingAverage)
-                    item[ratio.id] = simpleMovingAverage
-                    ratio.values.push(simpleMovingAverage)
-                    break
-                case 'movingAverageSet':
-                    const { days, sma } = createMovingAverage(priceData,index,ratio.value)
-                    set.push(...days.map(i => i.price))
-                    item[ratio.id] = sma
-                    ratio.values.push(...days.map(i => i.price))
-                    break
                 case 'priceRatio':
                     let priceRatio = priceData[index][ratio.name]
                     if(!isFinite(priceRatio)) priceRatio=null
@@ -32,8 +20,9 @@ export function createTrainingData(ticker){
                     item[ratio.id] = priceRatio    
                     ratio.values.push(priceRatio)      
                     break
-                case 'financialRatio':
-                    let year = new Date(item.date).getFullYear()-1 
+                case 'yearRatio':
+                    let years = new Date(item.date).getMonth()<1?2:1
+                    let year = new Date(item.date).getFullYear()-years 
                     if(year>lastFullFinancialYear) year=lastFullFinancialYear
                     if(year<firstFullFinancialYear) break
                     let value = yearlyData[year][ratio.name]
@@ -87,22 +76,4 @@ export function createTrainingData(ticker){
         })            
     })
     return trainingData
-}
-
-function createMovingAverage(priceData,index,weeks){
-    let totalsma=0
-    let days = []
-    for(let i=index;i<index+weeks;i++){
-        if(!priceData[i]){
-            totalsma=null
-            break
-        }
-        days.push({
-            date:priceData[i].date,
-            price:priceData[i].close
-        })
-        totalsma+=priceData[i].close
-    }
-    let sma = totalsma/weeks||null
-    return { days, sma }
 }

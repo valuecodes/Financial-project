@@ -139,8 +139,8 @@ button, select{
     transform:rotate(0deg); 
   }
   100% { 
-    -webkit-transform: rotateY(360deg); 
-    transform:rotate(360deg); 
+    -webkit-transform: rotateY(-360deg); 
+    transform:rotate(-360deg); 
   }  
 }
 

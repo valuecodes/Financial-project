@@ -80,8 +80,6 @@ export function priceChartOptions(ticker,options){
             titleFontColor:'rgba(0,0,0,0)',
             enabled:false,
             custom: function(tooltipModel,index) {
-
-                console.log(window.innerWidth)    
                 if(window.innerWidth<800){
                     return ''
                 }            

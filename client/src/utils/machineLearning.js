@@ -1,4 +1,4 @@
-import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addFinancialRatios, addAnalytics, addFinancialCategories, getRollingFinancialNum, getTrailing12MonthsFinancials, addValueStatements } from './calculations/tickerCalculations';
+import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addAnalytics, getRollingFinancialNum, getTrailing12MonthsFinancials, addValueStatements, addPriceRatios, addForecastInputs } from './calculations/tickerCalculations';
 import train, { makePredictions } from './calculations/model';
 import { colorArray, normalize } from './utils';
 import machineLearningCharts, { createMLChart } from './charts/machineLearningCharts';
@@ -30,16 +30,6 @@ export default function MachineLearning(data,macroData,quarterData){
             currentLoss:0,
             percentage:0,
         },
-        priceRatios:[
-            {name:'movingAverage',category:'movingAverage',value:7,values:[],chart:'priceChart'},
-            {name:'pe',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'},
-            {name:'volume',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'},
-            {name:'oscillator',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'pb',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'ps',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'pfcf',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
-            {name:'divYield',category:'priceRatio',normalize:true,values:[],chart:'ratioChart'}, 
-        ],
         selectedRatios:[],
         options:{
             trainingPercentage:{ 
@@ -73,9 +63,9 @@ export default function MachineLearning(data,macroData,quarterData){
 function handleInit(ticker){
     addValueStatements(ticker)
     addMovingAverages(ticker)
-    addFinancialRatios(ticker)
+    addPriceRatios(ticker)
     addAnalytics(ticker)
-    addFinancialCategories(ticker)
+    addForecastInputs(ticker)       
     ticker.ml.stage = 1
     return ticker
 }
@@ -95,15 +85,10 @@ function addTraininData(ticker){
     let fullData = [...trainingData]
     let futureData = trainingData.splice(trainingData.length-predictionWeeks,predictionWeeks)
 
-    let nullValues = 0
-    selectedRatios.forEach(item => {
-        if(item.value&&item.value>nullValues){
-            nullValues=item.value    
-        }    
-    })
+    let MAWeeks = 29
 
-    priceData.splice(0,nullValues)
-    trainingData.splice(0,nullValues)
+    priceData.splice(0,MAWeeks)
+    trainingData.splice(0,MAWeeks)
 
     selectedRatios.forEach((ratio,index) =>{
         let values = fullData.map(item => item.set[index]).map(item => item||0)
@@ -131,7 +116,7 @@ function addTraininData(ticker){
         priceChart,
         ratioChart
     }
-    console.log(ticker.chart)
+
     ticker.ml={
         ...ticker.ml,
         priceData,

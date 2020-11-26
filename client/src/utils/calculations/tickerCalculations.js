@@ -3,7 +3,7 @@ import { calculateGetFinancialNum, calculateExhangeRateModification } from "../t
 import { tickerDataModel } from '../dataModels'
 import { func } from "prop-types";
 
-export function addFinancialRatios(ticker){
+export function addPriceRatios(ticker){
     let priceData = ticker.priceData
     let currentYear = new Date().getFullYear()
     let numberOfDivs = null
@@ -109,7 +109,6 @@ export function addAnalytics(ticker){
         let revenuePerShare = yearData.revenue/shareCount
 
         yearlyData[year]={
-            // div:0,
             ...yearData,
             ...balanceData,
             ...cashflowData,
@@ -140,141 +139,45 @@ export function addAnalytics(ticker){
     })
 
     ticker.quarterData.forEach((item,index) => {
-        addQuarterGrowth(ticker.quarterData,index,4)
-        addQuarterGrowth(ticker.quarterData,index,1)
+        addGrowthPercent(ticker.quarterData,index,4,'_yoy_growth')
+        addGrowthPercent(ticker.quarterData,index,1,'_qoq_growth')
     })
 
-    ticker.priceData.forEach((item,index)=>
-        addQuarterGrowth(ticker.priceData,index,1,'_change')
-    )
-
-    let quarterRatios =ticker.quarterData[0]? Object.keys(ticker.quarterData[0])
-        .filter(item => !['date','dateName','_id'].includes(item))
-        .map(item => item+'_quarter'):[]
-        
-    let financialInputs= {
-        freeCashFlow:{},
-        netProfitMargin:{},
-        ebitMargin:{},
-        eps:{},
-        revenue:{},
-        netIncome:{},
-        grossProfit:{},
-        payoutRatio:{},
-        div:{},
-        debt:{},
-        debtToEbit:{},
-        ebit:{},
-        evEbit:{},
-        cash:{}
-    }
-
-    Object.keys(yearlyData).forEach((item,index) =>{
-        Object.keys(financialInputs).forEach(name =>{
-            let value = yearlyData[item][name]
-            if(value){
-                let nextYear = yearlyData[Number(item)+1]            
-                let growth = 0
-                if(nextYear){
-                    growth = (yearlyData[Number(item)+1][name] / value)-1
-                }
-                let count = financialInputs[name].count||0
-                let total = financialInputs[name].total||0
-                let growthTotal = financialInputs[name].growthTotal||0
-                count++
-                total+=value
-                growthTotal+=growth
-                let average = total/count
-                let averageGrowth = growthTotal/(count-1)
-                financialInputs[name]={
-                    ...financialInputs[name],
-                    latest: value,
-                    date: yearlyData[item].date,
-                    count:count,
-                    total:total,
-                    average: average,
-                    growthTotal:growthTotal,
-                    averageGrowth:averageGrowth,
-                }
-            }else{
-                financialInputs[name]={
-                    latest: 0,
-                    date: yearlyData[item].date,
-                    average: 0,
-                }
-            }
-        })
+    ticker.priceData.forEach((item,index)=>{
+        addGrowthPercent(ticker.priceData,index,1,'_change_1_week')
+        addGrowthPercent(ticker.priceData,index,4,'_change_1_month')        
+        addGrowthPercent(ticker.priceData,index,13,'_change_3_month')        
+        addGrowthPercent(ticker.priceData,index,26,'_change_6_month')        
+        addGrowthPercent(ticker.priceData,index,52,'_change_1_year')        
     })
 
-    let latestPE = peData[peData.length-1]
-    let averagePE = peData.reduce((a,c)=> a+c,0)/peData.length
-    let peDiscount = averagePE/latestPE    
-    let startingPrice = roundToTwoDecimal(ticker.priceData[0].close)
-
-    financialInputs={
-        ...financialInputs,
-        price:{
-            latest:startingPrice
-        },
-        pe:{
-            latest:latestPE,
-            average:averagePE,
-            discount:peDiscount
-        },        
-        lastFullFinancialYear,
-        firstFullFinancialYear,
-        startingFinancialYear:lastFullFinancialYear,
-    }
+    let yearData = Object.keys(yearlyData).map(item => yearlyData[item]).reverse()
+    yearData.forEach((item,index)=>{
+        addGrowthPercent(yearData,index,1,'_yoy_growth')        
+    })    
     
-    let averageGrowth = 
-        (financialInputs.eps.averageGrowth+
-        financialInputs.revenue.averageGrowth+
-        financialInputs.netIncome.averageGrowth)/3
-    
-    if(averageGrowth>0.3) averageGrowth=0.3
-
-    let forecastInputs={
-        startingPrice:startingPrice,
-        endingPE:averagePE,
-        futureGrowthRate:averageGrowth,
-        endingProfitability:financialInputs.netProfitMargin.average,
-        endingPayoutRatio:financialInputs.payoutRatio.latest,
-        shareCount,
-        dcfDiscountRate:0.1,
-        perpetuityGrowth:0.03,
-        startingFreeCashFlow:financialInputs.freeCashFlow.average,
-        forecastStartingDate:new Date().toISOString().split('T')[0]
-    }
-
+    let quarterRatios = createRatioKeys(ticker.quarterData,'_quarter')      
+    let priceRatios = createRatioKeys(ticker.priceData)
+    let yearRatios = createRatioKeys(yearData)
     let macroRatios = ticker.macroData?ticker.macroData.map(item => item.name):[]
 
     ticker.analytics={
         ...ticker.analytics,
-        financialInputs,
-        forecastInputs,
         yearlyData,
+        yearData,
         quarterRatios,
-        macroRatios
+        priceRatios,
+        yearRatios,
+        macroRatios,
     }
 }
 
-
-export function addFinancialCategories(ticker){
-    let latestFinanacialYear = ticker.analytics.financialInputs.lastFullFinancialYear
-    let inputs = Object.keys(ticker.analytics.yearlyData[latestFinanacialYear])
-    let financialCategories = {
-        incomeStatement:[],
-        balanceSheet:[],
-        cashFlow:[],
-        other:[]
-    }
-    inputs = inputs.filter(item => !['_id','date'].includes(item))
-    inputs.forEach(item =>{
-        let statement = getStatement(item)
-        financialCategories[statement].push(item)
-    })
-    ticker.analytics.financialCategories = financialCategories
+function createRatioKeys(data,add=''){
+    return data[0]? Object.keys(data[0])
+    .filter(item => !['date','dateName','_id','dateShort'].includes(item))
+    .map(item => item+add):[]  
 }
+
 
 export function getStatement(name){
     let statement = ''
@@ -578,24 +481,13 @@ function addTrailing12MonthsFinancials(ticker,index,date){
     })
 }
 
-function addQuarterGrowth(data,index,period,key=null){
+function addGrowthPercent(data,index,period,key=null){
     
     let yoyGrowth = {...data[index]}
-    let text=''
-    switch(period){
-        case 1:
-            text = '_qoq_growth';
-            break
-        case 4:
-            text = '_yoy_growth';
-            break
-        default: text = '_'+period
-    }
-
-    if(key) text=key
-
+    let text=key
+    
     Object.keys(yoyGrowth).forEach(item =>{
-        if(!['date','dateName','_id'].includes(item)&&!item.split('_')[2]){
+        if(!['date','dateName','_id','dateShort'].includes(item)&&!item.split('_')[2]){
             let current = data[index][item]
             let last = data[index+period]?data[index+period][item]:null
             if(last){                
@@ -607,4 +499,124 @@ function addQuarterGrowth(data,index,period,key=null){
             }
         }
     })
+}
+
+
+export function addForecastInputs(ticker){
+
+    let peData = ticker.getPriceRatio('pe').ratioArray
+
+    const { incomeStatement, balanceSheet, cashFlow } = ticker
+    const yearlyData = ticker.analytics.yearlyData
+
+    let latestEps = incomeStatement[0]
+    let firstFullFinancialYear = new Date(incomeStatement[incomeStatement.length-1].date).getFullYear()
+    let lastFullFinancialYear = new Date(incomeStatement[0].date).getFullYear()
+    let shareCount = 0
+    
+    if(latestEps){
+        lastFullFinancialYear = new Date(latestEps.date).getFullYear()
+        shareCount = latestEps.sharesOutstanding
+    }
+
+    let financialInputs= {
+        freeCashFlow:{},
+        netProfitMargin:{},
+        ebitMargin:{},
+        eps:{},
+        revenue:{},
+        netIncome:{},
+        grossProfit:{},
+        payoutRatio:{},
+        div:{},
+        debt:{},
+        debtToEbit:{},
+        ebit:{},
+        evEbit:{},
+        cash:{}
+    }       
+
+    Object.keys(yearlyData).forEach((item,index) =>{
+        Object.keys(financialInputs).forEach(name =>{
+            let value = yearlyData[item][name]
+            if(value){
+                let nextYear = yearlyData[Number(item)+1]            
+                let growth = 0
+                if(nextYear){
+                    growth = (yearlyData[Number(item)+1][name] / value)-1
+                }
+                let count = financialInputs[name].count||0
+                let total = financialInputs[name].total||0
+                let growthTotal = financialInputs[name].growthTotal||0
+                count++
+                total+=value
+                growthTotal+=growth
+                let average = total/count
+                let averageGrowth = growthTotal/(count-1)
+                financialInputs[name]={
+                    ...financialInputs[name],
+                    latest: value,
+                    date: yearlyData[item].date,
+                    count:count,
+                    total:total,
+                    average: average,
+                    growthTotal:growthTotal,
+                    averageGrowth:averageGrowth,
+                }
+            }else{
+                financialInputs[name]={
+                    latest: 0,
+                    date: yearlyData[item].date,
+                    average: 0,
+                }
+            }
+        })
+    })
+
+    let latestPE = peData[peData.length-1]
+    let averagePE = peData.reduce((a,c)=> a+c,0)/peData.length
+    let peDiscount = averagePE/latestPE    
+    let startingPrice = roundToTwoDecimal(ticker.priceData[0].close)
+
+    financialInputs={
+        ...financialInputs,
+        price:{
+            latest:startingPrice
+        },
+        pe:{
+            latest:latestPE,
+            average:averagePE,
+            discount:peDiscount
+        },        
+        lastFullFinancialYear,
+        firstFullFinancialYear,
+        startingFinancialYear:lastFullFinancialYear,
+    }   
+
+    let averageGrowth = 
+        (financialInputs.eps.averageGrowth+
+        financialInputs.revenue.averageGrowth+
+        financialInputs.netIncome.averageGrowth)/3
+    
+    if(averageGrowth>0.3) averageGrowth=0.3
+
+    let forecastInputs={
+        startingPrice:startingPrice,
+        endingPE:financialInputs.pe.average,
+        futureGrowthRate:averageGrowth,
+        endingProfitability:financialInputs.netProfitMargin.average,
+        endingPayoutRatio:financialInputs.payoutRatio.latest,
+        shareCount,
+        dcfDiscountRate:0.1,
+        perpetuityGrowth:0.03,
+        startingFreeCashFlow:financialInputs.freeCashFlow.average,
+        forecastStartingDate:new Date().toISOString().split('T')[0]
+    }
+
+    ticker.analytics={
+        ...ticker.analytics,
+        financialInputs,
+        forecastInputs,
+    }
+    return ticker
 }
