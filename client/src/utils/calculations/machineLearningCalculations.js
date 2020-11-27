@@ -1,3 +1,5 @@
+import { getMeanAndVariance, getStandardDeviation } from "../utils";
+
 export function createTrainingData(ticker){
 
     let { priceData } = ticker
@@ -76,4 +78,51 @@ export function createTrainingData(ticker){
         })            
     })
     return trainingData
+}
+
+
+export function createTrainingResultData(pred,trainingData,predictionWeeks){
+    [...Array(predictionWeeks).keys()].map( i => pred.unshift(null));
+    return pred.map((item,index) => item?(item+1)*trainingData[index-predictionWeeks].currentPrice:null)
+}
+
+export function addTrainingStats(ticker,data,epoch,epochs,log){
+
+    let { trainingData, options } = ticker.ml
+    const predictionWeeks = options.predictionWeeks.value
+
+    let comparison=[]
+    let maxDistance=0
+    let maxDistanceDate=null
+    let maxDistanceIndex=null
+
+    data.forEach((item,index) =>{
+        if(item){
+            let training = trainingData[index-predictionWeeks]
+            let change = Math.abs(item-training.price)
+            if(change>maxDistance){
+                maxDistance=change
+                maxDistanceDate=trainingData[index]?trainingData[index].date:''
+                maxDistanceIndex=index
+            }
+            comparison.push(change)
+        }
+    })
+  
+    const{ mean, variance } = getMeanAndVariance(comparison);
+    const standardDeviation = getStandardDeviation(comparison)
+
+    ticker.ml.stats={
+        currentEpoch:epoch,
+        currentLoss:log.loss.toFixed(5),
+        percentage:((epoch/epochs)*100).toFixed(0),        
+        mean,
+        variance,
+        standardDeviation,
+        maxDistance,
+        maxDistanceDate,
+        maxDistanceIndex
+    }
+
+    return ticker
 }

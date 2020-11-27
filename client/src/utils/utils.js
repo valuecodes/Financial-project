@@ -220,3 +220,31 @@ export const regress = (x, y) => {
     const ssr = sst - sse;
     return {slope, intercept, r, r2, sse, ssr, sst, sy, sx, see};
 }
+
+export function getMeanAndVariance(array) {
+
+    function getVariance(array, mean) {
+        return array.reduce(function(pre, cur) {
+            pre = pre + Math.pow((cur - mean), 2);
+            return pre;
+        }, 0)
+    }
+
+    var meanTot = array.reduce(function(pre, cur) {
+        return pre + cur;
+    })
+    var total = getVariance(array, meanTot / array.length);
+
+    var res = {
+        mean: meanTot / array.length,
+        variance: total / array.length
+    }
+
+    return res
+}
+
+export function getStandardDeviation (array) {
+    const n = array.length
+    const mean = array.reduce((a, b) => a + b) / n
+    return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+}

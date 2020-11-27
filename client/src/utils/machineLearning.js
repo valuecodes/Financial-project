@@ -2,7 +2,7 @@ import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addAnaly
 import train, { makePredictions } from './calculations/model';
 import { colorArray, normalize } from './utils';
 import machineLearningCharts, { createMLChart } from './charts/machineLearningCharts';
-import { createTrainingData } from './calculations/machineLearningCalculations';
+import { createTrainingData, addMeanAndAverage, addTrainingStats, createTrainingResultData } from './calculations/machineLearningCalculations';
 
 export default function MachineLearning(data,macroData,quarterData){
     this.profile = data?data.profile:{}
@@ -29,6 +29,12 @@ export default function MachineLearning(data,macroData,quarterData){
             currentEpoch:0,
             currentLoss:0,
             percentage:0,
+            mean:0,
+            variance:0,
+            standardDeviation:0,
+            maxDistance:0,
+            maxDistanceDate:null,
+            maxDistanceIndex:null
         },
         selectedRatios:[],
         options:{
@@ -45,7 +51,7 @@ export default function MachineLearning(data,macroData,quarterData){
                 value:2, step:1, max:20,stage:2
             },
             predictionWeeks:{ 
-                value:2, step:1, max:50,stage:1
+                value:2, step:1, max:100,stage:1
             },
         }
     }
@@ -106,7 +112,7 @@ function addTraininData(ticker){
         ratio.max = max
     })
 
-    const mlChartRatios=[...selectedRatios]
+    const mlChartRatios=[...selectedRatios];
 
     mlChartRatios.push({label:'Price', name:'close', color:'black', chart:'priceChart'})
     const { priceChart, ratioChart } = createMLChart(mlChartRatios,priceData)
@@ -116,7 +122,7 @@ function addTraininData(ticker){
         priceChart,
         ratioChart
     }
-
+ 
     ticker.ml={
         ...ticker.ml,
         priceData,
@@ -146,27 +152,18 @@ async function trainModel(ticker,setState){
     ticker.chart.lossChart.labels = [...Array(epochs).keys()].map(i => i+1)
 
     let trainingStatus = function(epoch, log,pred) {
-        let stats = ticker.ml.stats
-        epoch++
-        stats={
-            currentEpoch:epoch,
-            currentLoss:log.loss.toFixed(5),
-            percentage:((epoch/epochs)*100).toFixed(0)
-        }
-        ticker.ml={
-            ...ticker.ml,
-            stats,
-        };
         
-        [...Array(predictionWeeks).keys()].map( i => pred.unshift(null));
+        let trainingResultData = createTrainingResultData(pred,trainingData,predictionWeeks) 
+        addTrainingStats(ticker,trainingResultData,epoch,epochs,log)
 
-        let data = pred.map((item,index) => item?(item+1)*trainingData[index-predictionWeeks].currentPrice:null)
-
+        let pointRadius = createMaxDistanceStyle(trainingResultData,ticker,5,0)
+        let borderColor = createMaxDistanceStyle(trainingResultData,ticker,`rgba(27, 36, 36,${epoch/epochs})`,`rgba(227, 36, 36,${epoch/epochs})`)
+        
         ticker.chart.priceChart.datasets.push({
             label:'Prediction '+epoch,
-            data:data,
-            borderColor:`rgba(227, 36, 36,${epoch/epochs})`,
-            pointRadius:0,
+            data:trainingResultData,
+            borderColor,
+            pointRadius,
             borderWidth:2,            
             fill:false,
         })
@@ -187,6 +184,10 @@ async function trainModel(ticker,setState){
         stage:4
     }
     return ticker
+}
+
+function createMaxDistanceStyle(data,ticker,option1,option2){
+    return data.map((item,index)=> index===ticker.ml.stats.maxDistanceIndex?option1:option2)
 }
 
 function validateModel(ticker){
@@ -227,9 +228,10 @@ async function predictModel(ticker) {
     const { result, options, priceData, futureData } = ticker.ml
 
     const predictionWeeks = options.predictionWeeks.value    
-    let resultChartWeeks = 100;
+    let resultChartWeeks = 200;
     let resultPriceData = [...priceData]
     resultPriceData = resultPriceData.splice(resultPriceData.length-resultChartWeeks,resultPriceData.length-1 )
+
     let lastDate = new Date(resultPriceData[resultPriceData.length-1].date)
 
     await futureData.forEach(async(data,index) =>{
@@ -245,10 +247,10 @@ async function predictModel(ticker) {
 
     let priceChartOptions = [
        {label:'Price', name:'close', color:'black',chart:'predictionChart'},
-       {label:'Prediction', name:'prediction', color:'red',pointRadius:5,chart:'predictionChart',predictionWeeks},
+       {label:'Prediction', name:'prediction', color:'red',borderWidth:2,pointRadius:5,chart:'predictionChart',predictionWeeks},
     ]
 
-    ticker.chart.predictionChart = createMLChart(priceChartOptions,resultPriceData).predictionChart
+    ticker.chart.priceChart = createMLChart(priceChartOptions,resultPriceData).predictionChart
 
     return ticker
 }

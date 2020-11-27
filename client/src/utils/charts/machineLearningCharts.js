@@ -53,7 +53,7 @@ export default {
 }
 
 export function createMLChart(mlChartOptions,priceData){
-    
+
     let labels = priceData.map(item => item.date.split('T')[0])
     
     let charts={
@@ -100,7 +100,7 @@ export function createMLChart(mlChartOptions,priceData){
             label: option.label || option.name+index,
             data: data,
             borderColor: option.color || colorArray(index),
-            borderWidth: 2,            
+            borderWidth: option.borderWidth||2,            
             pointRadius: option.pointRadius||0,
             dataLabels,
             fill: false,

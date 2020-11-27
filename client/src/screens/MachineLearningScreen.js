@@ -43,6 +43,7 @@ export default function MachineLearningScreen() {
             <div className='machineLearning'>
                 <Header machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
                 <Stages machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
+                <TrainingStats machineLearning={machineLearning}/>
                 <div className='chartContainer'>
                     <Line
                         data={machineLearning.chart.priceChart}
@@ -55,13 +56,19 @@ export default function MachineLearningScreen() {
                         options={machineLearning.chart.ratiosChartOptions}
                     />
                 </div>
-                <div className='chartContainer predictionChart'>
-                    <Line
-                        data={machineLearning.chart.predictionChart}
-                        options={machineLearning.chart.options}
-                    />
-                </div>
             </div>
+        </div>
+    )
+}
+
+function TrainingStats({machineLearning}){
+    const { mean, variance, maxDistance, standardDeviation } = machineLearning.ml.stats
+    return(
+        <div className='trainingStats'>
+            <p>Mean: <h3>{mean.toFixed(2)}</h3></p>
+            <p>Variance: <h3>{variance.toFixed(2)}</h3></p>
+            <p>Standard Deviation: <h3>{standardDeviation.toFixed(2)}</h3></p>
+            <p>Max Distance: <h3>{maxDistance.toFixed(2)}</h3></p>
         </div>
     )
 }
@@ -137,13 +144,7 @@ function Header({machineLearning, setMachineLearning}){
 function TrainingStatistics({machineLearning}){
     const { options, stats } = machineLearning.ml
     return(
-        <div>
-            <div className='selectedMLRatios'>
-                <h3>Selected Ratios</h3>
-                {machineLearning.ml.selectedRatios.map(ratio =>
-                    <label key={ratio.id}>{camelCaseToString(ratio.name)} {ratio.value}</label>
-                )}                    
-            </div>
+        <div>            
             <div>
                 <div className='statHeader'>
                     <h3>Epochs: {stats.currentEpoch}/{options.epochs.value} ({stats.percentage}%)</h3>
@@ -156,7 +157,12 @@ function TrainingStatistics({machineLearning}){
                     />
                 </div>                
             </div>
-
+            <div className='selectedMLRatios'>
+                <h3>Selected Ratios</h3>
+                {machineLearning.ml.selectedRatios.map(ratio =>
+                    <label key={ratio.id}>{camelCaseToString(ratio.name)} {ratio.value}</label>
+                )}                    
+            </div>
         </div>
     )
 }
