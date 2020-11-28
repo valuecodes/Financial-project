@@ -1,6 +1,5 @@
 import { TickerSlim } from "./tickerSlim";
 import { getApiSymbol } from "./calculations/inputCalculations";
-import apiTestData from '../utils/test/apiData'
 import axios from 'axios'
 
 export function TickerList(tickers){

@@ -98,8 +98,8 @@ export function colorArray(index){
     let colors=[
         'yellow',
         'purple',
-        'green',
-        'salmon',
+        'rgb(8, 153, 83)',
+        'rgb(255, 69, 69)',
         'cyan',
         'lime'
     ]

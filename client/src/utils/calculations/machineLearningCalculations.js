@@ -47,11 +47,13 @@ export function createTrainingData(ticker){
                     ratio.values.push(quarterValue)  
                     break    
                 case 'macroRatio':
-                    let macroIndex = ticker.macroData.findIndex(data => data.name===ratio.name)   
+                    let ratioName = ratio.name.split('_')[0]
+                    let macroIndex = ticker.macroData.findIndex(data => data.name===ratioName)  
                     let macroRatio = ticker.macroData[macroIndex].data.find(i =>
                         new Date(i.date) < new Date(item.date)
                     )
-                    let macroValue = macroRatio?Number(macroRatio.value):null
+                    let macroName = ratio.name.replace(ratioName,'value')
+                    let macroValue = macroRatio?Number(macroRatio[macroName]):null
                     if(!isFinite(macroValue)) macroValue=null             
                     set.push(macroValue)
                     item[ratio.id] = macroValue    

@@ -139,27 +139,54 @@ export function addAnalytics(ticker){
     })
 
     ticker.quarterData.forEach((item,index) => {
-        addGrowthPercent(ticker.quarterData,index,4,'_yoy_growth')
-        addGrowthPercent(ticker.quarterData,index,1,'_qoq_growth')
+        addGrowthPercent(ticker.quarterData,index,4,'_yoyGrowth')
+        addGrowthPercent(ticker.quarterData,index,1,'_qoqGrowth')
     })
 
     ticker.priceData.forEach((item,index)=>{
-        addGrowthPercent(ticker.priceData,index,1,'_change_1_week')
-        addGrowthPercent(ticker.priceData,index,4,'_change_1_month')        
-        addGrowthPercent(ticker.priceData,index,13,'_change_3_month')        
-        addGrowthPercent(ticker.priceData,index,26,'_change_6_month')        
-        addGrowthPercent(ticker.priceData,index,52,'_change_1_year')        
+        addGrowthPercent(ticker.priceData,index,1,'_1week')
+        addGrowthPercent(ticker.priceData,index,4,'_1month')        
+        addGrowthPercent(ticker.priceData,index,13,'_3month')        
+        addGrowthPercent(ticker.priceData,index,26,'_6month')        
+        addGrowthPercent(ticker.priceData,index,52,'_1year')        
     })
 
     let yearData = Object.keys(yearlyData).map(item => yearlyData[item]).reverse()
     yearData.forEach((item,index)=>{
-        addGrowthPercent(yearData,index,1,'_yoy_growth')        
+        addGrowthPercent(yearData,index,1,'_yoyGrowth')        
     })    
+
+    ticker.macroData.forEach(mData =>{
+        const { frequence, data } = mData           
+        data.forEach((item,index) =>{
+            if(frequence==='weekly'){
+                addGrowthPercent(data,index,1,'_1week')     
+                addGrowthPercent(data,index,4,'_1month')        
+                addGrowthPercent(data,index,13,'_3month')        
+                addGrowthPercent(data,index,26,'_6month')        
+                addGrowthPercent(data,index,52,'_1year') 
+            }else if(frequence==='monthly'){
+                addGrowthPercent(data,index,1,'_1month')        
+                addGrowthPercent(data,index,3,'_3month')        
+                addGrowthPercent(data,index,6,'_6month')        
+                addGrowthPercent(data,index,12,'_1year') 
+            }
+        })
+    })
     
     let quarterRatios = createRatioKeys(ticker.quarterData,'_quarter')      
     let priceRatios = createRatioKeys(ticker.priceData)
     let yearRatios = createRatioKeys(yearData)
-    let macroRatios = ticker.macroData?ticker.macroData.map(item => item.name):[]
+    let macroRatios = ticker.macroData?
+        ticker.macroData.map(item => createRatioKeys(item.data,'_'+item.name)).flat(2)
+        .map(item =>{
+            let array=item.split('_')
+            array.shift()
+            array.unshift(array[array.length-1])
+            array.pop()
+            return array.join('_')
+        })
+        :[]
 
     ticker.analytics={
         ...ticker.analytics,
@@ -472,9 +499,9 @@ function addTrailing12MonthsFinancials(ticker,index,date){
             let current = quarterData[index][item]
             let last = quarterData[index+period]?quarterData[index+period][item]:null
             if(last){                
-                quarterData[index][item+'_trailing'] = newData[item] 
+                quarterData[index][item+'Trailing'] = newData[item] 
             }else{
-                quarterData[index][item+'_trailing'] = null
+                quarterData[index][item+'Trailing'] = null
             }
 
         }
@@ -485,9 +512,11 @@ function addGrowthPercent(data,index,period,key=null){
     
     let yoyGrowth = {...data[index]}
     let text=key
-    
+
     Object.keys(yoyGrowth).forEach(item =>{
-        if(!['date','dateName','_id','dateShort'].includes(item)&&!item.split('_')[2]){
+        let add = !['date','dateName','_id','dateShort'].includes(item)&&!item.split('_')[1]
+        if(item.split('_')[1]==='trailing') add=true
+        if(add){
             let current = data[index][item]
             let last = data[index+period]?data[index+period][item]:null
             if(last){                

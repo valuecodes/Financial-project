@@ -1,11 +1,14 @@
 import { normalize } from "../chartUtils";
 import { colorArray } from "../utils";
 
-export default {
+export const charts = {
     priceChart:{},
     options:{
         responsive:true,
         maintainAspectRatio: false,
+        legend:{
+            display:false
+        },
         plugins:{
             datalabels:{
                 display:false
@@ -14,7 +17,16 @@ export default {
         tooltips: {
             mode: 'index',
             intersect: false,
-        }            
+        },  
+        scales: {
+            xAxes : [{
+              ticks : {
+                maxTicksLimit:10,
+                maxRotation: 0,
+                minRotation: 0
+              }
+            }]
+        }          
     },
     ratioChart:{},
     predictionChart:{},
@@ -31,14 +43,35 @@ export default {
         },
         tooltips: {
             mode: 'index',
-            intersect: false,
-            position:'nearest'
+            intersect: false, 
+            callbacks:{
+                label: function(tooltipItem, data) {
+                    tooltipItem.opacity = 0;
+                }
+            }
+        },
+        layout: {
+            padding: {
+                // Any unspecified dimensions are assumed to be 0                     
+                right: 25
+            }
         },
         scales: {
             xAxes: [{
                 ticks: {
                     display: false
+                },
+                gridLines: {
+                    display:false
                 }
+            }],
+            yAxes: [{
+                // ticks: {
+                //     display: false
+                // },
+                gridLines: {
+                    display:false
+                }   
             }]
         }
     },
@@ -49,7 +82,7 @@ export default {
             data: [],
             borderColor: "black"
         }],
-    }
+    }        
 }
 
 export function createMLChart(mlChartOptions,priceData){
@@ -70,6 +103,8 @@ export function createMLChart(mlChartOptions,priceData){
             labels  
         }
     }
+
+    let highlighColorIndex=0
 
     mlChartOptions.forEach((option,index) => {
 
@@ -96,14 +131,22 @@ export function createMLChart(mlChartOptions,priceData){
             [...Array(option.predictionWeeks).keys()].map( i => data.unshift(null));
         }
 
+        let borderColor = option.color
+        let highlight = false
+        if(option.name.split('_').length===1&&!option.color){
+            borderColor = colorArray(highlighColorIndex)
+            highlighColorIndex++
+        }
+
         charts[option.chart].datasets.push({
             label: option.label || option.name+index,
             data: data,
-            borderColor: option.color || colorArray(index),
+            borderColor,
             borderWidth: option.borderWidth||2,            
             pointRadius: option.pointRadius||0,
             dataLabels,
             fill: false,
+            order:borderColor?1:2,
         })        
     })
 

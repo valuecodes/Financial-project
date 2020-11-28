@@ -1,6 +1,6 @@
 import React,{ useState, useEffect } from 'react'
 import SectionNav from '../components/SectionNav'
-import MachineLearning from '../utils/machineLearning'
+import MachineLearning, { createRatio } from '../utils/machineLearning'
 import SearchBox from '../components/SearchBox'
 import { useSelector, useDispatch } from 'react-redux'
 import { getTickerData } from '../actions/tickerActions';
@@ -16,7 +16,7 @@ export default function MachineLearningScreen() {
     const { loading, tickerFullData, tickerQuarter, error } = tickerData
     const macroData = useSelector(state => state.macroData)
     const { loading:loadingMacro, data:macroRatios, error:errorMacro } = macroData
-    
+    const [demoMode,setDemoMode]=useState(false)
     const [machineLearning, setMachineLearning] = useState(new MachineLearning(null))
     const [navigation,setNavigation] = useState({
         selected:{name:'machineLearning',index:0},
@@ -26,8 +26,11 @@ export default function MachineLearningScreen() {
     useEffect(()=>{
         if(tickerFullData&&macroRatios){
             let newMachineLearning = new MachineLearning(tickerFullData,macroRatios,tickerQuarter)
-            let updated = newMachineLearning.init()
+            let updated = newMachineLearning.init(setMachineLearning)
             setMachineLearning(newMachineLearning)
+            if(demoMode){
+                newMachineLearning.demoMode(setMachineLearning)
+            }
         }
     },[tickerFullData,macroRatios])
 
@@ -35,25 +38,23 @@ export default function MachineLearningScreen() {
         dispatch(getMacroData())
     },[])
 
-    const { stage } = machineLearning.ml
-
     return (
         <div className='page container'>
             <SectionNav navigation={navigation} setNavigation={setNavigation}/>
             <div className='machineLearning'>
-                <Header machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
+                <Header machineLearning={machineLearning} setMachineLearning={setMachineLearning} setDemoMode={setDemoMode} demoMode={demoMode}/>
                 <Stages machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>
                 <TrainingStats machineLearning={machineLearning}/>
                 <div className='chartContainer'>
                     <Line
-                        data={machineLearning.chart.priceChart}
-                        options={machineLearning.chart.options}
+                        data={machineLearning.charts.priceChart}
+                        options={machineLearning.charts.options}
                     />
                 </div>
                 <div className='chartContainerSmall'>
                     <Line
-                        data={machineLearning.chart.ratioChart}
-                        options={machineLearning.chart.ratiosChartOptions}
+                        data={machineLearning.charts.ratioChart}
+                        options={machineLearning.charts.ratiosChartOptions}
                     />
                 </div>
             </div>
@@ -64,16 +65,28 @@ export default function MachineLearningScreen() {
 function TrainingStats({machineLearning}){
     const { mean, variance, maxDistance, standardDeviation } = machineLearning.ml.stats
     return(
-        <div className='trainingStats'>
-            <p>Mean: <h3>{mean.toFixed(2)}</h3></p>
-            <p>Variance: <h3>{variance.toFixed(2)}</h3></p>
-            <p>Standard Deviation: <h3>{standardDeviation.toFixed(2)}</h3></p>
-            <p>Max Distance: <h3>{maxDistance.toFixed(2)}</h3></p>
-        </div>
+        <ul className='trainingStats'>
+            <li>
+                <p>Mean</p>
+                <h3>{mean.toFixed(2)}</h3>                
+            </li>
+            <li>
+                <p>Variance</p>
+                <h3>{variance.toFixed(2)}</h3>
+            </li>
+            <li>
+                <p>Standard Deviation</p>
+                <h3>{standardDeviation.toFixed(2)}</h3>
+            </li>
+            <li>
+                <p>Max Distance</p>
+                <h3>{maxDistance.toFixed(2)}</h3>
+            </li>
+        </ul>
     )
 }
 
-function Header({machineLearning, setMachineLearning}){
+function Header({machineLearning, setMachineLearning,setDemoMode,demoMode}){
     
     const dispatch = useDispatch()
     const tickerListData = useSelector(state => state.tickerListData)
@@ -85,6 +98,7 @@ function Header({machineLearning, setMachineLearning}){
 
     const handleReset=()=>{
         machineLearning.ml.stage=0
+        setDemoMode(false)        
         setMachineLearning({...machineLearning})
     }
 
@@ -108,16 +122,39 @@ function Header({machineLearning, setMachineLearning}){
         setMachineLearning({...updated})
     }
 
-    const { stage,stages, options } = machineLearning.ml    
+    const handleQuickStart=()=>{
+        selectTicker({ticker:'JNJ'})
+        setDemoMode(true)
+        machineLearning.ml.stage=0
+        machineLearning.ml.stages[0].infoText='Fetching data and creating training set...'
+        setMachineLearning({...machineLearning})
+    }
+
+    const { stage, stages } = machineLearning.ml    
 
     return(
         <div className='mlHeader'>
-            {stage===0?
-                <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Select ticker...'}/>:
-                <div className='stageHeader'>
+            <div className='mlStagesHeader'>
+                <div className='mlStagesHeading'>
+                    <h2>{camelCaseToString(stages[stage].name)}</h2>
                     <h2 className='mlTicker'>{machineLearning.profile.ticker}</h2>
-                </div>
-            }
+                </div>    
+                <div>
+                    <p>{stages[stage].infoText}
+                    </p>               
+                </div>     
+                {demoMode&&stage<4&&
+                    <i className='spinning headerLogo'>
+                        <MaterialIcon icon={'LoopIcon'} color={'black'}/>
+                    </i> 
+                } 
+                {stage===0&&!demoMode&&
+                    <div className='stageOptions'>
+                        <SearchBox tickers={tickers} addItem={selectTicker} placeholder={'Search ticker...'}/>    
+                        <button onClick={handleQuickStart} className='button'>Quick Start</button>    
+                    </div>
+                }                
+            </div>  
             <div className='stages'>
                 {stages.map(item => 
                     <button 
@@ -152,8 +189,8 @@ function TrainingStatistics({machineLearning}){
                 </div>
                 <div className='chartContainer'>
                     <Bar
-                        data={machineLearning.chart.lossChart}
-                        options={machineLearning.chart.options}
+                        data={machineLearning.charts.lossChart}
+                        options={machineLearning.charts.options}
                     />
                 </div>                
             </div>
@@ -175,11 +212,10 @@ function Stages({machineLearning, setMachineLearning}){
         setState({...state})
     }
 
-    const { stage,stages, options } = machineLearning.ml
+    const { stage, options } = machineLearning.ml
 
     return(
-        <div className='mlStages'>                
-            <h2>{camelCaseToString(stages[stage].name)}</h2>
+        <div className='mlStages'>  
             <div className='mlStats'>
                 {stage>=3 &&
                     <TrainingStatistics machineLearning={machineLearning}/>
@@ -204,121 +240,95 @@ function Stages({machineLearning, setMachineLearning}){
                         )}
                     </ul>
                 }
-                {stage===1&&<MLRAtios machineLearning={machineLearning} setMachineLearning={setMachineLearning}/>}             
+                {stage===1&& 
+                    machineLearning.ml.inputCategories.map(categoryName=>
+                        <SelectRatio 
+                            key={categoryName}
+                            machineLearning={machineLearning} 
+                            setMachineLearning={setMachineLearning} 
+                            categoryName={categoryName}
+                        />                
+                    )
+                }             
             </div>
         </div>
     )
 }
 
-function MLRAtios({ machineLearning, setMachineLearning }){
 
-    const handleAddFinancialRatio=(ratio,category,normalize)=>{
+function SelectRatio({machineLearning,setMachineLearning,categoryName}){
+
+    const category = categoryName.slice(0,-1)
+
+    const [groups,setGroups] = useState({})
+
+    useEffect(()=>{
+        let newGroups={}
+
+        machineLearning.analytics[categoryName].forEach(item => {
+            let group=item.split('_')[0]
+            if(item.split('_')[1]==='trailing'){
+                group=item.split('_')[0]+item.split('_')[1]
+            }         
+            if(newGroups[group]){
+                newGroups[group].push(item)
+            }else{
+                newGroups[group]=[item]
+            }
+        })
+
+        setGroups(newGroups)
+    },[])
+
+    const handleAddRatio = (ratio,category) => {
         let found = machineLearning.ml.selectedRatios.findIndex(item =>item.name===ratio)
         if(found>=0){
             machineLearning.ml.selectedRatios.splice(found,1)
         }else{
-            addFinancialRatio(ratio,category,normalize)
+            let newRatio = createRatio(ratio,category)
+            machineLearning.ml.selectedRatios.push(newRatio)
         }
-        setMachineLearning({...machineLearning})
-    }
-
-    const addFinancialRatio=(ratio,category,normalize=true)=>{
-        let newRatio={
-            name:ratio,
-            category:category,
-            chart:'ratioChart',
-            normalize,
-            id:uuidv4(),
-            values:[]
-        }
-        machineLearning.ml.selectedRatios.push(newRatio)
-    }
-
-    const handleRemoveRatio=(ratio)=>{
-        let { selectedRatios } = machineLearning.ml
-        selectedRatios = selectedRatios.filter(item => item.id!==ratio.id)
-        machineLearning.ml.selectedRatios = selectedRatios
-        setMachineLearning({...machineLearning})        
+        setMachineLearning({...machineLearning})   
     }
 
     const handleAddRatios = (categoryName,category) => {
         const ratioNames = machineLearning.analytics[categoryName]
-        ratioNames.forEach(ratio => handleAddFinancialRatio(ratio,category))
-        setMachineLearning({...machineLearning})  
+        ratioNames.forEach(ratio => handleAddRatio(ratio,category)) 
+    }
+
+    const parseName=(ratio)=>{
+        let array = ratio.split('_')
+        if(array[1]==='quarter') return camelCaseToString(array[0])
+        if(array[1]==='trailing') return camelCaseToString(array[1])
+        let text = camelCaseToString(ratio.split('_')[1]||ratio)
+        return text
     }
 
     return(
-        <>
-            <div>
-                <h3>Add Macro ratios</h3>
-                <button onClick={()=>handleAddRatios('macroRatios','macroRatio')}>
-                    Add All
-                </button>  
-                {machineLearning.analytics.macroRatios.map(ratio =>
-                        <button 
-                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
-                            key={ratio} 
-                            className='button small' 
-                            onClick={()=>handleAddFinancialRatio(ratio,'macroRatio')
-                        }>
-                            {camelCaseToString(ratio)}
-                        </button>
-                )}   
-                <h3>Add price ratios</h3>
-                <button onClick={()=>handleAddRatios('priceRatios','priceRatio')}>
-                    Add All
-                </button>  
-                {machineLearning.analytics.priceRatios.map(ratio =>
-                        <button 
-                            style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
-                            key={ratio} 
-                            className='button small' 
-                            onClick={()=>handleAddFinancialRatio(ratio,'priceRatio')
-                        }>
-                            {camelCaseToString(ratio)}
-                        </button>
-                )}                    
-                <h3>Add quarter data</h3>
-                    <button onClick={()=>handleAddRatios('quarterRatios','quarterRatio')}>
-                        Add All
-                    </button>    
-                    {machineLearning.analytics.quarterRatios.map(ratio =>
-                                <button 
-                                style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
+        <div className='ratioCategory'>
+            <div className='ratioCategoryHeader'>
+                <h3>{camelCaseToString(categoryName)}</h3>
+                <button onClick={()=>handleAddRatios(categoryName,category)}>Add category</button> 
+            </div>
+            <div className='ratioCategoryOptions'>
+                {Object.keys(groups).map(group=>
+                    <div key={group} className='ratioGroup'>
+                        {groups[group].map((ratio,index) => 
+                            <button 
+                                style={{
+                                    color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen',
+                                    width:index===0?!['priceRatios','macroRatios'].includes(categoryName)?'20rem':'8rem':'auto'
+                                }}
                                 key={ratio} 
                                 className='button small' 
-                                onClick={()=>handleAddFinancialRatio(ratio,'quarterRatio')
-                            }>
-                                {camelCaseToString(ratio)}
-                            </button>
-                    )}
-                    <h3>Add year data</h3>
-                    <button onClick={()=>handleAddRatios('yearRatios','yearRatio')}>
-                        Add All
-                    </button>    
-                    {machineLearning.analytics.yearRatios.map(ratio =>
-                                <button 
-                                style={{color:machineLearning.ml.selectedRatios.find(item =>item.name===ratio)&&'lightgreen'}}
-                                key={ratio} 
-                                className='button small' 
-                                onClick={()=>handleAddFinancialRatio(ratio,'yearRatio')
-                            }>
-                                {camelCaseToString(ratio)}
-                            </button>
-                    )}
+                                onClick={()=>handleAddRatio(ratio,category)}
+                            >
+                                {parseName(ratio)}
+                            </button>                
+                        )}                    
+                    </div>
+                )}
             </div>
-            <div>
-                <h3>Selected Ratios</h3>
-                <ul className='mlTrainingOptions'>
-                    {machineLearning.ml.selectedRatios.map(ratio =>
-                        <li key={ratio.id}>
-                            <p>{camelCaseToString(ratio.name)}</p>
-                            <p></p>
-                            <button onClick={()=>handleRemoveRatio(ratio)}>X</button>
-                        </li>
-                    )}                    
-                </ul>
-            </div>
-        </>
+        </div>
     )
 }
