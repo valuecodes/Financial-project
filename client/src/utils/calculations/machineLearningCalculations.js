@@ -88,7 +88,7 @@ export function createTrainingResultData(pred,trainingData,predictionWeeks){
     return pred.map((item,index) => item?(item+1)*trainingData[index-predictionWeeks].currentPrice:null)
 }
 
-export function addTrainingStats(ticker,data,epoch,epochs,log){
+export function addTrainingStats(ticker,data,pred,epoch,epochs,log){
 
     let { trainingData, options } = ticker.ml
     const predictionWeeks = options.predictionWeeks.value
@@ -97,11 +97,18 @@ export function addTrainingStats(ticker,data,epoch,epochs,log){
     let maxDistance=0
     let maxDistanceDate=null
     let maxDistanceIndex=null
+    let correctWeeks=0;
 
     data.forEach((item,index) =>{
         if(item){
             let training = trainingData[index-predictionWeeks]
             let change = Math.abs(item-training.price)
+            if(training.priceChange>=0&&pred[index]>=0){    
+                correctWeeks++
+            }
+            if(training.priceChange<0&&pred[index]<0){
+                correctWeeks++
+            }
             if(change>maxDistance){
                 maxDistance=change
                 maxDistanceDate=trainingData[index]?trainingData[index].date:''
@@ -110,20 +117,24 @@ export function addTrainingStats(ticker,data,epoch,epochs,log){
             comparison.push(change)
         }
     })
-  
+
     const{ mean, variance } = getMeanAndVariance(comparison);
     const standardDeviation = getStandardDeviation(comparison)
-
+    const totalWeeks = data.filter(item => item!==null).length
+    
     ticker.ml.stats={
         currentEpoch:epoch,
-        currentLoss:log.loss.toFixed(5),
-        percentage:((epoch/epochs)*100).toFixed(0),        
+        currentLoss:log?log.loss.toFixed(6):ticker.ml.stats.currentLoss,
+        percentage:epoch?((epoch/epochs)*100).toFixed(0):ticker.ml.stats.percentage,        
         mean,
         variance,
         standardDeviation,
         maxDistance,
         maxDistanceDate,
-        maxDistanceIndex
+        maxDistanceIndex,
+        correctWeeks,
+        totalWeeks,
+        correctWeeksPercent:((correctWeeks/totalWeeks)*100).toFixed(1)
     }
 
     return ticker

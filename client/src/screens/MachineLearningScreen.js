@@ -63,7 +63,10 @@ export default function MachineLearningScreen() {
 }
 
 function TrainingStats({machineLearning}){
-    const { mean, variance, maxDistance, standardDeviation } = machineLearning.ml.stats
+
+    const { mean, variance, maxDistance, standardDeviation, correctWeeks, totalWeeks,correctWeeksPercent 
+    } = machineLearning.ml.stats
+    
     return(
         <ul className='trainingStats'>
             <li>
@@ -81,6 +84,10 @@ function TrainingStats({machineLearning}){
             <li>
                 <p>Max Distance</p>
                 <h3>{maxDistance.toFixed(2)}</h3>
+            </li>
+            <li>
+                <p>Correct estimates</p>
+                <h3>{correctWeeks}/{totalWeeks}({correctWeeksPercent}%)</h3>
             </li>
         </ul>
     )
@@ -123,7 +130,7 @@ function Header({machineLearning, setMachineLearning,setDemoMode,demoMode}){
     }
 
     const handleQuickStart=()=>{
-        selectTicker({ticker:'JNJ'})
+        selectTicker({ticker:'BABA'})
         setDemoMode(true)
         machineLearning.ml.stage=0
         machineLearning.ml.stages[0].infoText='Fetching data and creating training set...'

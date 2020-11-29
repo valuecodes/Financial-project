@@ -162,12 +162,22 @@ function MacroRatios({}){
     }
 
     const handleTextData = (e,index)=>{
-        const { value } = e.target
+        const { value, name } = e.target
+        let valueIndex = 1
+        if(name==='investorSentimentNeutral') valueIndex=2
+        if(name==='investorSentimentBear') valueIndex=3
         let parsedData = value.split('\n')
             .map(item => item.split('\t'))
-            .map(item => {return{ value:Number(item[1]),date: new Date(item[0])}})
+            .map(item => {return{ value:toNumber(item[valueIndex]),date: new Date(item[0])}})
         macro[index].data = parsedData
         setMacro([...macro])
+
+        function toNumber(item){
+            console.log(item)
+            let number = Number(item.replace(',',''))
+            console.log(number)
+            return number
+        }
     }
 
     return(
@@ -194,7 +204,7 @@ function MacroRatios({}){
                             onChange={e=>handleModifyRatio(e,index)}
                         />
                         <input type='file' onChange={e => handleFileData(e,index)}/>
-                        <textarea onChange={e => handleTextData(e,index)}/>
+                        <textarea name={ratio.name} onChange={e => handleTextData(e,index)}/>
                         <p>Items: {ratio.data.length}</p>
                         <button onClick={()=>handleSaveMacro(ratio)}>Save Macro Ratio</button>
                         {ratio._id&&<button onClick={()=>handleDeleteMacro(ratio)}>Delete Macro Ratio</button>} 

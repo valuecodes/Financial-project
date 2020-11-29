@@ -1,6 +1,6 @@
 import { calculateFilterByDate, handleGetPriceRatio, addMovingAverages, addAnalytics, getRollingFinancialNum, getTrailing12MonthsFinancials, addValueStatements, addPriceRatios, addForecastInputs } from './calculations/tickerCalculations';
 import { train, makePredictions } from './calculations/machineLearningModel';
-import { colorArray, normalize, uuidv4 } from './utils';
+import { colorArray, normalize, uuidv4, normalizePercent } from './utils';
 import { charts, createMLChart, addRatioChartCallback } from './charts/machineLearningCharts';
 import { createTrainingData, addMeanAndAverage, addTrainingStats, createTrainingResultData } from './calculations/machineLearningCalculations';
 
@@ -53,7 +53,9 @@ export default function MachineLearning(data,macroData,quarterData){
             maxDistance:0,
             maxDistanceDate:null,
             maxDistanceIndex:null,
-            
+            correctWeeks:0,
+            totalWeeks:0,
+            correctWeeksPercent:0
         },
         inputCategories:['macroRatios','priceRatios','quarterRatios','yearRatios'],
         selectedRatios:[],
@@ -62,7 +64,7 @@ export default function MachineLearning(data,macroData,quarterData){
                 value:70, step:1, max:100,stage:2
             },
             epochs:{ 
-                value:10, step:1,stage:2
+                value:35, step:1,stage:2
             },
             learningRate:{ 
                 value:0.01, step:0.002,max:1,stage:2
@@ -121,9 +123,18 @@ function addTraininData(ticker){
         let values = fullData.map(item => item.set[index]).map(item => item||0)
         let min = Math.min(...values)
         let max = Math.max(...values)
+        
+        if((max>500||min<-100)&&!ratio.normalize&&ratio.category==='priceRatio'){
+            ratio.normalize=true
+            ratio.percent=false
+        }        
         if(ratio.normalize){
             trainingData.forEach((item,i) => trainingData[i].set[index] = normalize(item.set[index],max,0))
             futureData.forEach((item,i) => futureData[i].set[index] = normalize(item.set[index],max,0))
+        }
+        if(ratio.percent){
+            trainingData.forEach((item,i) => trainingData[i].set[index] = normalizePercent(item.set[index]))   
+            futureData.forEach((item,i) => futureData[i].set[index] = normalizePercent(item.set[index]))
         }
         if(ratio.scale){
             trainingData.forEach((item,i) => trainingData[i].set[index] = item.set[index]/max)
@@ -175,7 +186,7 @@ async function trainModel(ticker,setState){
     let trainingStatus = function(epoch, log,pred) {
         
         let trainingResultData = createTrainingResultData(pred,trainingData,predictionWeeks) 
-        addTrainingStats(ticker,trainingResultData,epoch,epochs,log)
+        addTrainingStats(ticker,trainingResultData,pred,epoch,epochs,log)
 
         let pointRadius = createMaxDistanceStyle(trainingResultData,ticker,5,0)
         let borderColor = createMaxDistanceStyle(trainingResultData,ticker,`rgba(27, 36, 36,${epoch/epochs})`,`rgba(227, 36, 36,${epoch/epochs})`)
@@ -213,7 +224,7 @@ function createMaxDistanceStyle(data,ticker,option1,option2){
 
 function validateModel(ticker){
 
-    const { inputs, result, options,priceData, mlChartRatios } = ticker.ml
+    const { inputs, result, options,priceData, mlChartRatios,trainingData } = ticker.ml
     let trainingSize = options.trainingPercentage.value
     const predictionWeeks = options.predictionWeeks.value
 
@@ -224,6 +235,11 @@ function validateModel(ticker){
 
     trainY.forEach(i => unseenY.unshift(null))
     unseenY[trainY.length-1] = trainY[trainY.length-1]
+    
+    let pred = [...unseenY]
+    let trainingResultData = createTrainingResultData(pred,trainingData,predictionWeeks) 
+    addTrainingStats(ticker,trainingResultData,pred)
+
 
     priceData.forEach((item,index)=>{
         item.trainY = trainY[index]
@@ -277,6 +293,7 @@ async function predictModel(ticker) {
 }
 
 async function handleDemoMode(ticker,setState){
+
     const { macroRatios, priceRatios, quarterRatios } = ticker.analytics
     let ratios = [...macroRatios,...priceRatios,...quarterRatios]
     macroRatios.forEach(item =>{
@@ -287,6 +304,7 @@ async function handleDemoMode(ticker,setState){
         let newRatio = createRatio(item,'priceRatio')
         ticker.ml.selectedRatios.push(newRatio)
     })
+
     let updated = ticker.addTraininData()
     setState({...updated})
     updated = await ticker.trainModel(setState)
@@ -294,12 +312,15 @@ async function handleDemoMode(ticker,setState){
 }
 
 export function createRatio(ratio,category,normalize=true){
+    let percent = ratio.split('_')[1]?true:false
+    if(ratio.split('_')[1]==='quarter') percent=false
     return{
         name:ratio,
         category:category,
         chart:'ratioChart',
-        normalize,
+        normalize:!percent,
         id:uuidv4(),
-        values:[]
+        values:[],
+        percent
     }
 }

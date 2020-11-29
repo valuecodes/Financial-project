@@ -1,5 +1,5 @@
 import { normalize } from "../chartUtils";
-import { colorArray } from "../utils";
+import { colorArray, normalizePercent } from "../utils";
 
 export const charts = {
     priceChart:{},
@@ -114,7 +114,9 @@ export function createMLChart(mlChartOptions,priceData){
         if(option.normalize){
             data = data.map(item => normalize(item,option.max,option.min))
         }
-
+        if(option.percent){
+            data = data.map(item => normalizePercent(item))            
+        }
         if(option.scale){
             data = data.map(item => item/option)            
         }
@@ -134,20 +136,26 @@ export function createMLChart(mlChartOptions,priceData){
         let borderColor = option.color
         let highlight = false
         if(option.name.split('_').length===1&&!option.color){
-            borderColor = colorArray(highlighColorIndex)
-            highlighColorIndex++
+            // borderColor = colorArray(highlighColorIndex)
+            // highlighColorIndex++
         }
 
-        charts[option.chart].datasets.push({
-            label: option.label || option.name+index,
-            data: data,
-            borderColor,
-            borderWidth: option.borderWidth||2,            
-            pointRadius: option.pointRadius||0,
-            dataLabels,
-            fill: false,
-            order:borderColor?1:2,
-        })        
+        if(
+            option.chart==='priceChart'||
+            (option.category!=='yearRatio'&&option.category!=='quarterRatio'))
+        {
+            charts[option.chart].datasets.push({
+                label: option.label || option.name+index,
+                data: data,
+                borderColor,
+                borderWidth: option.borderWidth||2,            
+                pointRadius: option.pointRadius||0,
+                dataLabels,
+                fill: false,
+                order:borderColor?1:2,
+            })                 
+        }
+   
     })
 
     return charts

@@ -1,5 +1,3 @@
-import { func } from "@tensorflow/tfjs-data";
-
 export function camelCaseToString(s) {
     if(s===null) return ''
 
@@ -92,6 +90,17 @@ export function normalize(val=0, max=1, min=0) {
     if(result===-Infinity) result=0
     if(result===Infinity) result=0
     return result;
+}
+
+export function normalizePercent(val){
+    let in_max=200
+    let in_min=-200
+    let out_max=1
+    let out_min=-1
+    if(val<-90)val=-90
+    if(val>400)val=400
+    let result = (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+    return result
 }
 
 export function colorArray(index){
