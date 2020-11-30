@@ -156,7 +156,7 @@ export function addAnalytics(ticker){
         addGrowthPercent(yearData,index,1,'_yoyGrowth')        
     })    
 
-    ticker.macroData.forEach(mData =>{
+    ticker.macroData && ticker.macroData.forEach(mData =>{
         const { frequence, data } = mData           
         data.forEach((item,index) =>{
             if(frequence==='weekly'){

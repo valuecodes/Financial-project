@@ -141,8 +141,9 @@ export function createMLChart(mlChartOptions,priceData){
         }
 
         if(
-            option.chart==='priceChart'||
-            (option.category!=='yearRatio'&&option.category!=='quarterRatio'))
+            option.chart==='priceChart'||option.chart==='predictionChart'||option.category==='macroRatio'
+            // (option.category!=='yearRatio'&&option.category!=='quarterRatio')
+        )
         {
             charts[option.chart].datasets.push({
                 label: option.label || option.name+index,

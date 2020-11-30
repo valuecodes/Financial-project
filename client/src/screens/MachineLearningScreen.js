@@ -201,12 +201,6 @@ function TrainingStatistics({machineLearning}){
                     />
                 </div>                
             </div>
-            <div className='selectedMLRatios'>
-                <h3>Selected Ratios</h3>
-                {machineLearning.ml.selectedRatios.map(ratio =>
-                    <label key={ratio.id}>{camelCaseToString(ratio.name)} {ratio.value}</label>
-                )}                    
-            </div>
         </div>
     )
 }
